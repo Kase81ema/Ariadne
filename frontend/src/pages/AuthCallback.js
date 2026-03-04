@@ -24,8 +24,12 @@ export default function AuthCallback() {
     const exchangeSession = async () => {
       try {
         const res = await authAPI.exchangeSession(sessionId);
+        // Store session token for auth header
+        if (res.data.session_token) {
+          localStorage.setItem('ariadne_token', res.data.session_token);
+        }
         setUser(res.data);
-        navigate('/dashboard', { replace: true, state: { user: res.data } });
+        navigate('/dashboard', { replace: true });
       } catch (err) {
         console.error('Session exchange failed:', err);
         navigate('/login');

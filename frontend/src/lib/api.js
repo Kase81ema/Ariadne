@@ -4,10 +4,9 @@ const API_BASE = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const api = axios.create({
   baseURL: API_BASE,
-  withCredentials: true,
 });
 
-// Add JWT token to requests if available
+// Add auth token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('ariadne_token');
   if (token) {

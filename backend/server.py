@@ -131,7 +131,31 @@ def create_jwt(user_id: str, email: str, role: str) -> str:
     return jwt.encode({"user_id": user_id, "email": email, "role": role, "exp": datetime.now(timezone.utc) + timedelta(days=7)}, JWT_SECRET, algorithm="HS256")
 
 async def get_current_user(request: Request) -> dict:
-    # Check cookie first (Google OAuth)
+    # Check Authorization header first (JWT or session token)
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        token_val = auth[7:]
+        # Try as JWT first
+        try:
+            payload = jwt.decode(token_val, JWT_SECRET, algorithms=["HS256"])
+            user = await db.users.find_one({"user_id": payload["user_id"]}, {"_id": 0})
+            if user:
+                return user
+        except Exception:
+            pass
+        # Try as session token
+        session = await db.user_sessions.find_one({"session_token": token_val}, {"_id": 0})
+        if session:
+            expires_at = session.get("expires_at")
+            if isinstance(expires_at, str):
+                expires_at = datetime.fromisoformat(expires_at)
+            if expires_at and expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if expires_at and expires_at > datetime.now(timezone.utc):
+                user = await db.users.find_one({"user_id": session["user_id"]}, {"_id": 0})
+                if user:
+                    return user
+    # Fallback: check cookie
     token = request.cookies.get("session_token")
     if token:
         session = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
@@ -145,16 +169,6 @@ async def get_current_user(request: Request) -> dict:
                 user = await db.users.find_one({"user_id": session["user_id"]}, {"_id": 0})
                 if user:
                     return user
-    # Check Authorization header (JWT)
-    auth = request.headers.get("Authorization", "")
-    if auth.startswith("Bearer "):
-        try:
-            payload = jwt.decode(auth[7:], JWT_SECRET, algorithms=["HS256"])
-            user = await db.users.find_one({"user_id": payload["user_id"]}, {"_id": 0})
-            if user:
-                return user
-        except Exception:
-            pass
     raise HTTPException(status_code=401, detail="Non autenticato")
 
 async def log_audit(user_id: str, action: str, details: dict = {}):
@@ -243,6 +257,7 @@ async def exchange_session(request: Request, response: Response):
     response.set_cookie("session_token", session_token, httponly=True, secure=True, samesite="none", path="/", max_age=7*24*3600)
     user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
     safe_user = {k: v for k, v in user.items() if k != "password_hash"}
+    safe_user["session_token"] = session_token
     return safe_user
 
 @api_router.get("/auth/me")
