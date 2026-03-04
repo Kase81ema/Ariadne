@@ -168,7 +168,7 @@ async def log_audit(user_id: str, action: str, details: dict = {}):
 
 # ===== AUTH ROUTES =====
 @api_router.post("/auth/register")
-async def register(data: UserRegister):
+async def register(data: UserRegister, response: Response):
     existing = await db.users.find_one({"email": data.email}, {"_id": 0})
     if existing:
         raise HTTPException(400, "Email gia registrata")
@@ -181,14 +181,30 @@ async def register(data: UserRegister):
     }
     await db.users.insert_one(user)
     token = create_jwt(user_id, data.email, "editor")
+    # Also create session cookie
+    session_token = f"sess_{uuid.uuid4().hex}"
+    await db.user_sessions.insert_one({
+        "user_id": user_id, "session_token": session_token,
+        "expires_at": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    response.set_cookie("session_token", session_token, httponly=True, secure=True, samesite="none", path="/", max_age=7*24*3600)
     return {"token": token, "user": {"user_id": user_id, "email": data.email, "name": data.name, "role": "editor", "picture": ""}}
 
 @api_router.post("/auth/login")
-async def login(data: UserLogin):
+async def login(data: UserLogin, response: Response):
     user = await db.users.find_one({"email": data.email}, {"_id": 0})
     if not user or not verify_password(data.password, user.get("password_hash", "")):
         raise HTTPException(401, "Credenziali non valide")
     token = create_jwt(user["user_id"], user["email"], user.get("role", "editor"))
+    # Also create a session cookie for consistent auth across navigations
+    session_token = f"sess_{uuid.uuid4().hex}"
+    await db.user_sessions.insert_one({
+        "user_id": user["user_id"], "session_token": session_token,
+        "expires_at": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    response.set_cookie("session_token", session_token, httponly=True, secure=True, samesite="none", path="/", max_age=7*24*3600)
     return {"token": token, "user": {"user_id": user["user_id"], "email": user["email"], "name": user["name"], "role": user.get("role", "editor"), "picture": user.get("picture", "")}}
 
 @api_router.post("/auth/session")
