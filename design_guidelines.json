@@ -1,0 +1,157 @@
+{
+  "identity": {
+    "name": "E1 - The Anti-AI Designer",
+    "mission": "Create a distinctive, minimal, and editorial dashboard for Ariadne Editorial Studio that breaks the generic SaaS mold.",
+    "core_principles": [
+      "Fusion over Imitation: Mix Italian editorial design with functional dashboard density.",
+      "Emotion First: The interface should feel 'calm' and 'organized' like a clean desk.",
+      "Content is King: Text hierarchy drives the design. No decorative fluff.",
+      "Negative Space: Use 2-3x more whitespace than typical dashboards (p-8, p-12).",
+      "Contrast: High contrast black text on white backgrounds. Accents are for function only."
+    ]
+  },
+  "typography": {
+    "font_family_heading": "Outfit, sans-serif",
+    "font_family_body": "Inter, sans-serif",
+    "heading_styles": {
+      "h1": "text-4xl font-semibold tracking-tight text-gray-900 mb-6",
+      "h2": "text-3xl font-medium tracking-tight text-gray-900 mb-4",
+      "h3": "text-2xl font-medium tracking-tight text-gray-900 mb-3",
+      "h4": "text-xl font-medium text-gray-900 mb-2"
+    },
+    "body_styles": {
+      "p": "text-base text-gray-600 leading-relaxed",
+      "small": "text-sm text-gray-500",
+      "label": "text-xs font-semibold uppercase tracking-wider text-gray-500"
+    }
+  },
+  "colors": {
+    "theme": "light",
+    "palette": {
+      "background": "#FFFFFF",
+      "foreground": "#111827",
+      "card": "#FFFFFF",
+      "card_foreground": "#111827",
+      "primary": "#111827",
+      "primary_foreground": "#FFFFFF",
+      "secondary": "#F3F4F6",
+      "secondary_foreground": "#111827",
+      "muted": "#F9FAFB",
+      "muted_foreground": "#6B7280",
+      "accent": "#F3F4F6",
+      "accent_foreground": "#111827",
+      "destructive": "#EF4444",
+      "destructive_foreground": "#FFFFFF",
+      "border": "#E5E7EB",
+      "input": "#E5E7EB",
+      "ring": "#7B61FF"
+    },
+    "cubotti_accents": {
+      "purple": "#7B61FF",
+      "orange": "#F5A623",
+      "green": "#10B981",
+      "red": "#EF4444",
+      "blue": "#3B82F6"
+    },
+    "usage_rules": {
+      "accents": "Use 'cubotti' colors ONLY for: Status Badges, Active Tabs, Progress Bars, and Highlighted Metrics. Do NOT use for large backgrounds.",
+      "gradients": "FORBIDDEN. Use solid flat colors.",
+      "text": "Never use pure black (#000000). Use #111827 or #374151."
+    }
+  },
+  "layout": {
+    "grid_system": "Bento Grid Protocol (Mode A for Overview, Mode B for Data)",
+    "spacing": {
+      "container_padding": "p-8 md:p-12",
+      "card_padding": "p-6 or p-8",
+      "gap": "gap-6 or gap-8"
+    },
+    "structure": {
+      "sidebar": "Fixed, minimal, white background with subtle right border.",
+      "main_content": "Max-width constrained for readability (max-w-7xl), centered.",
+      "cards": "Flat style, 1px border (#E5E7EB), no shadow or extremely subtle shadow-sm."
+    }
+  },
+  "components": {
+    "radius": "0.5rem (8px) or 0.75rem (12px) for gentle corners",
+    "shadows": "shadow-sm or none. Avoid deep drop shadows.",
+    "buttons": {
+      "primary": "bg-gray-900 text-white hover:bg-gray-800 rounded-md px-6 py-2.5 font-medium transition-all",
+      "secondary": "bg-white border border-gray-200 text-gray-900 hover:bg-gray-50 rounded-md px-6 py-2.5 font-medium transition-all",
+      "ghost": "hover:bg-gray-100 text-gray-700 hover:text-gray-900"
+    },
+    "cards": {
+      "style": "bg-white border border-gray-100 rounded-xl p-6 hover:border-gray-200 transition-colors"
+    },
+    "inputs": {
+      "style": "bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-500/20 rounded-md"
+    },
+    "badges": {
+      "style": "px-2.5 py-0.5 rounded-full text-xs font-medium",
+      "variants": {
+        "purple": "bg-[#7B61FF]/10 text-[#7B61FF]",
+        "orange": "bg-[#F5A623]/10 text-[#F5A623]",
+        "green": "bg-[#10B981]/10 text-[#10B981]",
+        "red": "bg-[#EF4444]/10 text-[#EF4444]",
+        "blue": "bg-[#3B82F6]/10 text-[#3B82F6]"
+      }
+    }
+  },
+  "visual_enhancers": {
+    "micro_interactions": "Subtle scale-up (scale-[1.01]) on card hover. Smooth color transitions.",
+    "textures": "None. Keep it strictly clean and vector-based.",
+    "icons": "Lucide React (Stroke width 1.5px or 2px). Use clear, minimal icons."
+  },
+  "images": {
+    "profiles": [
+      {
+        "name": "Arianna Perrone",
+        "url": "https://images.unsplash.com/photo-1771072426488-87e6bbcc0cf7",
+        "category": "Partner Profile"
+      },
+      {
+        "name": "Emanuele Ciccarelli",
+        "url": "https://images.unsplash.com/photo-1713636221406-09dde4aaf5be",
+        "category": "Partner Profile"
+      },
+      {
+        "name": "Emanuele Casero",
+        "url": "https://images.unsplash.com/photo-1611523794717-4d1f87dabf3b",
+        "category": "Partner Profile"
+      }
+    ],
+    "placeholders": {
+      "company_logo": "Use a simple text-based logo 'Ariadne Editorial' or a colored square (cubotto) if image missing."
+    }
+  },
+  "motion": {
+    "transitions": "transition-all duration-200 ease-out",
+    "enter_animations": "animate-in fade-in slide-in-from-bottom-4 duration-500"
+  },
+  "accessibility": {
+    "contrast": "Ensure text-to-background contrast ratio of 4.5:1.",
+    "focus_states": "Visible focus rings in brand purple (#7B61FF).",
+    "aria_labels": "Mandatory for all icon-only buttons."
+  },
+  "language": {
+    "locale": "it-IT",
+    "rules": "All UI text must be in Italian. Use formal but creative tone."
+  },
+  "instructions_to_main_agent": [
+    "1. IMPERATIVE: Use the 'cubotti' colors ONLY for accents. The primary UI is White/Gray/Black.",
+    "2. NO EMOJIS in the UI. Use Lucide icons instead.",
+    "3. Use 'Outfit' font for headings. If not available, use system sans-serif but bold and tight tracking.",
+    "4. Layouts must be responsive. Use 'bento' grids for the dashboard overview.",
+    "5. Replicate the 'Ariadne Training' feel: Blocky sections, clean lines, professional coaching vibe.",
+    "6. Use Shadcn components but override the default 'radius' and 'shadows' to match the design system.",
+    "7. All interactive elements MUST have `data-testid`."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Don't make generic centered layouts.",
+    "Create depth through subtle borders rather than heavy shadows.",
+    "Use 2-3x more spacing than feels comfortable (p-8, p-12).",
+    "Every interaction needs micro-animations (hover, focus, active).",
+    "Components MUST use named exports.",
+    "Use `sonner` for toasts."
+  ]
+}
