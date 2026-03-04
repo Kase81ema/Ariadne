@@ -1,34 +1,64 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* Ariadne Editorial Studio - Global Styles */
+
+/* Smooth page transitions */
+.page-enter {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms ease-out, transform 300ms ease-out;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+/* Sidebar styles */
+.sidebar-link {
+  @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200;
+  color: hsl(var(--muted-foreground));
+}
+.sidebar-link:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--foreground));
+}
+.sidebar-link.active {
+  background: hsl(var(--foreground));
+  color: hsl(var(--primary-foreground));
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+/* Card hover effect */
+.ariadne-card {
+  @apply bg-white border border-gray-100 rounded-xl transition-all duration-200;
+}
+.ariadne-card:hover {
+  border-color: hsl(var(--border));
+  transform: scale(1.005);
 }
 
-.App-link {
-    color: #61dafb;
+/* Calendar grid */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: hsl(var(--border));
+}
+.calendar-cell {
+  background: white;
+  min-height: 100px;
+  padding: 0.5rem;
+}
+.calendar-cell.today {
+  background: hsl(258 100% 69% / 0.04);
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
-}
+/* Status badge colors */
+.status-draft { @apply badge-blue; }
+.status-generated { @apply badge-purple; }
+.status-review { @apply badge-orange; }
+.status-approved { @apply badge-green; }
+.status-exported { @apply badge-green; }
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
