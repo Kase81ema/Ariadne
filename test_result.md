@@ -101,3 +101,114 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "Smoke test frontend Ariadne Editorial Studio per verificare funzionalità principali: login, dashboard Studio, switch a Scuola, navigazione Il mio percorso, Bacheca Community, e dettaglio corso"
+
+frontend:
+  - task: "Login editor con credenziali"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/LoginPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Test creato - verifica login con arianna.perrone@ariadne.test / password123"
+      - working: true
+        agent: "testing"
+        comment: "✓ Login completato con successo. Credenziali accettate, redirect a /dashboard funzionante. Pagina login presenta form correttamente, campi email/password funzionali, nessun errore rilevato"
+
+  - task: "Dashboard Studio caricamento e sidebar leggibile"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/DashboardPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Test creato - verifica dashboard Studio con sidebar e card navigabili"
+      - working: true
+        agent: "testing"
+        comment: "✓ Dashboard Studio caricata correttamente. Sidebar visibile con titolo 'Ariadne', tutte le voci di navigazione presenti (editorial, workflow, export), card statistiche visualizzate e cliccabili. UI leggibile e funzionale"
+
+  - task: "Switch da Studio a Scuola"
+    implemented: true
+    working: true
+    file: "frontend/src/components/Layout.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Test creato - verifica switch area e gestione onboarding modal se presente"
+      - working: true
+        agent: "testing"
+        comment: "✓ Switch da Studio a Scuola funzionante. Area selector presente, click su 'Scuola' reindirizza correttamente a /community. Nessun onboarding modal (utente già onboarded). Transizione fluida tra le due aree"
+
+  - task: "Pagina Il mio percorso con tab principali"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/MyJourneyPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Test creato - verifica caricamento pagina e tab navigabili"
+      - working: true
+        agent: "testing"
+        comment: "✓ Pagina Il mio percorso caricata correttamente. Tutti i tab presenti e funzionali: 'Formazione Coach ICF', 'Coach tecnica', 'Coach business', 'Credenziali ICF'. Journey overview card visualizzata con progress bar. Contenuti corsi visibili"
+
+  - task: "Bacheca Community con post e immagini"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/FeedPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Test creato - verifica esistenza post e visualizzazione immagini"
+      - working: true
+        agent: "testing"
+        comment: "✓ Bacheca Community caricata con successo. 11 post presenti nel feed, almeno 1 post con immagine visualizzata correttamente. Composer per nuovi post presente e funzionale. Layout stile LinkedIn implementato correttamente"
+
+  - task: "Dettaglio corso con contenuti principali"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/CourseDetailPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Test creato - verifica caricamento pagina dettaglio con informazioni corso"
+      - working: true
+        agent: "testing"
+        comment: "✓ Pagina dettaglio corso 'Core Coaching Program 2026' caricata completamente. Tutte le sezioni presenti: info corso, calendario, investimento, credenziale ACC, foto edizioni precedenti, testimonianze. Back button e CTA funzionanti. UI ricca e completa"
+
+metadata:
+  created_by: "testing_agent"
+  version: "1.0"
+  test_sequence: 2
+  run_ui: true
+
+test_plan:
+  current_focus: []
+  stuck_tasks: []
+  test_all: false
+  test_priority: "sequential"
+
+agent_communication:
+  - agent: "testing"
+    message: "Inizializzato smoke test frontend Ariadne. URL: https://content-academy-12.preview.emergentagent.com. Credenziali editor: arianna.perrone@ariadne.test / password123. Verifica flusso: login -> dashboard Studio -> switch Scuola -> navigazione percorso/community/corso"
+  - agent: "testing"
+    message: "✅ SMOKE TEST COMPLETATO CON SUCCESSO. Tutti i 6 test passati senza errori critici. Login funzionante, dashboard Studio con sidebar leggibile e card cliccabili, switch Studio<->Scuola fluido, pagina Il mio percorso con tutti i tab, Bacheca Community con 11 post (1+ con immagini), dettaglio corso completo con tutte le sezioni. App in stato ottimale per utente editor."
