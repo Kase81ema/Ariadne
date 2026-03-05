@@ -11,9 +11,9 @@
   transition: opacity 300ms ease-out, transform 300ms ease-out;
 }
 
-/* Sidebar styles */
+/* ===== SIDEBAR ===== */
 .sidebar-link {
-  @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200;
+  @apply flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200;
   color: hsl(var(--muted-foreground));
 }
 .sidebar-link:hover {
@@ -25,7 +25,35 @@
   color: hsl(var(--primary-foreground));
 }
 
-/* Card hover effect */
+/* Studio dark sidebar active */
+[data-area="studio"] .sidebar-link.active {
+  background: hsl(258 100% 69%);
+  color: #fff;
+}
+[data-area="studio"] .sidebar-link:hover:not(.active) {
+  background: hsl(228 14% 16%);
+}
+
+/* Collapsible group trigger */
+.group-trigger {
+  @apply flex items-center justify-between w-full px-4 pt-4 pb-1.5 cursor-pointer select-none;
+}
+.group-trigger:hover .group-label {
+  color: hsl(var(--foreground));
+}
+.group-label {
+  @apply text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors;
+  color: hsl(var(--muted-foreground));
+}
+.group-chevron {
+  @apply w-3 h-3 transition-transform duration-200;
+  color: hsl(var(--muted-foreground));
+}
+.group-chevron[data-open="true"] {
+  transform: rotate(90deg);
+}
+
+/* ===== CARD ===== */
 .ariadne-card {
   @apply bg-white border border-gray-100 rounded-xl transition-all duration-200;
 }
@@ -34,7 +62,46 @@
   transform: scale(1.005);
 }
 
-/* Calendar grid */
+/* Studio dark overrides for Tailwind hardcoded colors */
+[data-area="studio"] .bg-white,
+[data-area="studio"] .bg-gray-50\/50 {
+  background-color: hsl(var(--background)) !important;
+}
+[data-area="studio"] .bg-gray-50 {
+  background-color: hsl(var(--muted)) !important;
+}
+[data-area="studio"] .text-gray-900 {
+  color: hsl(var(--foreground)) !important;
+}
+[data-area="studio"] .text-gray-700 {
+  color: hsl(220 14% 78%) !important;
+}
+[data-area="studio"] .text-gray-600 {
+  color: hsl(220 9% 68%) !important;
+}
+[data-area="studio"] .text-gray-500 {
+  color: hsl(220 9% 60%) !important;
+}
+[data-area="studio"] .text-gray-400 {
+  color: hsl(220 9% 52%) !important;
+}
+[data-area="studio"] .border-gray-100,
+[data-area="studio"] .border-gray-200 {
+  border-color: hsl(var(--border)) !important;
+}
+[data-area="studio"] .bg-gray-100 {
+  background-color: hsl(228 14% 16%) !important;
+}
+
+/* Calendar grid dark */
+[data-area="studio"] .calendar-cell {
+  background: hsl(var(--card));
+}
+[data-area="studio"] .calendar-cell.today {
+  background: hsl(258 100% 69% / 0.06);
+}
+
+/* Calendar grid light */
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -62,3 +129,18 @@
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
+
+/* Logo */
+.ariadne-logo {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+}
+.ariadne-logo-login {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+}
+[data-area="studio"] .ariadne-logo {
+  filter: brightness(1.1);
+}

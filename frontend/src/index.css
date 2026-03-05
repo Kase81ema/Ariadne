@@ -38,6 +38,29 @@
     --ariadne-red: 0 84% 60%;
     --ariadne-blue: 217 91% 60%;
   }
+
+  /* ===== STUDIO DARK THEME ===== */
+  [data-area="studio"] {
+    --background: 228 20% 7%;
+    --foreground: 220 14% 90%;
+    --card: 228 18% 11%;
+    --card-foreground: 220 14% 90%;
+    --popover: 228 18% 13%;
+    --popover-foreground: 220 14% 90%;
+    --primary: 258 100% 69%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 228 16% 15%;
+    --secondary-foreground: 220 14% 85%;
+    --muted: 228 14% 14%;
+    --muted-foreground: 220 9% 60%;
+    --accent: 228 14% 16%;
+    --accent-foreground: 220 14% 90%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 228 14% 18%;
+    --input: 228 14% 18%;
+    --ring: 258 100% 69%;
+  }
 }
 
 @layer base {
@@ -78,9 +101,9 @@
     letter-spacing: -0.03em;
     color: hsl(var(--foreground));
   }
-  .badge-purple { background: hsl(258 100% 69% / 0.1); color: hsl(258 100% 69%); }
-  .badge-orange { background: hsl(37 91% 55% / 0.1); color: hsl(37 91% 55%); }
-  .badge-green { background: hsl(160 84% 39% / 0.1); color: hsl(160 84% 39%); }
-  .badge-red { background: hsl(0 84% 60% / 0.1); color: hsl(0 84% 60%); }
-  .badge-blue { background: hsl(217 91% 60% / 0.1); color: hsl(217 91% 60%); }
+  .badge-purple { background: hsl(258 100% 69% / 0.12); color: hsl(258 100% 69%); }
+  .badge-orange { background: hsl(37 91% 55% / 0.12); color: hsl(37 91% 55%); }
+  .badge-green { background: hsl(160 84% 39% / 0.12); color: hsl(160 84% 39%); }
+  .badge-red { background: hsl(0 84% 60% / 0.12); color: hsl(0 84% 60%); }
+  .badge-blue { background: hsl(217 91% 60% / 0.12); color: hsl(217 91% 60%); }
 }
