@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Progress } from '../components/ui/progress';
 import { campaignsAPI, coursesAPI, profilesAPI, rulesAPI, agentsAPI, generateAPI, postsAPI } from '../lib/api';
-import { ArrowRight, ArrowLeft, CheckCircle2, Loader2, Zap, FileText } from 'lucide-react';
+import { ArrowRight, ArrowLeft, CheckCircle2, Loader2, Zap, FileText, ImagePlus, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const INTENTIONS = [
@@ -23,6 +23,71 @@ const INTENTIONS = [
 ];
 
 const STEPS = ['Campagna', 'Profili', 'Agenti', 'Pianifica', 'Genera', 'Revisione'];
+
+const API_BASE = process.env.REACT_APP_BACKEND_URL;
+
+function PostImageUploader({ postId, currentImage, onImageSet }) {
+  const [uploading, setUploading] = useState(false);
+  const imgSrc = currentImage ? (currentImage.startsWith('http') ? currentImage : `${API_BASE}${currentImage}`) : null;
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const token = localStorage.getItem('ariadne_token');
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${API_BASE}/api/posts/${postId}/upload-image`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (data.image_url) {
+        onImageSet(data.image_url);
+        toast.success('Immagine caricata');
+      }
+    } catch {
+      toast.error('Errore nel caricamento');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    try {
+      const token = localStorage.getItem('ariadne_token');
+      await fetch(`${API_BASE}/api/posts/${postId}/upload-image`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      onImageSet('');
+      toast.success('Immagine rimossa');
+    } catch {
+      toast.error('Errore');
+    }
+  };
+
+  return (
+    <div className="mt-3 pt-3 border-t border-dashed border-gray-100">
+      {imgSrc ? (
+        <div className="relative inline-block">
+          <img src={imgSrc} alt="" className="rounded-lg max-h-40 object-cover" />
+          <button onClick={handleRemove} className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-black/80" data-testid={`remove-post-image-${postId}`}>
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ) : (
+        <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-gray-200 hover:border-gray-300 text-xs text-gray-400 hover:text-gray-600 cursor-pointer transition-colors" data-testid={`upload-post-image-${postId}`}>
+          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+          <span>{uploading ? 'Caricamento...' : 'Aggiungi immagine al post'}</span>
+          {!uploading && <input type="file" accept="image/*" className="hidden" onChange={handleFile} />}
+        </label>
+      )}
+    </div>
+  );
+}
 
 export default function WorkflowPage() {
   const location = useLocation();
@@ -395,6 +460,8 @@ export default function WorkflowPage() {
                     {p.hashtags.map((h, i) => <Badge key={i} variant="outline" className="text-[10px] badge-blue">#{h}</Badge>)}
                   </div>
                 )}
+                {/* Post image upload */}
+                <PostImageUploader postId={p.post_id} currentImage={p.image_url} onImageSet={(url) => setGeneratedPosts(prev => prev.map(gp => gp.post_id === p.post_id ? {...gp, image_url: url} : gp))} />
               </CardContent>
             </Card>
           ))}

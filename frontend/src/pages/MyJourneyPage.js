@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { Progress } from '../components/ui/progress';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
 import { schoolAPI } from '../lib/api';
-import { CheckCircle2, Circle, Clock, BookOpen, Briefcase, Loader2, ChevronDown } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, BookOpen, Briefcase, Loader2, ChevronDown, Award } from 'lucide-react';
 import { toast } from 'sonner';
 
 const STATUS_CONFIG = {
@@ -98,12 +98,60 @@ export default function MyJourneyPage() {
   const ariadneStats = getStats(ariadneCourses);
   const businessStats = getStats(businessCourses);
 
+  // Credential tracking based on completed Ariadne courses
+  const credentials = [
+    { id: 'acc', name: 'ACC (Associate Certified Coach)', required: 1, description: 'Completamento del Core Coaching Program' },
+    { id: 'pcc', name: 'PCC (Professional Certified Coach)', required: 3, description: 'Core Program + Advanced Lab + Mentoring' },
+    { id: 'mcc', name: 'MCC (Master Certified Coach)', required: 4, description: 'Tutti i corsi Ariadne completati' },
+  ];
+
+  const getCredentialProgress = (cred) => {
+    const completed = ariadneStats.completed;
+    const pct = Math.min(100, Math.round((completed / cred.required) * 100));
+    return { completed, pct, achieved: completed >= cred.required };
+  };
+
   return (
     <div data-testid="my-journey-page">
       <div className="mb-10">
         <h1 className="text-4xl font-semibold ariadne-heading mb-2">Il mio percorso</h1>
-        <p className="text-base text-gray-500">Catalogo corsi e stato di completamento</p>
+        <p className="text-base text-gray-500">Catalogo corsi e avanzamento verso le credenziali</p>
       </div>
+
+      {/* Credential advancement */}
+      <Card className="border-gray-100 mb-8" data-testid="credential-section">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Award className="w-5 h-5 text-[hsl(82,60%,42%)]" />
+            <h2 className="text-base font-semibold">Avanzamento credenziali ICF</h2>
+          </div>
+          <div className="space-y-4">
+            {credentials.map(cred => {
+              const prog = getCredentialProgress(cred);
+              return (
+                <div key={cred.id} className={`p-4 rounded-lg border ${prog.achieved ? 'border-[hsl(82,60%,42%)]/30 bg-[hsl(82,60%,42%)]/[0.03]' : 'border-gray-100'}`} data-testid={`credential-${cred.id}`}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      {prog.achieved ? (
+                        <CheckCircle2 className="w-4 h-4 text-[hsl(82,60%,42%)]" />
+                      ) : (
+                        <Circle className="w-4 h-4 text-gray-300" />
+                      )}
+                      <span className="text-sm font-semibold">{cred.name}</span>
+                      {prog.achieved && <Badge variant="outline" className="badge-green text-[9px]">Raggiunto</Badge>}
+                    </div>
+                    <span className="text-xs text-gray-400">{prog.completed}/{cred.required} corsi</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mb-2 ml-6">{cred.description}</p>
+                  <div className="ml-6">
+                    <Progress value={prog.pct} className="h-1.5" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Overview cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">

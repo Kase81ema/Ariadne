@@ -60,11 +60,19 @@ const schoolNavGroups = [
     title: 'Community',
     items: [
       { to: '/community', icon: LayoutDashboard, label: 'Dashboard' },
-      { to: '/feed', icon: MessageSquare, label: 'Feed' },
       { to: '/my-journey', icon: Map, label: 'Il mio percorso' },
+      { to: '/feed', icon: MessageSquare, label: 'Bacheca della Community' },
       { to: '/materials', icon: BookOpen, label: 'Materiali' },
       { to: '/community/events', icon: CalendarDays, label: 'Eventi e annunci' },
-      { to: '/assistant', icon: HelpCircle, label: 'Assistente' },
+      { to: '/assistant', icon: HelpCircle, label: 'Ariadne AI' },
+    ],
+  },
+  {
+    id: 'risorse',
+    title: 'Risorse',
+    items: [
+      { to: '/courses', icon: GraduationCap, label: 'Corsi ed eventi' },
+      { to: '/repository', icon: FolderOpen, label: 'Repository' },
     ],
   },
   {
@@ -120,7 +128,7 @@ function AriadneLogo({ className }) {
   );
 }
 
-const schoolPaths = ['/community', '/feed', '/my-journey', '/materials', '/community/events', '/assistant', '/inbox', '/routing-rules', '/email-templates', '/users-admin', '/cohorts-admin', '/banners-admin'];
+const schoolPaths = ['/community', '/feed', '/my-journey', '/materials', '/community/events', '/assistant', '/inbox', '/routing-rules', '/email-templates', '/users-admin', '/cohorts-admin', '/banners-admin', '/welcome'];
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
