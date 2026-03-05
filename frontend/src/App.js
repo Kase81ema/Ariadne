@@ -14,6 +14,8 @@ import WorkflowPage from "./pages/WorkflowPage";
 import ApprovalsPage from "./pages/ApprovalsPage";
 import ExportPage from "./pages/ExportPage";
 import RepositoryPage from "./pages/RepositoryPage";
+import AgentsPage from "./pages/AgentsPage";
+import StartCampaignPage from "./pages/StartCampaignPage";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -33,7 +35,6 @@ function ProtectedRoute({ children }) {
 
 function AppRouter() {
   const location = useLocation();
-  // Check URL fragment for session_id synchronously (prevents race conditions)
   if (location.hash?.includes('session_id=')) {
     return <AuthCallback />;
   }
@@ -49,6 +50,8 @@ function AppRouter() {
       <Route path="/approvals" element={<ProtectedRoute><ApprovalsPage /></ProtectedRoute>} />
       <Route path="/export" element={<ProtectedRoute><ExportPage /></ProtectedRoute>} />
       <Route path="/repository" element={<ProtectedRoute><RepositoryPage /></ProtectedRoute>} />
+      <Route path="/agents" element={<ProtectedRoute><AgentsPage /></ProtectedRoute>} />
+      <Route path="/start" element={<ProtectedRoute><StartCampaignPage /></ProtectedRoute>} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

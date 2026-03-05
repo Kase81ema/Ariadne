@@ -613,6 +613,54 @@ async def toggle_agent(agent_id: str, request: Request):
     await log_audit(user["user_id"], "toggle_agent", {"agent_id": agent_id, "active": body.get("active")})
     return await db.agent_configs.find_one({"agent_id": agent_id}, {"_id": 0})
 
+@api_router.post("/agents/preset")
+async def apply_agents_preset(request: Request):
+    user = await get_current_user(request)
+    body = await request.json()
+    preset = body.get("preset", "standard")
+    presets = {
+        "veloce": ["planner", "writer_linkedin_company", "writer_linkedin_personal", "writer_instagram", "quality_reviewer", "formatter_export"],
+        "standard": ["planner", "writer_linkedin_company", "writer_linkedin_personal", "writer_instagram", "quality_reviewer", "compliance_icf", "formatter_export"],
+        "alta_qualita": ["planner", "writer_linkedin_company", "writer_linkedin_personal", "writer_instagram", "deep_research", "compliance_icf", "quality_reviewer", "grammar_editor", "hashtag_curator", "formatter_export"],
+    }
+    active_ids = presets.get(preset, presets["standard"])
+    await db.agent_configs.update_many({"always_on": {"$ne": True}}, {"$set": {"active": False}})
+    await db.agent_configs.update_many({"agent_id": {"$in": active_ids}}, {"$set": {"active": True}})
+    await log_audit(user["user_id"], "apply_preset", {"preset": preset})
+    return await db.agent_configs.find({}, {"_id": 0}).to_list(20)
+
+# ===== SETUP READINESS =====
+@api_router.get("/setup/readiness")
+async def setup_readiness(request: Request):
+    await get_current_user(request)
+    profiles_active = await db.social_profiles.count_documents({"active": True})
+    rules_count = await db.planning_rules.count_documents({})
+    agents_active = await db.agent_configs.count_documents({"active": True})
+    repo_pipeline = [{"$group": {"_id": "$category", "count": {"$sum": 1}}}]
+    repo_counts_raw = await db.repository_files.aggregate(repo_pipeline).to_list(20)
+    repo_counts = {r["_id"]: r["count"] for r in repo_counts_raw}
+    total_repo = sum(repo_counts.values())
+    missing = []
+    if profiles_active == 0:
+        missing.append("profiles")
+    if rules_count == 0:
+        missing.append("rules")
+    if agents_active == 0:
+        missing.append("agents")
+    for cat in ["tone_of_voice", "compliance_icf", "esempi_post"]:
+        if repo_counts.get(cat, 0) == 0:
+            missing.append(f"repository.{cat}")
+    ready = profiles_active > 0 and rules_count > 0 and agents_active >= 3
+    return {
+        "profiles_active_count": profiles_active,
+        "rules_count": rules_count,
+        "repository_counts_by_category": repo_counts,
+        "repository_total": total_repo,
+        "agents_active_count": agents_active,
+        "ready": ready,
+        "missing": missing,
+    }
+
 # ===== GENERATION =====
 @api_router.post("/generate/plan")
 async def gen_plan(data: GeneratePlanRequest, request: Request):

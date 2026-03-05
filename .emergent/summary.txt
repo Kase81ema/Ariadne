@@ -1,0 +1,151 @@
+<analysis>**original_problem_statement:**
+The initial request was to build a full-stack web app, Ariadne Editorial Studio, to function as a social media management console. The primary goal is to plan an editorial calendar and generate text-only social media posts for LinkedIn and Instagram. Key features included a calendar, post generation, export to Buffer (CSV/JSON), user roles, Google Drive integration for a knowledge base, a specific visual style matching , and specialized agents (LLM-powered modules) for tasks like planning, writing, and compliance checks.
+
+After the initial version was delivered, the user provided a new set of requirements to improve usability for non-technical users. This involved:
+1.  **Separating Setup vs. Production:** Restructuring the UI to create a clear distinction between one-time setup tasks (configuring profiles, rules, agents) and daily production tasks (creating campaigns).
+2.  **Guided Campaign Start:** Introducing a new Avvia campagna page that acts as a guided wizard, starting with a checklist to ensure all prerequisites (profiles, rules, repository content, active agents) are met before proceeding.
+3.  **Readiness Status:** Adding a backend endpoint () and corresponding UI badges in the sidebar to give users an at-a-glance view of the system's readiness.
+4.  **Agent Management Page:** Creating a dedicated page to manage the AI agents (enable/disable) and apply presets (e.g., fast, standard, high quality).
+5.  **Operational Speed-ups:** Adding a duplica (duplicate) action for courses and an essential mode for the campaign creation workflow to hide advanced options.
+
+**User's preferred language**: italiano
+
+**what currently exists?**
+A full-stack application with a React frontend and a FastAPI backend is in place. Authentication via JWT (email/password) and Google OAuth is functional, using  to persist the session. The application's UI adheres to the requested Ariadne minimalist aesthetic.
+
+The backend features a  endpoint to check system configuration status. The frontend has been updated with a restructured sidebar in  and new pages:  (for the guided workflow) and  (for managing agents). The routing in  has been updated accordingly. Placeholders and initial logic for the duplica course feature and essential mode have also been added.
+
+**Last working item**:
+-   **Last item agent was working**: The agent was in the process of implementing the Setup vs. Production UX overhaul. The final actions involved modifying  and its child component  to support an essential mode, which simplifies the UI by hiding advanced fields.
+-   **Status**: IN PROGRESS
+-   **Agent Testing Done**: N
+-   **Which testing method agent to use?**: frontend testing agent
+-   **User Testing Done**: N
+
+**All Pending/In progress Issue list**:
+-   **Issue 1: Complete and test the Setup vs. Production UX Refactor (P0)**
+    -   **Description**: The new pages (, ) and backend endpoint () have been created, but they are not fully integrated. The frontend needs to fetch data from the readiness endpoint to dynamically display status badges in the sidebar and control the guided workflow on the Avvia campagna page.
+    -   **Attempted fixes**: This is a new feature implementation, no fixes have been attempted yet.
+    -   **Next debug checklist**:
+        1.  In , implement a  hook to call the  endpoint.
+        2.  Use the fetched data to render status badges next to the Setup menu items.
+        3.  In , use the readiness data to populate the setup checklist and enable/disable the Continue button.
+        4.  Verify that the vai a... (go to...) links on the checklist navigate to the correct setup pages.
+        5.  Thoroughly test the agent presets on the .
+        6.  Test the duplica functionality on the .
+        7.  Validate the end-to-end flow of the modalità essenziale (essential mode) from  through the .
+    -   **Why fix this issue and what will be achieved with the fix?**: This is the user's highest priority request and is critical for making the application intuitive for its target non-technical users.
+    -   **Status**: IN PROGRESS
+    -   **Is recurring issue?**: N
+    -   **Should Test frontend/backend/both after fix?**: Both
+    -   **Blocked on other issue**: None
+
+**In progress Task List**:
+-   **Task 1: Complete the Setup vs. Production UX Refactor (P0)**
+    -   **Where to resume**: . The immediate next step is to implement the API call to  and wire the response data to the sidebar UI components to display the status badges.
+    -   **What will be achieved with this?**: The application will feature a clear, guided user experience that separates initial setup from daily operational tasks, fulfilling the user's latest request.
+    -   **Status**: IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?**: Both
+    -   **Blocked on something**: No
+
+**Upcoming and Future Tasks**
+-   **Upcoming Tasks**:
+    -   **(P1) Implement Core Content Generation Logic**: The agent framework exists (), but the actual text generation using Claude Sonnet 4.5 needs to be implemented within the workflow.
+    -   **(P1) Implement Full Workflow Logic**: The  UI exists, but the backend logic for each step (calendar planning with conflict detection, post versioning, quality checks, approval flow) needs to be built out.
+-   **Future Tasks**:
+    -   **(P2) Implement Google Drive Integration**: Connect to Google Drive to read from the Ariadne repository as a knowledge base. The backend and frontend pages are placeholders.
+    -   **(P2) Implement Export to Buffer**: Build the functionality to generate and download CSV and JSON files formatted for Buffer.
+    -   **(P2) Implement Audit Logging**: Implement the mechanism to log all critical user actions to the  collection.
+
+**Completed work in this session**
+-   **Initial App Scaffolding**: Built the full-stack application structure with a FastAPI backend and React frontend, including database models and basic CRUD APIs.
+-   **Authentication**: Implemented a robust authentication system supporting both email/password (JWT) and Google OAuth, using  for session persistence after resolving CORS issues.
+-   **UI/UX Foundation**: Established the Ariadne visual style using Tailwind CSS and Shadcn/UI components, creating a clean, minimal, and responsive interface.
+-   **Initial UX Refactor Implementation**:
+    -   Created the  endpoint in .
+    -   Created the new frontend pages  and .
+    -   Restructured the sidebar in  into logical groups.
+    -   Added placeholders for the duplica course and essential mode features.
+
+**Earlier issues found/mentioned but not fixed**
+-   None. All previously identified issues, such as the authentication-related CORS problem, have been resolved.
+
+**Known issue recurrence from previous fork**
+-   N/A
+
+**Code Architecture**
+
+
+**Key Technical Concepts**
+-   **Frontend**: React, React Router, Tailwind CSS, Shadcn/UI
+-   **Backend**: FastAPI (Python)
+-   **Database**: MongoDB
+-   **Authentication**: JWT & Google OAuth (via  and Authorization header)
+-   **Planned Integrations**: Claude Sonnet 4.5, Google Drive
+
+**key DB schema**
+-   : {email, hashed_password, name, role}
+-   : {name, platform, handle, active}
+-   : {title, type, dates, description}
+-   : {name, status, ...}
+-   : {campaign_id, content, status, scheduled_at}
+-   : {name, config_json}
+-   : {name, enabled}
+-   : {name, category, content}
+
+**changes in tech stack**
+-   None.
+
+**All files of reference**
+-   : Updated with the  endpoint.
+-   : Sidebar navigation () was restructured into groups.
+-   : New page for the guided campaign setup.
+-   : New page for managing AI agents.
+-   : Updated with routes for the new pages (, ).
+-   : Modified to include a Duplica button.
+
+**Areas that need refactoring**:
+-   The  file is becoming a monolith. It should be refactored into a more modular structure (e.g., separate files for routes, models, and services) to improve maintainability.
+
+**key api endpoints**
+-   : Returns the readiness status of the application setup.
+-   : Clones an existing course or event.
+-   : Applies a predefined configuration to the agents.
+-   : Authenticates a user.
+-   : Retrieves the current user's data.
+
+**Critical Info for New Agent**
+-   Your immediate priority is to complete the Setup vs. Production UX refactor. This involves connecting the frontend UI to the  backend endpoint to make the sidebar badges and the guided Avvia campagna page fully functional.
+-   The core logic for AI content generation and other advanced workflow steps (e.g., calendar conflict detection) is still placeholder and represents the next major phase of work after the current UX task is complete and verified.
+-   Authentication was refactored to use  and the  header to fix a critical CORS issue. Do not re-introduce cookie-based authentication.
+
+**documents and test reports created in this job**
+-   
+-   
+-   
+
+**Last 10 User Messages and any pending HUMAN messages**
+The last user message provided a detailed specification for a major UX overhaul, focusing on separating Setup from Production tasks. The agent acknowledged this, analyzed the existing code, and began a parallel implementation of the required backend and frontend changes. The last actions were creating and modifying the necessary files (, , , etc.) to build the new features, but the work is incomplete and untested. There are no pending messages from the user.
+
+**Project Health Check:**
+-   **Broken**: The new UX flow is partially implemented. Key features like the dynamic sidebar badges and the readiness checklist on the  are not yet functional as the frontend is not yet fetching data from the backend  endpoint.
+-   **Mocked**: Core functionalities like AI content generation, Google Drive integration, and export to Buffer are still placeholders.
+
+**3rd Party Integrations**
+-   **Claude Sonnet 4.5** (Text Generation) — uses Emergent LLM Key (Planned).
+-   **Emergent-managed Google Auth** — requires User LLM Key (Implemented).
+-   **Google Drive** (File Reading) — requires User API Key (Planned).
+-   **Buffer** (Export) — Adapter planned, no API integration yet.
+
+**Testing status**
+-   **Testing agent used after significant changes**: YES (after initial build and auth fix).
+-   **Troubleshoot agent used after agent stuck in loop**: NO
+-   **Test files created**: None.
+-   **Known regressions**: None, but the current state is an unfinished implementation.
+
+**Credentials to test flow:**
+-   **User**: 
+-   **Password**: 
+
+**What agent forgot to execute**
+-   The agent created the files for the UX refactor but did not implement the crucial  call in the frontend ( and ) to get data from the new  endpoint. This is the main missing piece to make the new UI functional and must be addressed first.</analysis>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -24,6 +25,8 @@ const INTENTIONS = [
 const STEPS = ['Campagna', 'Profili', 'Agenti', 'Pianifica', 'Genera', 'Revisione'];
 
 export default function WorkflowPage() {
+  const location = useLocation();
+  const essentialMode = location.state?.essentialMode || false;
   const [step, setStep] = useState(0);
   const [courses, setCourses] = useState([]);
   const [profiles, setProfiles] = useState([]);
@@ -206,19 +209,28 @@ export default function WorkflowPage() {
                 <Input type="date" value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} data-testid="workflow-end-input" />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Post per profilo</Label>
-              <Input type="number" min={1} max={20} value={postsPerProfile} onChange={e => setPostsPerProfile(parseInt(e.target.value) || 1)} className="w-24" data-testid="workflow-posts-input" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Regola di pianificazione</Label>
-              <Select value={selectedRule} onValueChange={setSelectedRule}>
-                <SelectTrigger data-testid="workflow-rule-select"><SelectValue placeholder="Seleziona regola..." /></SelectTrigger>
-                <SelectContent>
-                  {rules.map(r => <SelectItem key={r.rule_id} value={r.rule_id}>{r.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
+            {!essentialMode && (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Post per profilo</Label>
+                  <Input type="number" min={1} max={20} value={postsPerProfile} onChange={e => setPostsPerProfile(parseInt(e.target.value) || 1)} className="w-24" data-testid="workflow-posts-input" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Regola di pianificazione</Label>
+                  <Select value={selectedRule} onValueChange={setSelectedRule}>
+                    <SelectTrigger data-testid="workflow-rule-select"><SelectValue placeholder="Seleziona regola..." /></SelectTrigger>
+                    <SelectContent>
+                      {rules.map(r => <SelectItem key={r.rule_id} value={r.rule_id}>{r.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+            {essentialMode && (
+              <p className="text-xs text-gray-400 bg-gray-50 rounded-lg px-4 py-2">
+                Modalita essenziale: 3 post per profilo, regola predefinita. Modifica in Workflow avanzato.
+              </p>
+            )}
             <div className="flex justify-end">
               <Button onClick={() => setStep(1)} className="gap-2" data-testid="workflow-next-0">Avanti <ArrowRight className="w-4 h-4" /></Button>
             </div>
