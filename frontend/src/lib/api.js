@@ -98,6 +98,12 @@ export const repoAPI = {
 export const agentsAPI = {
   list: () => api.get('/agents'),
   toggle: (id, active) => api.put(`/agents/${id}`, { active }),
+  applyPreset: (preset) => api.post('/agents/preset', { preset }),
+};
+
+// Setup readiness
+export const setupAPI = {
+  readiness: () => api.get('/setup/readiness'),
 };
 
 // Generation

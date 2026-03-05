@@ -1,30 +1,83 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
+import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import {
   LayoutDashboard, Users, GraduationCap, FileText, Settings2,
-  GitBranch, CheckCircle2, Download, FolderOpen, LogOut, Zap, Menu, X
+  GitBranch, CheckCircle2, Download, FolderOpen, LogOut, Zap, Menu, X,
+  PlayCircle, Bot, AlertCircle, Minus
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { setupAPI } from '../lib/api';
 
-const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/profiles', icon: Users, label: 'Profili Social' },
-  { to: '/courses', icon: GraduationCap, label: 'Corsi ed Eventi' },
-  { to: '/editorial', icon: FileText, label: 'Editoriale' },
-  { to: '/rules', icon: Settings2, label: 'Regole' },
-  { to: '/workflow', icon: GitBranch, label: 'Workflow' },
-  { to: '/approvals', icon: CheckCircle2, label: 'Approvazioni' },
-  { to: '/export', icon: Download, label: 'Esporta' },
-  { to: '/repository', icon: FolderOpen, label: 'Repository' },
+const navGroups = [
+  {
+    title: 'Avvio',
+    items: [
+      { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+      { to: '/start', icon: PlayCircle, label: 'Avvia campagna' },
+    ],
+  },
+  {
+    title: 'Produzione',
+    items: [
+      { to: '/workflow', icon: GitBranch, label: 'Workflow avanzato' },
+      { to: '/approvals', icon: CheckCircle2, label: 'Approvazioni' },
+      { to: '/export', icon: Download, label: 'Esporta' },
+    ],
+  },
+  {
+    title: 'Contenuti',
+    items: [
+      { to: '/courses', icon: GraduationCap, label: 'Corsi ed Eventi' },
+      { to: '/editorial', icon: FileText, label: 'Editoriale' },
+    ],
+  },
+  {
+    title: 'Setup',
+    items: [
+      { to: '/repository', icon: FolderOpen, label: 'Repository', setupKey: 'repository' },
+      { to: '/rules', icon: Settings2, label: 'Regole', setupKey: 'rules' },
+      { to: '/profiles', icon: Users, label: 'Profili social', setupKey: 'profiles' },
+      { to: '/agents', icon: Bot, label: 'Agenti', setupKey: 'agents' },
+    ],
+  },
 ];
+
+function SetupBadge({ status }) {
+  if (status === 'ok') return <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] ml-auto flex-shrink-0" />;
+  if (status === 'warn') return <span className="w-1.5 h-1.5 rounded-full bg-[#F5A623] ml-auto flex-shrink-0" />;
+  if (status === 'missing') return <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] ml-auto flex-shrink-0" />;
+  return null;
+}
+
+function getSetupStatus(key, readiness) {
+  if (!readiness) return null;
+  if (key === 'profiles') return readiness.profiles_active_count > 0 ? 'ok' : 'missing';
+  if (key === 'rules') return readiness.rules_count > 0 ? 'ok' : 'missing';
+  if (key === 'agents') return readiness.agents_active_count >= 3 ? 'ok' : (readiness.agents_active_count > 0 ? 'warn' : 'missing');
+  if (key === 'repository') return readiness.repository_total > 0 ? 'ok' : 'warn';
+  return null;
+}
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [readiness, setReadiness] = useState(null);
+
+  const fetchReadiness = useCallback(() => {
+    setupAPI.readiness().then(r => setReadiness(r.data)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetchReadiness();
+    const iv = setInterval(fetchReadiness, 30000);
+    return () => clearInterval(iv);
+  }, [fetchReadiness]);
 
   const handleLogout = async () => {
     await logout();
@@ -38,26 +91,51 @@ export default function Layout({ children }) {
           <div className="w-8 h-8 rounded-lg bg-[hsl(258,100%,69%)] flex items-center justify-center">
             <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <h1 className="text-base font-semibold ariadne-heading" data-testid="app-title">Ariadne</h1>
             <p className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Editorial Studio</p>
           </div>
+          {readiness && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${readiness.ready ? 'bg-[#10B981]/10' : 'bg-[#F5A623]/10'}`} data-testid="readiness-indicator">
+                    {readiness.ready
+                      ? <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981]" />
+                      : <AlertCircle className="w-3.5 h-3.5 text-[#F5A623]" />
+                    }
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p className="text-xs">{readiness.ready ? 'Pronto a generare' : `Setup incompleto: ${readiness.missing?.length || 0} elementi mancanti`}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
       </div>
       <Separator />
-      <ScrollArea className="flex-1 py-4">
-        <nav className="px-3 space-y-0.5">
-          {navItems.map(({ to, icon: Icon, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              onClick={() => setMobileOpen(false)}
-              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-              data-testid={`nav-${to.replace('/', '')}`}
-            >
-              <Icon className="w-4 h-4" strokeWidth={1.75} />
-              <span>{label}</span>
-            </NavLink>
+      <ScrollArea className="flex-1 py-2">
+        <nav className="px-3">
+          {navGroups.map((group) => (
+            <div key={group.title} className="mb-1">
+              <p className="px-4 pt-4 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-gray-300">{group.title}</p>
+              <div className="space-y-0.5">
+                {group.items.map(({ to, icon: Icon, label, setupKey }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    onClick={() => setMobileOpen(false)}
+                    className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+                    data-testid={`nav-${to.replace('/', '')}`}
+                  >
+                    <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.75} />
+                    <span className="flex-1 truncate">{label}</span>
+                    {setupKey && <SetupBadge status={getSetupStatus(setupKey, readiness)} />}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
       </ScrollArea>
