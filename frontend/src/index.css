@@ -24,42 +24,53 @@
     --destructive-foreground: 0 0% 100%;
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 258 100% 69%;
-    --chart-1: 258 100% 69%;
-    --chart-2: 37 91% 55%;
-    --chart-3: 160 84% 39%;
-    --chart-4: 0 84% 60%;
-    --chart-5: 217 91% 60%;
+    --ring: 82 60% 42%;
+    --chart-1: 195 100% 60%;
+    --chart-2: 278 60% 50%;
+    --chart-3: 82 60% 42%;
+    --chart-4: 37 91% 55%;
+    --chart-5: 350 80% 55%;
     --radius: 0.625rem;
 
-    --ariadne-purple: 258 100% 69%;
-    --ariadne-orange: 37 91% 55%;
-    --ariadne-green: 160 84% 39%;
-    --ariadne-red: 0 84% 60%;
-    --ariadne-blue: 217 91% 60%;
+    /* Ariadne logo colors */
+    --ariadne-orange: 30 100% 60%;
+    --ariadne-yellow-green: 82 60% 50%;
+    --ariadne-pink: 340 100% 60%;
+    --ariadne-blue: 195 100% 60%;
+    --ariadne-purple: 278 60% 50%;
   }
 
-  /* ===== STUDIO DARK THEME ===== */
+  /* ===== SCUOLA LIGHT THEME (Yellow-Green) ===== */
+  [data-area="school"] {
+    --primary: 82 60% 38%;
+    --ring: 82 60% 42%;
+    --ariadne-accent: 82 60% 42%;
+    --ariadne-accent-2: 82 75% 48%;
+  }
+
+  /* ===== STUDIO THEME (Blue-Purple, refined dark) ===== */
   [data-area="studio"] {
-    --background: 228 20% 7%;
-    --foreground: 220 14% 90%;
-    --card: 228 18% 11%;
-    --card-foreground: 220 14% 90%;
-    --popover: 228 18% 13%;
-    --popover-foreground: 220 14% 90%;
-    --primary: 258 100% 69%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 228 16% 15%;
-    --secondary-foreground: 220 14% 85%;
-    --muted: 228 14% 14%;
-    --muted-foreground: 220 9% 60%;
-    --accent: 228 14% 16%;
-    --accent-foreground: 220 14% 90%;
+    --background: 225 20% 12%;
+    --foreground: 210 25% 93%;
+    --card: 225 18% 16%;
+    --card-foreground: 210 25% 93%;
+    --popover: 225 18% 18%;
+    --popover-foreground: 210 25% 93%;
+    --primary: 195 100% 55%;
+    --primary-foreground: 225 20% 8%;
+    --secondary: 225 16% 20%;
+    --secondary-foreground: 210 20% 85%;
+    --muted: 225 14% 18%;
+    --muted-foreground: 210 15% 82%;
+    --accent: 225 14% 20%;
+    --accent-foreground: 210 25% 93%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 228 14% 18%;
-    --input: 228 14% 18%;
-    --ring: 258 100% 69%;
+    --border: 225 14% 24%;
+    --input: 225 14% 24%;
+    --ring: 195 100% 55%;
+    --ariadne-accent: 195 100% 55%;
+    --ariadne-accent-2: 278 60% 55%;
   }
 }
 
@@ -101,9 +112,9 @@
     letter-spacing: -0.03em;
     color: hsl(var(--foreground));
   }
-  .badge-purple { background: hsl(258 100% 69% / 0.12); color: hsl(258 100% 69%); }
-  .badge-orange { background: hsl(37 91% 55% / 0.12); color: hsl(37 91% 55%); }
-  .badge-green { background: hsl(160 84% 39% / 0.12); color: hsl(160 84% 39%); }
-  .badge-red { background: hsl(0 84% 60% / 0.12); color: hsl(0 84% 60%); }
-  .badge-blue { background: hsl(217 91% 60% / 0.12); color: hsl(217 91% 60%); }
+  .badge-purple { background: hsl(278 60% 50% / 0.12); color: hsl(278 60% 55%); }
+  .badge-orange { background: hsl(30 100% 60% / 0.12); color: hsl(30 100% 50%); }
+  .badge-green { background: hsl(82 60% 42% / 0.12); color: hsl(82 60% 38%); }
+  .badge-red { background: hsl(0 84% 60% / 0.12); color: hsl(0 84% 55%); }
+  .badge-blue { background: hsl(195 100% 55% / 0.12); color: hsl(195 100% 45%); }
 }

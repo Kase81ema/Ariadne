@@ -4,8 +4,9 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
+import { useNavigate } from 'react-router-dom';
 import { dashboardAPI, profilesAPI } from '../lib/api';
-import { Calendar as CalIcon, FileText, CheckCircle2, Download, Clock, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalIcon, FileText, CheckCircle2, Download, Clock, AlertTriangle, ChevronLeft, ChevronRight, MousePointerClick } from 'lucide-react';
 
 const STATUS_COLORS = {
   draft: 'badge-blue', generated: 'badge-purple', review: 'badge-orange',
@@ -18,6 +19,7 @@ const STATUS_LABELS = {
 const DAYS_IT = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({});
   const [calendarPosts, setCalendarPosts] = useState([]);
   const [profiles, setProfiles] = useState([]);
@@ -86,10 +88,10 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-        <StatCard icon={FileText} label="Bozze" value={stats.draft_posts || 0} accent="blue" testId="stat-draft" />
-        <StatCard icon={FileText} label="Generati" value={stats.generated_posts || 0} accent="purple" testId="stat-generated" />
-        <StatCard icon={Download} label="Esportati" value={stats.exported_posts || 0} accent="green" testId="stat-exported" />
-        <StatCard icon={CalIcon} label="Campagne attive" value={stats.active_campaigns || 0} accent="orange" testId="stat-campaigns" />
+        <StatCard icon={FileText} label="Bozze" value={stats.draft_posts || 0} accent="blue" testId="stat-draft" onClick={() => navigate('/editorial?status=draft')} />
+        <StatCard icon={FileText} label="Generati" value={stats.generated_posts || 0} accent="purple" testId="stat-generated" onClick={() => navigate('/editorial?status=generated')} />
+        <StatCard icon={Download} label="Esportati" value={stats.exported_posts || 0} accent="green" testId="stat-exported" onClick={() => navigate('/export')} />
+        <StatCard icon={CalIcon} label="Campagne attive" value={stats.active_campaigns || 0} accent="orange" testId="stat-campaigns" onClick={() => navigate('/workflow')} />
       </div>
 
       {/* Calendar section */}
@@ -164,7 +166,7 @@ export default function DashboardPage() {
   );
 }
 
-function StatCard({ icon: Icon, label, value, accent, testId }) {
+function StatCard({ icon: Icon, label, value, accent, testId, onClick }) {
   const colors = {
     purple: 'text-[#7B61FF] bg-[#7B61FF]/8',
     orange: 'text-[#F5A623] bg-[#F5A623]/8',
@@ -173,12 +175,13 @@ function StatCard({ icon: Icon, label, value, accent, testId }) {
     red: 'text-[#EF4444] bg-[#EF4444]/8',
   };
   return (
-    <Card className="border-gray-100" data-testid={testId}>
+    <Card className={`border-gray-100 ${onClick ? 'cursor-pointer hover:border-gray-200 transition-all' : ''}`} data-testid={testId} onClick={onClick}>
       <CardContent className="p-5">
         <div className="flex items-center gap-3 mb-3">
           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colors[accent]}`}>
             <Icon className="w-4 h-4" strokeWidth={1.75} />
           </div>
+          {onClick && <MousePointerClick className="w-3 h-3 text-gray-300 ml-auto" />}
         </div>
         <p className="text-2xl font-semibold ariadne-heading">{value}</p>
         <p className="text-xs text-gray-400 mt-0.5">{label}</p>

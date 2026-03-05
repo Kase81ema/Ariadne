@@ -504,6 +504,27 @@ async def get_comments(post_id: str, request: Request):
     await get_current_user(request)
     return await db.post_comments.find({"post_id": post_id}, {"_id": 0}).to_list(100)
 
+@api_router.post("/posts/{post_id}/upload-image")
+async def upload_post_image(post_id: str, request: Request, file: UploadFile = File(...)):
+    user = await get_current_user(request)
+    upload_dir = "/app/backend/uploads/post_images"
+    os.makedirs(upload_dir, exist_ok=True)
+    ext = file.filename.rsplit(".", 1)[-1] if "." in file.filename else "jpg"
+    fname = f"{post_id}_{uuid.uuid4().hex[:8]}.{ext}"
+    fpath = os.path.join(upload_dir, fname)
+    async with aiofiles.open(fpath, "wb") as f:
+        content = await file.read()
+        await f.write(content)
+    image_url = f"/api/uploads/post_images/{fname}"
+    await db.posts.update_one({"post_id": post_id}, {"$set": {"image_url": image_url}})
+    return {"image_url": image_url}
+
+@api_router.delete("/posts/{post_id}/upload-image")
+async def delete_post_image(post_id: str, request: Request):
+    user = await get_current_user(request)
+    await db.posts.update_one({"post_id": post_id}, {"$set": {"image_url": ""}})
+    return {"ok": True}
+
 # ===== PLANNING RULES =====
 @api_router.get("/planning-rules")
 async def list_rules(request: Request):
@@ -1215,6 +1236,13 @@ school_router = create_school_router(db, get_current_user, log_audit)
 @api_router.get("/uploads/{filename}")
 async def serve_upload(filename: str):
     filepath = UPLOAD_DIR / filename
+    if not filepath.exists():
+        raise HTTPException(404, "File non trovato")
+    return FileResponse(filepath)
+
+@api_router.get("/uploads/{subdir}/{filename}")
+async def serve_upload_subdir(subdir: str, filename: str):
+    filepath = UPLOAD_DIR / subdir / filename
     if not filepath.exists():
         raise HTTPException(404, "File non trovato")
     return FileResponse(filepath)
