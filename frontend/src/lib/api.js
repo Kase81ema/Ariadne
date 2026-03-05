@@ -163,4 +163,56 @@ export const adminAPI = {
   removeContent: (userId) => api.delete(`/admin/users/${userId}/content`),
 };
 
+// Inbox (School Operations)
+export const inboxAPI = {
+  listThreads: (view = 'all', category = '', status = '') => api.get('/inbox/threads', { params: { view, category, status } }),
+  getThread: (threadId) => api.get(`/inbox/threads/${threadId}`),
+  importThread: (data) => api.post('/inbox/threads/import', data),
+  updateStatus: (threadId, status) => api.put(`/inbox/threads/${threadId}/status`, { status }),
+  assignThread: (threadId, assignedTo) => api.put(`/inbox/threads/${threadId}/assign`, { assigned_to: assignedTo }),
+  archiveThread: (threadId) => api.post(`/inbox/threads/${threadId}/archive`),
+  generateDraft: (threadId, templateId = '') => api.post(`/inbox/threads/${threadId}/draft/generate`, { template_id: templateId }),
+  updateDraft: (threadId, data) => api.put(`/inbox/threads/${threadId}/draft`, data),
+  submitDraft: (threadId) => api.post(`/inbox/threads/${threadId}/draft/submit`),
+  approveDraft: (threadId) => api.post(`/inbox/threads/${threadId}/draft/approve`),
+  listRules: () => api.get('/inbox/rules'),
+  createRule: (data) => api.post('/inbox/rules', data),
+  updateRule: (ruleId, data) => api.put(`/inbox/rules/${ruleId}`, data),
+  deleteRule: (ruleId) => api.delete(`/inbox/rules/${ruleId}`),
+  listTemplates: () => api.get('/inbox/templates'),
+  createTemplate: (data) => api.post('/inbox/templates', data),
+  updateTemplate: (templateId, data) => api.put(`/inbox/templates/${templateId}`, data),
+  deleteTemplate: (templateId) => api.delete(`/inbox/templates/${templateId}`),
+  gmailStatus: () => api.get('/inbox/gmail-status'),
+};
+
+// School (Programs, Cohorts, Materials, Journey, Assistant)
+export const schoolAPI = {
+  listPrograms: () => api.get('/school/programs'),
+  createProgram: (data) => api.post('/school/programs', data),
+  updateProgram: (id, data) => api.put(`/school/programs/${id}`, data),
+  deleteProgram: (id) => api.delete(`/school/programs/${id}`),
+  listCohorts: () => api.get('/school/cohorts'),
+  createCohort: (data) => api.post('/school/cohorts', data),
+  updateCohort: (id, data) => api.put(`/school/cohorts/${id}`, data),
+  deleteCohort: (id) => api.delete(`/school/cohorts/${id}`),
+  listMembers: (cohortId) => api.get(`/school/cohorts/${cohortId}/members`),
+  addMember: (cohortId, userId, role = 'student') => api.post(`/school/cohorts/${cohortId}/members`, { user_id: userId, role_in_cohort: role }),
+  removeMember: (cohortId, userId) => api.delete(`/school/cohorts/${cohortId}/members/${userId}`),
+  listMaterials: () => api.get('/school/materials'),
+  uploadMaterial: (file, cohortId, title, description) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('cohort_id', cohortId);
+    fd.append('title', title);
+    fd.append('description', description);
+    return api.post('/school/materials/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+  deleteMaterial: (id) => api.delete(`/school/materials/${id}`),
+  getJourneyTemplates: () => api.get('/school/journey/templates'),
+  getJourneyProgress: () => api.get('/school/journey/progress'),
+  updateStepProgress: (stepId, data) => api.put(`/school/journey/progress/${stepId}`, data),
+  assistantQuery: (question) => api.post('/school/assistant/query', { question }),
+};
+
 export default api;

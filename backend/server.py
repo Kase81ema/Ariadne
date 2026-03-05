@@ -978,6 +978,53 @@ async def seed_data():
         for b in banners:
             await db.suggestion_banners.insert_one(b)
         logger.info("Community banners seeded.")
+    # Seed inbox rules
+    if await db.inbox_rules.count_documents({}) == 0:
+        rules = [
+            {"rule_id": "irl_iscrizioni", "name": "Richieste iscrizione", "enabled": True, "conditions": {"subject_keywords": ["iscrizione", "iscrivermi", "partecipare"], "body_keywords": ["iscrizione", "corso"]}, "category": "iscrizione", "priority": 10, "sla_hours": 24, "assignee_user_id": "", "queue": "iscrizioni", "created_at": datetime.now(timezone.utc).isoformat()},
+            {"rule_id": "irl_info", "name": "Richieste informazioni", "enabled": True, "conditions": {"subject_keywords": ["informazioni", "info", "dettagli"], "body_keywords": []}, "category": "info_corsi", "priority": 5, "sla_hours": 48, "assignee_user_id": "", "queue": "info", "created_at": datetime.now(timezone.utc).isoformat()},
+            {"rule_id": "irl_collab", "name": "Collaborazioni", "enabled": True, "conditions": {"subject_keywords": ["collaborazione", "partnership", "proposta"], "body_keywords": ["collaborazione"]}, "category": "collaborazione", "priority": 3, "sla_hours": 72, "assignee_user_id": "", "queue": "collaborazioni", "created_at": datetime.now(timezone.utc).isoformat()},
+        ]
+        for r in rules:
+            await db.inbox_rules.insert_one(r)
+        logger.info("Inbox rules seeded.")
+    # Seed email templates
+    if await db.inbox_templates.count_documents({}) == 0:
+        templates = [
+            {"template_id": "etpl_info", "name": "Info corsi standard", "category": "info_corsi", "subject_template": "Re: Informazioni su {{corso}}", "body_template": "Gentile {{nome}},\n\ngrazie per il tuo interesse verso {{corso}}.\n\nIl corso si terra nelle seguenti date: {{date}}, presso {{luogo}}.\n\nPer informazioni dettagliate e per procedere con l'iscrizione, puoi consultare la pagina dedicata: {{link}}\n\nResto a disposizione per qualsiasi domanda.\n\nUn caro saluto,\nAriadne Training", "variables": ["nome", "corso", "date", "luogo", "link"], "enabled": True, "created_at": datetime.now(timezone.utc).isoformat()},
+            {"template_id": "etpl_conferma", "name": "Conferma iscrizione", "category": "iscrizione", "subject_template": "Conferma iscrizione a {{corso}}", "body_template": "Gentile {{nome}},\n\nconfermo la tua iscrizione a {{corso}}.\n\nDate: {{date}}\nLuogo: {{luogo}}\n\nRiceverai ulteriori dettagli logistici nei prossimi giorni.\n\nBenvenuto/a nella community Ariadne!\n\nAriadne Training", "variables": ["nome", "corso", "date", "luogo"], "enabled": True, "created_at": datetime.now(timezone.utc).isoformat()},
+            {"template_id": "etpl_call", "name": "Proposta call conoscitiva", "category": "richiesta_call", "subject_template": "Re: {{oggetto}} - Proposta call", "body_template": "Gentile {{nome}},\n\ngrazie per il tuo messaggio.\n\nSarebbe utile organizzare una breve call conoscitiva per capire meglio le tue esigenze. Propongo: {{data_proposta}}.\n\nFammi sapere la tua disponibilita.\n\nA presto,\nAriadne Training", "variables": ["nome", "oggetto", "data_proposta"], "enabled": True, "created_at": datetime.now(timezone.utc).isoformat()},
+        ]
+        for t in templates:
+            await db.inbox_templates.insert_one(t)
+        logger.info("Email templates seeded.")
+    # Seed journey templates
+    if await db.journey_templates.count_documents({}) == 0:
+        journey_tmpls = [
+            {"template_id": "jtpl_formazione", "type": "formazione", "name": "Percorso formativo", "steps": [
+                {"step_id": "jf_01", "title": "Orientamento iniziale", "description": "Sessione di orientamento e definizione obiettivi personali", "editable_by_user": False, "requires_admin_validation": False, "order": 0},
+                {"step_id": "jf_02", "title": "Modulo 1 - Fondamenti", "description": "Completamento primo modulo formativo", "editable_by_user": True, "requires_admin_validation": True, "order": 1},
+                {"step_id": "jf_03", "title": "Modulo 2 - Pratica", "description": "Completamento modulo pratico con esercitazioni", "editable_by_user": True, "requires_admin_validation": True, "order": 2},
+                {"step_id": "jf_04", "title": "Modulo 3 - Avanzato", "description": "Completamento modulo avanzato", "editable_by_user": True, "requires_admin_validation": True, "order": 3},
+                {"step_id": "jf_05", "title": "Valutazione finale", "description": "Valutazione di fine percorso", "editable_by_user": False, "requires_admin_validation": True, "order": 4},
+            ], "created_at": datetime.now(timezone.utc).isoformat()},
+            {"template_id": "jtpl_credenziale", "type": "credenziale", "name": "Ore pratica e credenziale", "steps": [
+                {"step_id": "jc_01", "title": "Ore di pratica coaching", "description": "Registra le ore di pratica (minimo 100 ore ICF)", "editable_by_user": True, "requires_admin_validation": True, "order": 0},
+                {"step_id": "jc_02", "title": "Supervisione", "description": "Sessioni di supervisione completate (minimo 10 ore)", "editable_by_user": True, "requires_admin_validation": True, "order": 1},
+                {"step_id": "jc_03", "title": "Mentoring", "description": "Ore di mentoring completate", "editable_by_user": True, "requires_admin_validation": True, "order": 2},
+                {"step_id": "jc_04", "title": "Richiesta credenziale ICF", "description": "Presentazione domanda credenziale ACC/PCC", "editable_by_user": False, "requires_admin_validation": True, "order": 3},
+            ], "created_at": datetime.now(timezone.utc).isoformat()},
+            {"template_id": "jtpl_business", "type": "business", "name": "Avvio attivita coaching", "steps": [
+                {"step_id": "jb_01", "title": "Definizione nicchia", "description": "Identifica il tuo target e specializzazione", "editable_by_user": True, "requires_admin_validation": False, "order": 0},
+                {"step_id": "jb_02", "title": "Presenza online", "description": "Sito web, profilo LinkedIn, canali social", "editable_by_user": True, "requires_admin_validation": False, "order": 1},
+                {"step_id": "jb_03", "title": "Prima offerta", "description": "Struttura la tua prima offerta di coaching", "editable_by_user": True, "requires_admin_validation": False, "order": 2},
+                {"step_id": "jb_04", "title": "Primi clienti", "description": "Strategie per acquisire i primi clienti", "editable_by_user": True, "requires_admin_validation": False, "order": 3},
+                {"step_id": "jb_05", "title": "Sostenibilita", "description": "Piano di sostenibilita economica", "editable_by_user": True, "requires_admin_validation": False, "order": 4},
+            ], "created_at": datetime.now(timezone.utc).isoformat()},
+        ]
+        for jt in journey_tmpls:
+            await db.journey_templates.insert_one(jt)
+        logger.info("Journey templates seeded.")
     # Seed admin user if not exists
     admin_exists = await db.users.find_one({"email": "admin@ariadne.training"}, {"_id": 0})
     if not admin_exists:
@@ -1048,9 +1095,13 @@ async def seed_data():
 from fastapi.responses import FileResponse
 from community_routes import create_community_router
 from admin_routes import create_admin_router
+from inbox_routes import create_inbox_router
+from school_routes import create_school_router
 
 community_router = create_community_router(db, get_current_user, log_audit)
 admin_router = create_admin_router(db, get_current_user, log_audit)
+inbox_router = create_inbox_router(db, get_current_user, log_audit)
+school_router = create_school_router(db, get_current_user, log_audit)
 
 @api_router.get("/uploads/{filename}")
 async def serve_upload(filename: str):
@@ -1062,6 +1113,8 @@ async def serve_upload(filename: str):
 app.include_router(api_router)
 app.include_router(community_router)
 app.include_router(admin_router)
+app.include_router(inbox_router)
+app.include_router(school_router)
 app.add_middleware(CORSMiddleware, allow_credentials=True, allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','), allow_methods=["*"], allow_headers=["*"])
 
 @app.on_event("startup")

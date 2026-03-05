@@ -21,6 +21,13 @@ import FeedPage from "./pages/FeedPage";
 import UsersAdminPage from "./pages/UsersAdminPage";
 import BannersAdminPage from "./pages/BannersAdminPage";
 import CommunityEventsPage from "./pages/CommunityEventsPage";
+import InboxPage from "./pages/InboxPage";
+import RoutingRulesPage from "./pages/RoutingRulesPage";
+import EmailTemplatesPage from "./pages/EmailTemplatesPage";
+import CohortsAdminPage from "./pages/CohortsAdminPage";
+import MaterialsPage from "./pages/MaterialsPage";
+import MyJourneyPage from "./pages/MyJourneyPage";
+import AssistantPage from "./pages/AssistantPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 
 function ProtectedRoute({ children, requiredRole }) {
@@ -84,16 +91,16 @@ function AppRouter() {
       <Route path="/community" element={<ProtectedRoute><CommunityDashboardPage /></ProtectedRoute>} />
       <Route path="/feed" element={<ProtectedRoute><FeedPage /></ProtectedRoute>} />
       <Route path="/community/events" element={<ProtectedRoute><CommunityEventsPage /></ProtectedRoute>} />
-      <Route path="/my-journey" element={<ProtectedRoute><PlaceholderPage title="Il mio percorso" description="Formazione, credenziale e business" backTo="/community" /></ProtectedRoute>} />
-      <Route path="/materials" element={<ProtectedRoute><PlaceholderPage title="Materiali" description="Materiali per percorso ed edizione" backTo="/community" /></ProtectedRoute>} />
-      <Route path="/assistant" element={<ProtectedRoute><PlaceholderPage title="Assistente" description="Chiedi informazioni su corsi e servizi" backTo="/community" /></ProtectedRoute>} />
+      <Route path="/my-journey" element={<ProtectedRoute><MyJourneyPage /></ProtectedRoute>} />
+      <Route path="/materials" element={<ProtectedRoute><MaterialsPage /></ProtectedRoute>} />
+      <Route path="/assistant" element={<ProtectedRoute><AssistantPage /></ProtectedRoute>} />
 
       {/* Admin/Editor only - Scuola e community management */}
-      <Route path="/inbox" element={<AdminEditorRoute><PlaceholderPage title="Inbox" description="Gestione richieste in ingresso" backTo="/community" /></AdminEditorRoute>} />
-      <Route path="/routing-rules" element={<AdminEditorRoute><PlaceholderPage title="Regole smistamento" description="Configurazione regole di assegnazione automatica" backTo="/community" /></AdminEditorRoute>} />
-      <Route path="/email-templates" element={<AdminEditorRoute><PlaceholderPage title="Template email" description="Modelli per risposte rapide" backTo="/community" /></AdminEditorRoute>} />
+      <Route path="/inbox" element={<AdminEditorRoute><InboxPage /></AdminEditorRoute>} />
+      <Route path="/routing-rules" element={<AdminEditorRoute><RoutingRulesPage /></AdminEditorRoute>} />
+      <Route path="/email-templates" element={<AdminEditorRoute><EmailTemplatesPage /></AdminEditorRoute>} />
       <Route path="/users-admin" element={<AdminEditorRoute><UsersAdminPage /></AdminEditorRoute>} />
-      <Route path="/cohorts-admin" element={<AdminEditorRoute><PlaceholderPage title="Cohort e materiali" description="Gestione percorsi, edizioni e materiali" backTo="/community" /></AdminEditorRoute>} />
+      <Route path="/cohorts-admin" element={<AdminEditorRoute><CohortsAdminPage /></AdminEditorRoute>} />
       <Route path="/banners-admin" element={<AdminEditorRoute><BannersAdminPage /></AdminEditorRoute>} />
 
       <Route path="/" element={<DefaultRedirect />} />
