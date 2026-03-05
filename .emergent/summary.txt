@@ -1,74 +1,91 @@
 <analysis>**original_problem_statement:**
-The initial request was to build a full-stack web app, Ariadne Editorial Studio, to function as a social media management console. The primary goal is to plan an editorial calendar and generate text-only social media posts for LinkedIn and Instagram. Key features included a calendar, post generation, export to Buffer (CSV/JSON), user roles, Google Drive integration for a knowledge base, a specific visual style matching , and specialized agents (LLM-powered modules) for tasks like planning, writing, and compliance checks.
+The initial goal was to build Ariadne Editorial Studio, a social media management console. This was later expanded with a major UX overhaul to separate Setup from Production tasks for non-technical users.
 
-After the initial version was delivered, the user provided a new set of requirements to improve usability for non-technical users. This involved:
-1.  **Separating Setup vs. Production:** Restructuring the UI to create a clear distinction between one-time setup tasks (configuring profiles, rules, agents) and daily production tasks (creating campaigns).
-2.  **Guided Campaign Start:** Introducing a new Avvia campagna page that acts as a guided wizard, starting with a checklist to ensure all prerequisites (profiles, rules, repository content, active agents) are met before proceeding.
-3.  **Readiness Status:** Adding a backend endpoint () and corresponding UI badges in the sidebar to give users an at-a-glance view of the system's readiness.
-4.  **Agent Management Page:** Creating a dedicated page to manage the AI agents (enable/disable) and apply presets (e.g., fast, standard, high quality).
-5.  **Operational Speed-ups:** Adding a duplica (duplicate) action for courses and an essential mode for the campaign creation workflow to hide advanced options.
+The most recent user request is a substantial expansion and refinement of the existing application. The key objectives are:
+1.  **Visual Differentiation**: Implement a dark theme for the Studio area and keep a light theme for the new Scuola (School) area.
+2.  **UI/UX Improvements**: Make the sidebar navigation groups collapsible, translate all labels to Italian, reduce technical jargon, and improve text contrast.
+3.  **Fix Critical Bug**: The final step of generating social media post text in the Studio workflow is failing. This needs to be fixed by implementing an asynchronous background job with progress tracking.
+4.  **Community Enhancements**: The community feed should support image uploads. The dashboard should be made more human with user avatars and images from the feed.
+5.  **Simplify Il Mio Percorso**: Rework the user's personal journey page to be a simple catalog of courses (Ariadne-specific and business-focused) with completion status, instead of a granular task list.
+6.  **Expand School Management**: Add a user details page for admins to manage billing information and payment installment deadlines, with alerts for users and admins.
+7.  **Streamline Registration**: Simplify the registration form to only require an email, with an optional, expandable section for detailed profile and billing information.
+8.  **Branding**: Integrate the Ariadne logo into the application header and login page.
+9.  **Terminology**: Consistently use Edizioni instead of Cohort in the user-facing UI.
 
 **User's preferred language**: italiano
 
 **what currently exists?**
-A full-stack application with a React frontend and a FastAPI backend is in place. Authentication via JWT (email/password) and Google OAuth is functional, using  to persist the session. The application's UI adheres to the requested Ariadne minimalist aesthetic.
-
-The backend features a  endpoint to check system configuration status. The frontend has been updated with a restructured sidebar in  and new pages:  (for the guided workflow) and  (for managing agents). The routing in  has been updated accordingly. Placeholders and initial logic for the duplica course feature and essential mode have also been added.
+The application is a full-stack project using React, FastAPI, and MongoDB. It's structured into two main functional areas: Studio comunicazione and Scuola e community. The backend has been modularized into separate files for routes, models, and services. The previous major tasks, including the Setup vs. Production UX refactor and the implementation of the Scuola e community features (with AI-powered drafts and an assistant), have been completed and verified. The foundation for all newly requested features exists in the form of placeholder pages and a robust component library.
 
 **Last working item**:
--   **Last item agent was working**: The agent was in the process of implementing the Setup vs. Production UX overhaul. The final actions involved modifying  and its child component  to support an essential mode, which simplifies the UI by hiding advanced fields.
+-   **Last item agent was working**: The agent was implementing **Batch 1** of the user's latest, large request. This batch focuses on the core visual and usability improvements. The agent successfully added the CSS variables for the dark theme into  and then performed a major rewrite of  to implement a collapsible sidebar, integrate the Ariadne logo, add Italian labels, and prepare for the dark/light theme switching via a  attribute.
 -   **Status**: IN PROGRESS
 -   **Agent Testing Done**: N
 -   **Which testing method agent to use?**: frontend testing agent
 -   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Complete and test the Setup vs. Production UX Refactor (P0)**
-    -   **Description**: The new pages (, ) and backend endpoint () have been created, but they are not fully integrated. The frontend needs to fetch data from the readiness endpoint to dynamically display status badges in the sidebar and control the guided workflow on the Avvia campagna page.
-    -   **Attempted fixes**: This is a new feature implementation, no fixes have been attempted yet.
+-   **Issue 1: Complete and test Batch 1 of the UI/UX Overhaul (P0)**
+    -   **Description**: The work on  is done, but the other parts of Batch 1 are not. The simplified registration flow needs to be implemented, and the entire batch of changes needs to be tested to ensure they work together.
     -   **Next debug checklist**:
-        1.  In , implement a  hook to call the  endpoint.
-        2.  Use the fetched data to render status badges next to the Setup menu items.
-        3.  In , use the readiness data to populate the setup checklist and enable/disable the Continue button.
-        4.  Verify that the vai a... (go to...) links on the checklist navigate to the correct setup pages.
-        5.  Thoroughly test the agent presets on the .
-        6.  Test the duplica functionality on the .
-        7.  Validate the end-to-end flow of the modalità essenziale (essential mode) from  through the .
-    -   **Why fix this issue and what will be achieved with the fix?**: This is the user's highest priority request and is critical for making the application intuitive for its target non-technical users.
+        1.  Modify  and related auth components to implement the new registration flow (email-only required, with an optional expandable form for more details).
+        2.  Update the corresponding backend registration endpoint in  to handle optional fields.
+        3.  Thoroughly test the dark theme for the Studio area and the light theme for the Scuola area.
+        4.  Verify the sidebar groups are collapsible and their state is persisted in .
+        5.  Confirm all new Italian labels are correct and the logo is displayed with a proper fallback.
+    -   **Why fix this issue and what will be achieved with the fix?**: This is a foundational part of the user's request, improving the core usability and visual identity of the app.
     -   **Status**: IN PROGRESS
     -   **Is recurring issue?**: N
     -   **Should Test frontend/backend/both after fix?**: Both
     -   **Blocked on other issue**: None
 
 **In progress Task List**:
--   **Task 1: Complete the Setup vs. Production UX Refactor (P0)**
-    -   **Where to resume**: . The immediate next step is to implement the API call to  and wire the response data to the sidebar UI components to display the status badges.
-    -   **What will be achieved with this?**: The application will feature a clear, guided user experience that separates initial setup from daily operational tasks, fulfilling the user's latest request.
+-   **Task 1: Complete Batch 1 Implementation (P0)**
+    -   **Where to resume**: . The next step is to implement the simplified registration UI as per the user's requirements.
+    -   **What will be achieved with this?**: A more polished, user-friendly, and visually distinct application that meets the user's core usability requirements.
     -   **Status**: IN PROGRESS
     -   **Should Test frontend/backend/both after fix?**: Both
     -   **Blocked on something**: No
 
 **Upcoming and Future Tasks**
--   **Upcoming Tasks**:
-    -   **(P1) Implement Core Content Generation Logic**: The agent framework exists (), but the actual text generation using Claude Sonnet 4.5 needs to be implemented within the workflow.
-    -   **(P1) Implement Full Workflow Logic**: The  UI exists, but the backend logic for each step (calendar planning with conflict detection, post versioning, quality checks, approval flow) needs to be built out.
--   **Future Tasks**:
-    -   **(P2) Implement Google Drive Integration**: Connect to Google Drive to read from the Ariadne repository as a knowledge base. The backend and frontend pages are placeholders.
-    -   **(P2) Implement Export to Buffer**: Build the functionality to generate and download CSV and JSON files formatted for Buffer.
-    -   **(P2) Implement Audit Logging**: Implement the mechanism to log all critical user actions to the  collection.
+-   **Upcoming Tasks (P1): Implement Batch 2**
+    -   **Fix Async Post Generation**:
+        -   Create a new asynchronous endpoint  that returns a .
+        -   Implement a status endpoint .
+        -   Use  in the backend to run text generation in the background.
+        -   Update  to use these endpoints, showing a progress bar via polling.
+    -   **Enhance Community Features**:
+        -   Update  to include an image upload component in the post composer.
+        -   Redesign  to feature user avatars (volti della community) and a more prominent il mio percorso section.
+
+-   **Future Tasks (P2): Implement Batch 3**
+    -   **Simplify Il Mio Percorso**:
+        -   Create new DB collections:  and .
+        -   Build new API endpoints (, ).
+        -   Rewrite  to use a simple, two-tab layout for Corsi Ariadne and Corsi business.
+    -   **Add User & Payment Management**:
+        -   Extend the user model/collection to include billing details.
+        -   Create a  collection.
+        -   Build admin pages for managing user details and viewing payment statuses.
+    -   **Finalize UI Terminology**:
+        -   Globally replace the term Cohort with Edizioni in all user-facing components.
+    -   **(From original backlog) Google Drive Integration**: Connect to Google Drive to read from the Ariadne repository.
+    -   **(From original backlog) Export to Buffer**: Implement CSV/JSON export functionality.
 
 **Completed work in this session**
--   **Initial App Scaffolding**: Built the full-stack application structure with a FastAPI backend and React frontend, including database models and basic CRUD APIs.
--   **Authentication**: Implemented a robust authentication system supporting both email/password (JWT) and Google OAuth, using  for session persistence after resolving CORS issues.
--   **UI/UX Foundation**: Established the Ariadne visual style using Tailwind CSS and Shadcn/UI components, creating a clean, minimal, and responsive interface.
--   **Initial UX Refactor Implementation**:
-    -   Created the  endpoint in .
-    -   Created the new frontend pages  and .
-    -   Restructured the sidebar in  into logical groups.
-    -   Added placeholders for the duplica course and essential mode features.
+-   Setup vs. Production UX refactor (DONE)
+-   Modular backend architecture implementation (DONE)
+-   Scuola e community feature set, including AI integrations for drafts and assistant (DONE)
+-   **Recently completed**:
+    -   Dark theme CSS variables added to .
+    -   Complete rewrite of  to include:
+        -   Collapsible, stateful sidebar groups.
+        -   Integration of the Ariadne logo.
+        -    attribute for theme switching.
+        -   New labels translated to Italian.
 
 **Earlier issues found/mentioned but not fixed**
--   None. All previously identified issues, such as the authentication-related CORS problem, have been resolved.
+-   None.
 
 **Known issue recurrence from previous fork**
 -   N/A
@@ -77,75 +94,83 @@ The backend features a  endpoint to check system configuration status. The front
 
 
 **Key Technical Concepts**
--   **Frontend**: React, React Router, Tailwind CSS, Shadcn/UI
--   **Backend**: FastAPI (Python)
+-   **Frontend**: React, React Router, Tailwind CSS, Shadcn/UI,  for UI state.
+-   **Backend**: FastAPI, Modular routing, Pydantic models,  for background tasks.
 -   **Database**: MongoDB
--   **Authentication**: JWT & Google OAuth (via  and Authorization header)
--   **Planned Integrations**: Claude Sonnet 4.5, Google Drive
+-   **Authentication**: JWT & Google OAuth
+-   **AI Integration**:  library with Claude Sonnet 4.5.
 
 **key DB schema**
 -   : {email, hashed_password, name, role}
--   : {name, platform, handle, active}
--   : {title, type, dates, description}
--   : {name, status, ...}
--   : {campaign_id, content, status, scheduled_at}
--   : {name, config_json}
--   : {name, enabled}
--   : {name, category, content}
+-   : {user_id, address, billing_info, tax_info} (To be added/extended)
+-   , , , , , , 
+-   , , , , 
+-   , , , , , , 
+-   : {id, category, title, description, key_points[]} (To be added)
+-   : {user_id, course_id, status} (To be added)
+-   : {user_id, amount, due_date, status} (To be added)
+-   : {job_id, status, progress, result} (To be added)
 
 **changes in tech stack**
 -   None.
 
 **All files of reference**
--   : Updated with the  endpoint.
--   : Sidebar navigation () was restructured into groups.
--   : New page for the guided campaign setup.
--   : New page for managing AI agents.
--   : Updated with routes for the new pages (, ).
--   : Modified to include a Duplica button.
+-   : Modified to include dark theme CSS variables under .
+-   : Completely rewritten for collapsible sidebar, theme switching, and new labels.
+-   : New logo file.
+-   : Next file to be modified for the simplified registration flow.
+-    & : Key files for the upcoming async post-generation task.
+-   : Key file for the Il mio percorso simplification task.
 
 **Areas that need refactoring**:
--   The  file is becoming a monolith. It should be refactored into a more modular structure (e.g., separate files for routes, models, and services) to improve maintainability.
+-   The backend was recently refactored and is in good shape. The  component was also just rewritten. The next agent should continue to build upon this modular structure.
 
 **key api endpoints**
--   : Returns the readiness status of the application setup.
--   : Clones an existing course or event.
--   : Applies a predefined configuration to the agents.
--   : Authenticates a user.
--   : Retrieves the current user's data.
+-   : (To be created) Starts an async job for post generation.
+-   : (To be created) Polls the status of the generation job.
+-   : (To be created) Fetches the list of available courses.
+-   : (To be created) Updates a user's progress on a course.
+-   : (To be created/updated) Updates a user's billing and profile information.
 
 **Critical Info for New Agent**
--   Your immediate priority is to complete the Setup vs. Production UX refactor. This involves connecting the frontend UI to the  backend endpoint to make the sidebar badges and the guided Avvia campagna page fully functional.
--   The core logic for AI content generation and other advanced workflow steps (e.g., calendar conflict detection) is still placeholder and represents the next major phase of work after the current UX task is complete and verified.
--   Authentication was refactored to use  and the  header to fix a critical CORS issue. Do not re-introduce cookie-based authentication.
+-   You are in the middle of a large, multi-batch implementation. Your immediate task is to complete **Batch 1**.
+-   **Batch 1 Plan**: First, implement the simplified registration flow in  and its backend counterpart. Then, thoroughly test all Batch 1 features: dark/light theme, collapsible sidebar, new labels, and the new registration process.
+-   After completing and verifying Batch 1, proceed to **Batch 2** (async post generation, community feed enhancements), and then **Batch 3** (simplified journey, payment management). Do not mix tasks from different batches.
+-   The user wants clear visual separation and improved usability for non-technical users. Keep this goal in mind for all UI changes.
 
 **documents and test reports created in this job**
--   
--   
--   
+-    (Updated in the last successful )
+-    (Last successful test run)
 
 **Last 10 User Messages and any pending HUMAN messages**
-The last user message provided a detailed specification for a major UX overhaul, focusing on separating Setup from Production tasks. The agent acknowledged this, analyzed the existing code, and began a parallel implementation of the required backend and frontend changes. The last actions were creating and modifying the necessary files (, , , etc.) to build the new features, but the work is incomplete and untested. There are no pending messages from the user.
+-   **User**:  (Ok, proceed with the 3 batches one after the other, starting from Batch 1).
+-   **Agent**: Acknowledged and started work on Batch 1.
+-   **User**:  (Ok great, proceed).
+-   **Agent**: Presented a detailed 3-batch plan to tackle the user's large request.
+-   **User**: Provided a very large and detailed set of new requirements, which form the basis for the current work batches.
 
 **Project Health Check:**
--   **Broken**: The new UX flow is partially implemented. Key features like the dynamic sidebar badges and the readiness checklist on the  are not yet functional as the frontend is not yet fetching data from the backend  endpoint.
--   **Mocked**: Core functionalities like AI content generation, Google Drive integration, and export to Buffer are still placeholders.
+-   **Broken**:
+    -   The UI is in an inconsistent state as  was rewritten but other pages like  have not yet been updated for Batch 1.
+    -   The core Studio feature of generating post text is confirmed to be broken and is the target of the Batch 2 fix.
+-   **Mocked**:
+    -   The simplified Il mio percorso feature is not yet implemented.
+    -   The user management section for payments and billing does not exist yet.
 
 **3rd Party Integrations**
--   **Claude Sonnet 4.5** (Text Generation) — uses Emergent LLM Key (Planned).
+-   **Claude Sonnet 4.5** (Text Generation) — uses Emergent LLM Key (Implemented).
 -   **Emergent-managed Google Auth** — requires User LLM Key (Implemented).
 -   **Google Drive** (File Reading) — requires User API Key (Planned).
--   **Buffer** (Export) — Adapter planned, no API integration yet.
 
 **Testing status**
--   **Testing agent used after significant changes**: YES (after initial build and auth fix).
+-   **Testing agent used after significant changes**: YES (after previous feature completion).
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: None.
--   **Known regressions**: None, but the current state is an unfinished implementation.
+-   **Known regressions**: The final step of the post-generation workflow is known to be failing.
 
 **Credentials to test flow:**
 -   **User**: 
 -   **Password**: 
 
 **What agent forgot to execute**
--   The agent created the files for the UX refactor but did not implement the crucial  call in the frontend ( and ) to get data from the new  endpoint. This is the main missing piece to make the new UI functional and must be addressed first.</analysis>
+-   The agent is currently mid-execution of a larger plan. It has correctly started with Batch 1 as instructed but has not yet completed it. Nothing has been forgotten, but the task is incomplete.</analysis>
