@@ -13,7 +13,9 @@
 
 /* ===== SIDEBAR ===== */
 .sidebar-link {
-  @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200;
+  @apply flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition-all duration-200;
+  font-size: 13px;
+  font-weight: 500;
   color: hsl(var(--muted-foreground));
 }
 .sidebar-link:hover {
@@ -25,13 +27,13 @@
   color: hsl(var(--primary-foreground));
 }
 
-/* STUDIO sidebar - bright and readable */
+/* STUDIO sidebar - white text, compact */
 [data-area="studio"] .sidebar-link {
-  color: hsl(210 20% 85%) !important;
+  color: hsl(0 0% 92%) !important;
 }
 [data-area="studio"] .sidebar-link:hover:not(.active) {
-  background: hsl(225 14% 22%);
-  color: hsl(0 0% 98%) !important;
+  background: hsl(225 10% 28%);
+  color: #fff !important;
 }
 [data-area="studio"] .sidebar-link.active {
   background: hsl(195 100% 55%) !important;
@@ -56,15 +58,15 @@
   @apply text-[10px] font-bold uppercase tracking-[0.14em] transition-colors;
   color: hsl(var(--muted-foreground));
 }
-/* Studio group labels - more visible */
+/* Studio group labels - bright cyan */
 [data-area="studio"] .group-label {
-  color: hsl(195 70% 65%) !important;
+  color: hsl(195 80% 70%) !important;
 }
 [data-area="studio"] .group-trigger:hover .group-label {
-  color: hsl(195 80% 75%) !important;
+  color: hsl(195 90% 80%) !important;
 }
 [data-area="studio"] .group-chevron {
-  color: hsl(210 15% 55%) !important;
+  color: hsl(0 0% 55%) !important;
 }
 .group-chevron {
   @apply w-3 h-3 transition-transform duration-200;
@@ -86,35 +88,35 @@
 /* Studio dark overrides for Tailwind hardcoded colors */
 [data-area="studio"] .bg-white,
 [data-area="studio"] .bg-gray-50\/50 {
-  background-color: hsl(var(--background)) !important;
+  background-color: hsl(var(--card)) !important;
 }
 [data-area="studio"] .bg-gray-50 {
   background-color: hsl(var(--muted)) !important;
 }
 [data-area="studio"] .text-gray-900 {
-  color: hsl(var(--foreground)) !important;
+  color: hsl(0 0% 96%) !important;
 }
 [data-area="studio"] .text-gray-700 {
-  color: hsl(210 15% 80%) !important;
+  color: hsl(0 0% 88%) !important;
 }
 [data-area="studio"] .text-gray-600 {
-  color: hsl(210 12% 72%) !important;
+  color: hsl(0 0% 82%) !important;
 }
 [data-area="studio"] .text-gray-500 {
-  color: hsl(210 10% 65%) !important;
+  color: hsl(0 0% 72%) !important;
 }
 [data-area="studio"] .text-gray-400 {
-  color: hsl(210 10% 55%) !important;
+  color: hsl(0 0% 60%) !important;
 }
 [data-area="studio"] .border-gray-100,
 [data-area="studio"] .border-gray-200 {
   border-color: hsl(var(--border)) !important;
 }
 [data-area="studio"] .bg-gray-100 {
-  background-color: hsl(225 14% 20%) !important;
+  background-color: hsl(225 10% 26%) !important;
 }
 [data-area="studio"] .bg-gray-200 {
-  background-color: hsl(225 14% 22%) !important;
+  background-color: hsl(225 10% 28%) !important;
 }
 
 /* Calendar grid dark */

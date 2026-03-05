@@ -10,7 +10,7 @@ import json
 from datetime import datetime
 
 class AriadneAPITester:
-    def __init__(self, base_url="https://italian-redesign.preview.emergentagent.com"):
+    def __init__(self, base_url="https://content-academy-12.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
         self.tests_run = 0

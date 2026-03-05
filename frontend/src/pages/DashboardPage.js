@@ -75,8 +75,8 @@ export default function DashboardPage() {
   return (
     <div data-testid="dashboard-page">
       <div className="mb-10">
-        <h1 className="text-4xl font-semibold ariadne-heading mb-2">Dashboard</h1>
-        <p className="text-base text-gray-500">Panoramica del calendario editoriale</p>
+        <h1 className="text-4xl font-semibold ariadne-heading mb-2">Studio comunicazione</h1>
+        <p className="text-base text-gray-500">Il tuo centro di controllo per il calendario editoriale. Qui trovi una visione d'insieme dei contenuti, le campagne attive e il calendario delle pubblicazioni.</p>
       </div>
 
       {/* Stats grid */}
@@ -88,14 +88,15 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-        <StatCard icon={FileText} label="Bozze" value={stats.draft_posts || 0} accent="blue" testId="stat-draft" onClick={() => navigate('/editorial?status=draft')} />
-        <StatCard icon={FileText} label="Generati" value={stats.generated_posts || 0} accent="purple" testId="stat-generated" onClick={() => navigate('/editorial?status=generated')} />
-        <StatCard icon={Download} label="Esportati" value={stats.exported_posts || 0} accent="green" testId="stat-exported" onClick={() => navigate('/export')} />
-        <StatCard icon={CalIcon} label="Campagne attive" value={stats.active_campaigns || 0} accent="orange" testId="stat-campaigns" onClick={() => navigate('/workflow')} />
+        <StatCard icon={FileText} label="Post in bozza" value={stats.draft_posts || 0} accent="blue" testId="stat-draft" onClick={() => navigate('/editorial')} subtitle="Apri il calendario editoriale" />
+        <StatCard icon={FileText} label="Post generati" value={stats.generated_posts || 0} accent="purple" testId="stat-generated" onClick={() => navigate('/editorial')} subtitle="Vedi i post generati" />
+        <StatCard icon={Download} label="Post esportati" value={stats.exported_posts || 0} accent="green" testId="stat-exported" onClick={() => navigate('/export')} subtitle="Vai alla sezione export" />
+        <StatCard icon={CalIcon} label="Campagne attive" value={stats.active_campaigns || 0} accent="orange" testId="stat-campaigns" onClick={() => navigate('/workflow')} subtitle="Gestisci le campagne" />
       </div>
 
       {/* Calendar section */}
       <div className="ariadne-card p-6">
+        <p className="text-xs text-gray-400 mb-4">Visualizza i post pianificati nel calendario editoriale. Clicca su un giorno per vederne i dettagli.</p>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => changeMonth(-1)} data-testid="cal-prev">
@@ -166,7 +167,7 @@ export default function DashboardPage() {
   );
 }
 
-function StatCard({ icon: Icon, label, value, accent, testId, onClick }) {
+function StatCard({ icon: Icon, label, value, accent, testId, onClick, subtitle }) {
   const colors = {
     purple: 'text-[#7B61FF] bg-[#7B61FF]/8',
     orange: 'text-[#F5A623] bg-[#F5A623]/8',
@@ -181,10 +182,10 @@ function StatCard({ icon: Icon, label, value, accent, testId, onClick }) {
           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colors[accent]}`}>
             <Icon className="w-4 h-4" strokeWidth={1.75} />
           </div>
-          {onClick && <MousePointerClick className="w-3 h-3 text-gray-300 ml-auto" />}
         </div>
         <p className="text-2xl font-semibold ariadne-heading">{value}</p>
         <p className="text-xs text-gray-400 mt-0.5">{label}</p>
+        {subtitle && onClick && <p className="text-[10px] text-gray-400 mt-1 opacity-60">{subtitle}</p>}
       </CardContent>
     </Card>
   );
