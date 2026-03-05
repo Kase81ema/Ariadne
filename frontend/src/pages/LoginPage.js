@@ -4,16 +4,33 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Card, CardContent } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Zap } from 'lucide-react';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../components/ui/collapsible';
+import { ChevronRight, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
+
+function AriadneLogoLogin() {
+  const [hasLogo, setHasLogo] = useState(true);
+  if (!hasLogo) return null;
+  return (
+    <img
+      src="/ariadne-logo.png"
+      alt="Ariadne"
+      className="ariadne-logo-login"
+      onError={() => setHasLogo(false)}
+      data-testid="login-logo"
+    />
+  );
+}
 
 export default function LoginPage() {
   const { loginJWT, registerJWT, loginGoogle } = useAuth();
   const navigate = useNavigate();
   const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [registerData, setRegisterData] = useState({ email: '', password: '', name: '' });
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerExtra, setRegisterExtra] = useState({ name: '', password: '' });
+  const [showExtra, setShowExtra] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
@@ -31,10 +48,20 @@ export default function LoginPage() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (!registerEmail) return;
     setLoading(true);
     try {
-      await registerJWT(registerData.email, registerData.password, registerData.name);
-      navigate('/dashboard');
+      const res = await registerJWT(
+        registerEmail,
+        registerExtra.password || null,
+        registerExtra.name || null
+      );
+      if (res.generated_password) {
+        toast.success(`Registrazione completata! La tua password temporanea: ${res.generated_password}`, { duration: 12000 });
+      } else {
+        toast.success('Registrazione completata!');
+      }
+      navigate('/community');
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Errore di registrazione');
     } finally {
@@ -43,7 +70,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen bg-white flex" data-testid="login-page">
       {/* Left panel - branding */}
       <div className="hidden lg:flex lg:w-1/2 items-center justify-center p-16 relative overflow-hidden">
         <div className="absolute inset-0 bg-gray-50" />
@@ -52,11 +79,9 @@ export default function LoginPage() {
         <div className="absolute top-1/3 right-24 w-12 h-12 rounded-lg bg-[#10B981]/8" />
         <div className="relative z-10 max-w-md">
           <div className="flex items-center gap-3 mb-12">
-            <div className="w-12 h-12 rounded-xl bg-[#7B61FF] flex items-center justify-center">
-              <Zap className="w-6 h-6 text-white" strokeWidth={2.5} />
-            </div>
+            <AriadneLogoLogin />
             <div>
-              <h1 className="text-2xl font-semibold ariadne-heading">Ariadne</h1>
+              <h1 className="text-2xl font-semibold ariadne-heading" data-testid="login-brand-title">Ariadne</h1>
               <p className="text-xs text-gray-400 uppercase tracking-[0.2em] font-medium">Editorial Studio</p>
             </div>
           </div>
@@ -64,7 +89,7 @@ export default function LoginPage() {
             Pianifica, genera, pubblica.
           </h2>
           <p className="text-base text-gray-500 leading-relaxed">
-            La console operativa per il calendario editoriale di Ariadne. 
+            La console operativa per il calendario editoriale di Ariadne.
             Coordina tutti i canali social, genera contenuti con AI e esporta per la pubblicazione.
           </p>
         </div>
@@ -74,9 +99,7 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-sm">
           <div className="lg:hidden flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 rounded-xl bg-[#7B61FF] flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" strokeWidth={2.5} />
-            </div>
+            <AriadneLogoLogin />
             <div>
               <h1 className="text-xl font-semibold ariadne-heading">Ariadne</h1>
               <p className="text-[10px] text-gray-400 uppercase tracking-[0.2em]">Editorial Studio</p>
@@ -118,33 +141,58 @@ export default function LoginPage() {
             <TabsContent value="register">
               <form onSubmit={handleRegister} className="space-y-5">
                 <div className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Nome</Label>
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Email *</Label>
                   <Input
-                    placeholder="Il tuo nome"
-                    value={registerData.name}
-                    onChange={e => setRegisterData(d => ({ ...d, name: e.target.value }))}
-                    data-testid="register-name-input"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Email</Label>
-                  <Input
-                    type="email" placeholder="nome@ariadne.training"
-                    value={registerData.email}
-                    onChange={e => setRegisterData(d => ({ ...d, email: e.target.value }))}
+                    type="email" placeholder="nome@ariadne.training" required
+                    value={registerEmail}
+                    onChange={e => setRegisterEmail(e.target.value)}
                     data-testid="register-email-input"
                   />
+                  <p className="text-[11px] text-gray-400">L'unico campo obbligatorio per iniziare</p>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Password</Label>
-                  <Input
-                    type="password" placeholder="Scegli una password"
-                    value={registerData.password}
-                    onChange={e => setRegisterData(d => ({ ...d, password: e.target.value }))}
-                    data-testid="register-password-input"
-                  />
-                </div>
-                <Button type="submit" className="w-full h-11" disabled={loading} data-testid="register-submit-btn">
+
+                {/* Expandable optional section */}
+                <Collapsible open={showExtra} onOpenChange={setShowExtra}>
+                  <CollapsibleTrigger className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors cursor-pointer w-full" data-testid="register-extra-toggle">
+                    <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${showExtra ? 'rotate-90' : ''}`} />
+                    <span>Completa il profilo (opzionale)</span>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="space-y-4 pt-3 pb-1">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Nome</Label>
+                        <Input
+                          placeholder="Il tuo nome"
+                          value={registerExtra.name}
+                          onChange={e => setRegisterExtra(d => ({ ...d, name: e.target.value }))}
+                          data-testid="register-name-input"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Password</Label>
+                        <div className="relative">
+                          <Input
+                            type={showPwd ? 'text' : 'password'} placeholder="Scegli una password"
+                            value={registerExtra.password}
+                            onChange={e => setRegisterExtra(d => ({ ...d, password: e.target.value }))}
+                            data-testid="register-password-input"
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            onClick={() => setShowPwd(!showPwd)}
+                            tabIndex={-1}
+                          >
+                            {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                        <p className="text-[11px] text-gray-400">Se non scegli una password, ne verra generata una automaticamente</p>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Button type="submit" className="w-full h-11" disabled={loading || !registerEmail} data-testid="register-submit-btn">
                   {loading ? 'Registrazione...' : 'Registrati'}
                 </Button>
               </form>

@@ -110,6 +110,8 @@ export const setupAPI = {
 export const generateAPI = {
   plan: (campaignId, agents) => api.post('/generate/plan', { campaign_id: campaignId, active_agents: agents }),
   texts: (campaignId, postIds, agents) => api.post('/generate/texts', { campaign_id: campaignId, post_ids: postIds, active_agents: agents }),
+  startTextsJob: (campaignId, postIds, agents) => api.post('/generate/texts-job', { campaign_id: campaignId, post_ids: postIds, active_agents: agents }),
+  getJobStatus: (jobId) => api.get(`/generate/texts-job/${jobId}`),
 };
 
 // Export
@@ -213,6 +215,21 @@ export const schoolAPI = {
   getJourneyProgress: () => api.get('/school/journey/progress'),
   updateStepProgress: (stepId, data) => api.put(`/school/journey/progress/${stepId}`, data),
   assistantQuery: (question) => api.post('/school/assistant/query', { question }),
+  // Course catalog
+  getCatalog: () => api.get('/school/catalog'),
+  updateCourseProgress: (courseId, status) => api.post('/school/catalog/progress', { course_id: courseId, status }),
+  // User details
+  getUserDetails: () => api.get('/school/user-details'),
+  saveUserDetails: (data) => api.post('/school/user-details', data),
+  // Admin user details & payments
+  adminGetUserDetails: (userId) => api.get(`/school/admin/user-details/${userId}`),
+  adminSaveUserDetails: (userId, data) => api.post(`/school/admin/user-details/${userId}`, data),
+  adminListInstallments: () => api.get('/school/admin/installments'),
+  adminCreateInstallment: (data) => api.post('/school/admin/installments', data),
+  adminUpdateInstallment: (id, data) => api.put(`/school/admin/installments/${id}`, data),
+  adminDeleteInstallment: (id) => api.delete(`/school/admin/installments/${id}`),
+  // My payments
+  getMyPayments: () => api.get('/school/my-payments'),
 };
 
 export default api;

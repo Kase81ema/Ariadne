@@ -98,22 +98,52 @@ export default function WorkflowPage() {
     }
   };
 
-  // Step 4: Generate texts
+  // Step 4: Generate texts via background job with polling
+  const [jobId, setJobId] = useState(null);
+  const [jobProgress, setJobProgress] = useState({ current: 0, total: 0, label: '' });
+
   const handleGenerateTexts = async () => {
     if (!createdCampaign) return;
     setLoading(true);
     try {
-      await generateAPI.texts(createdCampaign.campaign_id, planPostIds, activeAgentIds);
-      const postsRes = await postsAPI.list({ campaign_id: createdCampaign.campaign_id });
-      setGeneratedPosts(postsRes.data);
-      toast.success('Testi generati');
-      setStep(5);
+      const res = await generateAPI.startTextsJob(createdCampaign.campaign_id, planPostIds, activeAgentIds);
+      setJobId(res.data.job_id);
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Errore nella generazione');
-    } finally {
+      toast.error(err.response?.data?.detail || 'Errore nell\'avvio della generazione');
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!jobId) return;
+    const poll = setInterval(async () => {
+      try {
+        const res = await generateAPI.getJobStatus(jobId);
+        const job = res.data;
+        setJobProgress({ current: job.current, total: job.total, label: job.current_label });
+        if (job.status === 'completed') {
+          clearInterval(poll);
+          setJobId(null);
+          setLoading(false);
+          const postsRes = await postsAPI.list({ campaign_id: createdCampaign.campaign_id });
+          setGeneratedPosts(postsRes.data);
+          toast.success('Testi generati con successo!');
+          setStep(5);
+        } else if (job.status === 'error') {
+          clearInterval(poll);
+          setJobId(null);
+          setLoading(false);
+          toast.error(job.error || 'Errore nella generazione');
+        }
+      } catch {
+        clearInterval(poll);
+        setJobId(null);
+        setLoading(false);
+      }
+    }, 2000);
+    return () => clearInterval(poll);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobId]);
 
   // Step 5: Approve posts
   const handleApproveAll = async () => {
@@ -314,10 +344,20 @@ export default function WorkflowPage() {
               <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono leading-relaxed max-h-64 overflow-y-auto">{planText}</pre>
             </div>
             <p className="text-sm text-gray-500">{planPostIds.length} post creati nel calendario</p>
+            {jobId && (
+              <div className="space-y-3 p-4 rounded-xl bg-[#7B61FF]/[0.04] border border-[#7B61FF]/10" data-testid="generation-progress">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium text-[#7B61FF]">{jobProgress.label || 'Avvio generazione...'}</span>
+                  <span className="text-gray-500 text-xs">{jobProgress.total > 0 ? `${jobProgress.current}/${jobProgress.total}` : '...'}</span>
+                </div>
+                <Progress value={jobProgress.total > 0 ? (jobProgress.current / jobProgress.total) * 100 : 5} className="h-2" />
+                <p className="text-xs text-gray-400">L'AI sta scrivendo i testi. Questo puo richiedere qualche minuto...</p>
+              </div>
+            )}
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(2)} className="gap-2"><ArrowLeft className="w-4 h-4" /> Indietro</Button>
+              <Button variant="outline" onClick={() => setStep(2)} className="gap-2" disabled={loading}><ArrowLeft className="w-4 h-4" /> Indietro</Button>
               <Button onClick={handleGenerateTexts} disabled={loading} className="gap-2" data-testid="workflow-generate-texts">
-                {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generazione testi...</> : <>Genera testi <Zap className="w-4 h-4" /></>}
+                {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generazione in corso...</> : <>Genera testi <Zap className="w-4 h-4" /></>}
               </Button>
             </div>
           </CardContent>

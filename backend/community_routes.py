@@ -65,13 +65,23 @@ def create_community_router(db, get_current_user, log_audit):
             post["like_count"] = await db.feed_likes.count_documents({"post_id": post["post_id"]})
             post["comment_count"] = await db.feed_comments.count_documents({"post_id": post["post_id"], "deleted": {"$ne": True}})
 
+        # Community members (volti della community)
+        members_raw = await db.users.find({"suspended": {"$ne": True}}, {"_id": 0, "password_hash": 0}).limit(20).to_list(20)
+        community_members = [{"name": m.get("name", ""), "picture": m.get("picture", ""), "role": m.get("role", "user")} for m in members_raw if m.get("name")]
+
+        # Journey summary
+        journey_progress = await db.journey_progress.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(100)
+        total_steps = len(journey_progress)
+        completed_steps = sum(1 for j in journey_progress if j.get("status") == "completed")
+
         return {
             "onboarded": onboarded,
             "profile": profile,
             "banners": banners,
             "upcoming_events": upcoming,
             "recent_posts": recent_posts,
-            "journey_summary": {"total_steps": 0, "completed_steps": 0},
+            "community_members": community_members,
+            "journey_summary": {"total_steps": total_steps, "completed_steps": completed_steps},
         }
 
     # ===== FEED =====

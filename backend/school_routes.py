@@ -346,4 +346,159 @@ REPOSITORY ARIADNE:
 
         return {"answer": answer, "sources_used": bool(repo_context or courses_info or materials_info)}
 
+    # ===== COURSE CATALOG =====
+    @router.get("/catalog")
+    async def list_catalog(request: Request):
+        user = await get_current_user(request)
+        courses = await db.course_catalog.find({}, {"_id": 0}).sort("order", 1).to_list(100)
+        if not courses:
+            # Seed initial catalog
+            seed = [
+                {"course_id": "cat_cc2026", "category": "ariadne", "title": "Core Coaching Program 2026", "description": "Percorso base di coaching creativo-esperienziale riconosciuto ICF.", "key_points": ["Fondamenti del coaching", "Approccio creativo-esperienziale", "Supervisione e pratica", "Certificazione ICF"], "order": 1},
+                {"course_id": "cat_adv", "category": "ariadne", "title": "Advanced Coaching Lab", "description": "Laboratorio avanzato per coach certificati. Tecniche avanzate e specializzazioni.", "key_points": ["Specializzazioni tematiche", "Supervisione avanzata", "Progettazione sessioni complesse"], "order": 2},
+                {"course_id": "cat_mentor", "category": "ariadne", "title": "Mentoring per Coach", "description": "Percorso di mentoring individuale e di gruppo per lo sviluppo della pratica.", "key_points": ["Sessioni individuali", "Gruppo di pari", "Feedback strutturato", "Ore ICF riconosciute"], "order": 3},
+                {"course_id": "cat_team", "category": "ariadne", "title": "Team Coaching", "description": "Modulo specialistico sul coaching di team e gruppi.", "key_points": ["Dinamiche di gruppo", "Facilitazione", "Co-creazione obiettivi team"], "order": 4},
+                {"course_id": "cat_biz1", "category": "business", "title": "Business del Coach", "description": "Come avviare e gestire una pratica di coaching indipendente.", "key_points": ["Posizionamento", "Pricing", "Marketing etico", "Aspetti legali e fiscali"], "order": 10},
+                {"course_id": "cat_biz2", "category": "business", "title": "Marketing per Coach", "description": "Strategie di comunicazione e acquisizione clienti per coach.", "key_points": ["Personal branding", "Social media", "Content strategy", "Networking"], "order": 11},
+                {"course_id": "cat_biz3", "category": "business", "title": "Digital Presence", "description": "Costruire e gestire la propria presenza digitale professionale.", "key_points": ["Sito web", "LinkedIn strategy", "Newsletter", "SEO per coach"], "order": 12},
+            ]
+            for c in seed:
+                await db.course_catalog.insert_one(c)
+            courses = await db.course_catalog.find({}, {"_id": 0}).sort("order", 1).to_list(100)
+        # Get user progress
+        progress = await db.user_course_progress.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(100)
+        progress_map = {p["course_id"]: p["status"] for p in progress}
+        for c in courses:
+            c["user_status"] = progress_map.get(c["course_id"], "not_started")
+        return courses
+
+    @router.post("/catalog/progress")
+    async def update_course_progress(request: Request):
+        user = await get_current_user(request)
+        body = await request.json()
+        course_id = body.get("course_id")
+        status = body.get("status", "not_started")
+        if status not in ("not_started", "in_progress", "completed"):
+            raise HTTPException(400, "Stato non valido")
+        existing = await db.user_course_progress.find_one({"user_id": user["user_id"], "course_id": course_id})
+        if existing:
+            await db.user_course_progress.update_one(
+                {"user_id": user["user_id"], "course_id": course_id},
+                {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+            )
+        else:
+            await db.user_course_progress.insert_one({
+                "user_id": user["user_id"], "course_id": course_id, "status": status,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            })
+        return {"ok": True}
+
+    # ===== USER DETAILS (Billing/Profile) =====
+    @router.get("/user-details")
+    async def get_user_details(request: Request):
+        user = await get_current_user(request)
+        details = await db.user_details.find_one({"user_id": user["user_id"]}, {"_id": 0})
+        return details or {"user_id": user["user_id"]}
+
+    @router.post("/user-details")
+    async def save_user_details(request: Request):
+        user = await get_current_user(request)
+        body = await request.json()
+        update_data = {
+            "user_id": user["user_id"],
+            "fiscal_code": body.get("fiscal_code", ""),
+            "vat_number": body.get("vat_number", ""),
+            "address": body.get("address", ""),
+            "city": body.get("city", ""),
+            "zip_code": body.get("zip_code", ""),
+            "province": body.get("province", ""),
+            "phone": body.get("phone", ""),
+            "billing_name": body.get("billing_name", ""),
+            "sdi_code": body.get("sdi_code", ""),
+            "pec": body.get("pec", ""),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.user_details.update_one(
+            {"user_id": user["user_id"]},
+            {"$set": update_data},
+            upsert=True
+        )
+        return {"ok": True}
+
+    # ===== ADMIN: User Details & Payment Management =====
+    @router.get("/admin/user-details/{user_id}")
+    async def admin_get_user_details(request: Request, user_id: str):
+        await require_admin_editor(request)
+        user_info = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+        if not user_info:
+            raise HTTPException(404, "Utente non trovato")
+        details = await db.user_details.find_one({"user_id": user_id}, {"_id": 0})
+        installments = await db.payment_installments.find({"user_id": user_id}, {"_id": 0}).sort("due_date", 1).to_list(50)
+        return {"user": user_info, "details": details or {}, "installments": installments}
+
+    @router.post("/admin/user-details/{user_id}")
+    async def admin_save_user_details(request: Request, user_id: str):
+        await require_admin_editor(request)
+        body = await request.json()
+        update_data = {k: v for k, v in body.items() if k != "user_id"}
+        update_data["user_id"] = user_id
+        update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+        await db.user_details.update_one({"user_id": user_id}, {"$set": update_data}, upsert=True)
+        return {"ok": True}
+
+    @router.get("/admin/installments")
+    async def admin_list_installments(request: Request):
+        await require_admin_editor(request)
+        installments = await db.payment_installments.find({}, {"_id": 0}).sort("due_date", 1).to_list(200)
+        # Enrich with user names
+        for inst in installments:
+            u = await db.users.find_one({"user_id": inst.get("user_id", "")}, {"_id": 0, "password_hash": 0})
+            inst["user_name"] = u.get("name", "") if u else ""
+            inst["user_email"] = u.get("email", "") if u else ""
+        return installments
+
+    @router.post("/admin/installments")
+    async def admin_create_installment(request: Request):
+        await require_admin_editor(request)
+        body = await request.json()
+        inst = {
+            "installment_id": f"inst_{uuid.uuid4().hex[:12]}",
+            "user_id": body.get("user_id"),
+            "description": body.get("description", ""),
+            "amount": body.get("amount", 0),
+            "due_date": body.get("due_date", ""),
+            "status": "pending",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.payment_installments.insert_one(inst)
+        inst.pop("_id", None)
+        return inst
+
+    @router.put("/admin/installments/{installment_id}")
+    async def admin_update_installment(request: Request, installment_id: str):
+        await require_admin_editor(request)
+        body = await request.json()
+        update = {k: v for k, v in body.items() if k in ("status", "amount", "due_date", "description", "notes")}
+        update["updated_at"] = datetime.now(timezone.utc).isoformat()
+        result = await db.payment_installments.update_one({"installment_id": installment_id}, {"$set": update})
+        if result.matched_count == 0:
+            raise HTTPException(404, "Rata non trovata")
+        return {"ok": True}
+
+    @router.delete("/admin/installments/{installment_id}")
+    async def admin_delete_installment(request: Request, installment_id: str):
+        await require_admin_editor(request)
+        result = await db.payment_installments.delete_one({"installment_id": installment_id})
+        if result.deleted_count == 0:
+            raise HTTPException(404, "Rata non trovata")
+        return {"ok": True}
+
+    # ===== USER: Payment alerts =====
+    @router.get("/my-payments")
+    async def my_payments(request: Request):
+        user = await get_current_user(request)
+        installments = await db.payment_installments.find({"user_id": user["user_id"]}, {"_id": 0}).sort("due_date", 1).to_list(50)
+        return installments
+
     return router

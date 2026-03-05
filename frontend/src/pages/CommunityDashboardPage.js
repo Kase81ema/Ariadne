@@ -190,7 +190,7 @@ export default function CommunityDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Recent feed */}
+        {/* Recent feed with images */}
         <Card className="border-gray-100">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -204,13 +204,20 @@ export default function CommunityDashboardPage() {
                 {data.recent_posts.map(p => (
                   <div key={p.post_id} className="p-3 rounded-lg bg-gray-50/50">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-500">
-                        {p.author?.name?.charAt(0)?.toUpperCase() || '?'}
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 overflow-hidden" style={{ background: `hsl(${(p.author?.name?.charCodeAt(0) || 0) * 7 % 360} 60% 90%)`, color: `hsl(${(p.author?.name?.charCodeAt(0) || 0) * 7 % 360} 60% 35%)` }}>
+                        {p.author?.picture ? (
+                          <img src={p.author.picture} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          p.author?.name?.charAt(0)?.toUpperCase() || '?'
+                        )}
                       </div>
                       <span className="text-xs font-medium text-gray-700">{p.author?.name}</span>
                       <span className="text-[10px] text-gray-400 ml-auto">{new Date(p.created_at).toLocaleDateString('it-IT')}</span>
                     </div>
                     <p className="text-xs text-gray-600 line-clamp-2">{p.content}</p>
+                    {p.image_url && (
+                      <img src={`${process.env.REACT_APP_BACKEND_URL}${p.image_url}`} alt="" className="rounded-md mt-2 max-h-24 w-full object-cover" />
+                    )}
                     <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-400">
                       <span className="flex items-center gap-0.5"><Heart className="w-3 h-3" /> {p.like_count}</span>
                       <span className="flex items-center gap-0.5"><MessageCircle className="w-3 h-3" /> {p.comment_count}</span>
@@ -224,6 +231,25 @@ export default function CommunityDashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Volti della community - human faces section */}
+      {data?.community_members?.length > 0 && (
+        <Card className="border-gray-100 mt-6">
+          <CardContent className="p-6">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-4">Volti della community</h2>
+            <div className="flex flex-wrap gap-3">
+              {data.community_members.map((m, i) => (
+                <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-full bg-gray-50 border border-gray-100" data-testid={`member-chip-${i}`}>
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold overflow-hidden" style={{ background: `hsl(${(m.name?.charCodeAt(0) || 0) * 7 % 360} 60% 90%)`, color: `hsl(${(m.name?.charCodeAt(0) || 0) * 7 % 360} 60% 35%)` }}>
+                    {m.picture ? <img src={m.picture} alt="" className="w-full h-full object-cover" /> : m.name?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                  <span className="text-xs font-medium text-gray-600">{m.name}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Journey progress placeholder */}
       <Card className="border-gray-100 mt-6">

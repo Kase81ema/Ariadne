@@ -114,13 +114,13 @@ export default function CohortsAdminPage() {
   return (
     <div data-testid="cohorts-admin-page">
       <div className="mb-10">
-        <h1 className="text-4xl font-semibold ariadne-heading mb-2">Cohort e materiali</h1>
+        <h1 className="text-4xl font-semibold ariadne-heading mb-2">Edizioni e materiali</h1>
         <p className="text-base text-gray-500">Gestisci percorsi, edizioni, partecipanti e materiali</p>
       </div>
 
       <div className="flex gap-2 mb-6">
         <Button variant={tab === 'programs' ? 'default' : 'outline'} size="sm" onClick={() => setTab('programs')} data-testid="tab-programs">Percorsi</Button>
-        <Button variant={tab === 'cohorts' ? 'default' : 'outline'} size="sm" onClick={() => setTab('cohorts')} data-testid="tab-cohorts">Edizioni (Cohort)</Button>
+        <Button variant={tab === 'cohorts' ? 'default' : 'outline'} size="sm" onClick={() => setTab('cohorts')} data-testid="tab-cohorts">Edizioni</Button>
       </div>
 
       {tab === 'programs' && (
@@ -207,7 +207,7 @@ export default function CohortsAdminPage() {
       {/* Members dialog */}
       <Dialog open={!!membersOpen} onOpenChange={(o) => { if (!o) setMembersOpen(null); }}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle className="ariadne-heading">Membri cohort</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="ariadne-heading">Membri edizione</DialogTitle></DialogHeader>
           <div className="space-y-3 mt-4">
             <div className="flex gap-2">
               <Select value={addUserId} onValueChange={setAddUserId}>
