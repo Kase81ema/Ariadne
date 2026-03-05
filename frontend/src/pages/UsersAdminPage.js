@@ -85,11 +85,12 @@ function UserDetailsDialog({ userId, open, onClose }) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" aria-describedby="user-details-desc">
         <DialogHeader>
           <DialogTitle className="ariadne-heading text-xl">
             {data?.user?.name || 'Dettagli utente'}
           </DialogTitle>
+          <p id="user-details-desc" className="text-sm text-gray-500">Dati fatturazione e gestione pagamenti</p>
         </DialogHeader>
 
         {loading ? (
