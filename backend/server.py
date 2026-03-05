@@ -19,6 +19,7 @@ db = client[os.environ['DB_NAME']]
 JWT_SECRET = os.environ.get('JWT_SECRET', 'ariadne-secret')
 UPLOAD_DIR = ROOT_DIR / 'uploads'
 UPLOAD_DIR.mkdir(exist_ok=True)
+ADMIN_EMAILS = [e.strip().lower() for e in os.environ.get('ADMIN_EMAILS', '').split(',') if e.strip()]
 
 app = FastAPI(title="Ariadne Editorial Studio API")
 api_router = APIRouter(prefix="/api")
@@ -171,6 +172,16 @@ async def get_current_user(request: Request) -> dict:
                     return user
     raise HTTPException(status_code=401, detail="Non autenticato")
 
+async def determine_role(email: str) -> str:
+    email_lower = email.lower()
+    if ADMIN_EMAILS and email_lower in ADMIN_EMAILS:
+        return "admin"
+    if not ADMIN_EMAILS:
+        user_count = await db.users.count_documents({})
+        if user_count == 0:
+            return "admin"
+    return "user"
+
 async def log_audit(user_id: str, action: str, details: dict = {}):
     await db.audit_logs.insert_one({
         "log_id": f"log_{uuid.uuid4().hex[:12]}",
@@ -186,16 +197,16 @@ async def register(data: UserRegister, response: Response):
     existing = await db.users.find_one({"email": data.email}, {"_id": 0})
     if existing:
         raise HTTPException(400, "Email gia registrata")
+    role = await determine_role(data.email)
     user_id = f"user_{uuid.uuid4().hex[:12]}"
     user = {
         "user_id": user_id, "email": data.email, "name": data.name,
-        "password_hash": hash_password(data.password), "role": "editor",
-        "picture": "", "auth_type": "jwt",
+        "password_hash": hash_password(data.password), "role": role,
+        "picture": "", "auth_type": "jwt", "suspended": False,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(user)
-    token = create_jwt(user_id, data.email, "editor")
-    # Also create session cookie
+    token = create_jwt(user_id, data.email, role)
     session_token = f"sess_{uuid.uuid4().hex}"
     await db.user_sessions.insert_one({
         "user_id": user_id, "session_token": session_token,
@@ -203,15 +214,18 @@ async def register(data: UserRegister, response: Response):
         "created_at": datetime.now(timezone.utc).isoformat()
     })
     response.set_cookie("session_token", session_token, httponly=True, secure=True, samesite="none", path="/", max_age=7*24*3600)
-    return {"token": token, "user": {"user_id": user_id, "email": data.email, "name": data.name, "role": "editor", "picture": ""}}
+    return {"token": token, "user": {"user_id": user_id, "email": data.email, "name": data.name, "role": role, "picture": ""}}
 
 @api_router.post("/auth/login")
 async def login(data: UserLogin, response: Response):
     user = await db.users.find_one({"email": data.email}, {"_id": 0})
     if not user or not verify_password(data.password, user.get("password_hash", "")):
         raise HTTPException(401, "Credenziali non valide")
-    token = create_jwt(user["user_id"], user["email"], user.get("role", "editor"))
-    # Also create a session cookie for consistent auth across navigations
+    # Ensure ADMIN_EMAILS users have admin role
+    if ADMIN_EMAILS and user["email"].lower() in ADMIN_EMAILS and user.get("role") != "admin":
+        await db.users.update_one({"user_id": user["user_id"]}, {"$set": {"role": "admin"}})
+        user["role"] = "admin"
+    token = create_jwt(user["user_id"], user["email"], user.get("role", "user"))
     session_token = f"sess_{uuid.uuid4().hex}"
     await db.user_sessions.insert_one({
         "user_id": user["user_id"], "session_token": session_token,
@@ -219,7 +233,7 @@ async def login(data: UserLogin, response: Response):
         "created_at": datetime.now(timezone.utc).isoformat()
     })
     response.set_cookie("session_token", session_token, httponly=True, secure=True, samesite="none", path="/", max_age=7*24*3600)
-    return {"token": token, "user": {"user_id": user["user_id"], "email": user["email"], "name": user["name"], "role": user.get("role", "editor"), "picture": user.get("picture", "")}}
+    return {"token": token, "user": {"user_id": user["user_id"], "email": user["email"], "name": user["name"], "role": user.get("role", "user"), "picture": user.get("picture", "")}}
 
 @api_router.post("/auth/session")
 async def exchange_session(request: Request, response: Response):
@@ -240,12 +254,17 @@ async def exchange_session(request: Request, response: Response):
     existing = await db.users.find_one({"email": email}, {"_id": 0})
     if existing:
         user_id = existing["user_id"]
-        await db.users.update_one({"email": email}, {"$set": {"name": name, "picture": picture}})
+        update_fields = {"name": name, "picture": picture}
+        # Ensure ADMIN_EMAILS users have admin role
+        if ADMIN_EMAILS and email.lower() in ADMIN_EMAILS and existing.get("role") != "admin":
+            update_fields["role"] = "admin"
+        await db.users.update_one({"email": email}, {"$set": update_fields})
     else:
         user_id = f"user_{uuid.uuid4().hex[:12]}"
+        role = await determine_role(email)
         await db.users.insert_one({
             "user_id": user_id, "email": email, "name": name, "picture": picture,
-            "role": "editor", "auth_type": "google", "password_hash": "",
+            "role": role, "auth_type": "google", "password_hash": "", "suspended": False,
             "created_at": datetime.now(timezone.utc).isoformat()
         })
     session_token = f"sess_{uuid.uuid4().hex}"
@@ -949,6 +968,24 @@ async def list_audit_logs(request: Request, limit: int = 50):
 # ===== SEED DATA =====
 async def seed_data():
     """Initialize database with sample data if empty."""
+    # Seed community banners independently
+    if await db.suggestion_banners.count_documents({}) == 0:
+        banners = [
+            {"banner_id": "ban_welcome", "title": "Benvenuto nella community Ariadne", "body": "Esplora i materiali, partecipa al feed e completa il tuo percorso personale.", "link": "/feed", "cta_text": "Vai al feed", "audience": "all", "enabled": True, "priority": 10, "created_at": datetime.now(timezone.utc).isoformat()},
+            {"banner_id": "ban_ccp", "title": "Core Coaching Program 2026", "body": "Il percorso di formazione in coaching creativo-esperienziale riconosciuto ICF. Scopri le prossime date.", "link": "/community/events", "cta_text": "Scopri", "audience": "interessato", "enabled": True, "priority": 5, "created_at": datetime.now(timezone.utc).isoformat()},
+            {"banner_id": "ban_alumni", "title": "Rete Alumni attiva", "body": "Resta connesso con la community, condividi esperienze e opportunita nel feed.", "link": "/feed", "cta_text": "Partecipa", "audience": "alumni", "enabled": True, "priority": 5, "created_at": datetime.now(timezone.utc).isoformat()},
+        ]
+        for b in banners:
+            await db.suggestion_banners.insert_one(b)
+        logger.info("Community banners seeded.")
+    # Seed admin user if not exists
+    admin_exists = await db.users.find_one({"email": "admin@ariadne.training"}, {"_id": 0})
+    if not admin_exists:
+        await db.users.insert_one({
+            "user_id": "user_admin", "email": "admin@ariadne.training", "name": "Admin Ariadne",
+            "password_hash": hash_password("admin123"), "role": "admin", "picture": "", "auth_type": "jwt",
+            "suspended": False, "created_at": datetime.now(timezone.utc).isoformat()
+        })
     if await db.social_profiles.count_documents({}) > 0:
         return
     logger.info("Seeding initial data...")
@@ -1005,18 +1042,26 @@ async def seed_data():
     ]
     for t in templates:
         await db.templates.insert_one(t)
-    # Create admin user
-    admin_exists = await db.users.find_one({"email": "admin@ariadne.training"}, {"_id": 0})
-    if not admin_exists:
-        await db.users.insert_one({
-            "user_id": "user_admin", "email": "admin@ariadne.training", "name": "Admin Ariadne",
-            "password_hash": hash_password("admin123"), "role": "admin", "picture": "", "auth_type": "jwt",
-            "created_at": datetime.now(timezone.utc).isoformat()
-        })
     logger.info("Seed data initialized.")
 
 # ===== APP SETUP =====
+from fastapi.responses import FileResponse
+from community_routes import create_community_router
+from admin_routes import create_admin_router
+
+community_router = create_community_router(db, get_current_user, log_audit)
+admin_router = create_admin_router(db, get_current_user, log_audit)
+
+@api_router.get("/uploads/{filename}")
+async def serve_upload(filename: str):
+    filepath = UPLOAD_DIR / filename
+    if not filepath.exists():
+        raise HTTPException(404, "File non trovato")
+    return FileResponse(filepath)
+
 app.include_router(api_router)
+app.include_router(community_router)
+app.include_router(admin_router)
 app.add_middleware(CORSMiddleware, allow_credentials=True, allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','), allow_methods=["*"], allow_headers=["*"])
 
 @app.on_event("startup")

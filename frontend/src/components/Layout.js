@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -8,12 +8,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 import {
   LayoutDashboard, Users, GraduationCap, FileText, Settings2,
   GitBranch, CheckCircle2, Download, FolderOpen, LogOut, Zap, Menu, X,
-  PlayCircle, Bot, AlertCircle, Minus
+  PlayCircle, Bot, AlertCircle, MessageSquare, Heart, Map, BookOpen,
+  Mail, FileOutput, Megaphone, HelpCircle, CalendarDays, UserCircle
 } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { setupAPI } from '../lib/api';
 
-const navGroups = [
+// Studio comunicazione nav groups
+const studioNavGroups = [
   {
     title: 'Avvio',
     items: [
@@ -47,6 +49,33 @@ const navGroups = [
   },
 ];
 
+// Scuola e community nav groups
+const schoolNavGroups = [
+  {
+    title: 'Community',
+    items: [
+      { to: '/community', icon: LayoutDashboard, label: 'Dashboard' },
+      { to: '/feed', icon: MessageSquare, label: 'Feed' },
+      { to: '/my-journey', icon: Map, label: 'Il mio percorso' },
+      { to: '/materials', icon: BookOpen, label: 'Materiali' },
+      { to: '/community/events', icon: CalendarDays, label: 'Eventi e annunci' },
+      { to: '/assistant', icon: HelpCircle, label: 'Assistente' },
+    ],
+  },
+  {
+    title: 'Gestione',
+    adminOnly: true,
+    items: [
+      { to: '/inbox', icon: Mail, label: 'Inbox' },
+      { to: '/routing-rules', icon: GitBranch, label: 'Regole smistamento' },
+      { to: '/email-templates', icon: FileOutput, label: 'Template email' },
+      { to: '/users-admin', icon: Users, label: 'Utenti' },
+      { to: '/cohorts-admin', icon: GraduationCap, label: 'Cohort e materiali' },
+      { to: '/banners-admin', icon: Megaphone, label: 'Banner consigli' },
+    ],
+  },
+];
+
 function SetupBadge({ status }) {
   if (status === 'ok') return <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] ml-auto flex-shrink-0" />;
   if (status === 'warn') return <span className="w-1.5 h-1.5 rounded-full bg-[#F5A623] ml-auto flex-shrink-0" />;
@@ -63,15 +92,43 @@ function getSetupStatus(key, readiness) {
   return null;
 }
 
+// Paths belonging to each area
+const schoolPaths = ['/community', '/feed', '/my-journey', '/materials', '/community/events', '/assistant', '/inbox', '/routing-rules', '/email-templates', '/users-admin', '/cohorts-admin', '/banners-admin'];
+
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [readiness, setReadiness] = useState(null);
 
+  const canSeeStudio = user?.role === 'admin' || user?.role === 'editor';
+  const isOnSchoolPath = schoolPaths.some(p => location.pathname.startsWith(p));
+
+  const [area, setArea] = useState(() => {
+    if (!canSeeStudio) return 'school';
+    if (isOnSchoolPath) return 'school';
+    return localStorage.getItem('ariadne_area') || 'studio';
+  });
+
+  // Sync area with current path
+  useEffect(() => {
+    if (isOnSchoolPath && area !== 'school') setArea('school');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+  const switchArea = (newArea) => {
+    setArea(newArea);
+    localStorage.setItem('ariadne_area', newArea);
+    if (newArea === 'school') navigate('/community');
+    else navigate('/dashboard');
+  };
+
   const fetchReadiness = useCallback(() => {
-    setupAPI.readiness().then(r => setReadiness(r.data)).catch(() => {});
-  }, []);
+    if (canSeeStudio) {
+      setupAPI.readiness().then(r => setReadiness(r.data)).catch(() => {});
+    }
+  }, [canSeeStudio]);
 
   useEffect(() => {
     fetchReadiness();
@@ -84,6 +141,9 @@ export default function Layout({ children }) {
     navigate('/login');
   };
 
+  const currentNavGroups = area === 'school' ? schoolNavGroups : studioNavGroups;
+  const isAdminOrEditor = user?.role === 'admin' || user?.role === 'editor';
+
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       <div className="p-6 pb-4">
@@ -93,9 +153,11 @@ export default function Layout({ children }) {
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-semibold ariadne-heading" data-testid="app-title">Ariadne</h1>
-            <p className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Editorial Studio</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">
+              {area === 'school' ? 'Scuola & Community' : 'Editorial Studio'}
+            </p>
           </div>
-          {readiness && (
+          {area === 'studio' && readiness && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -114,10 +176,39 @@ export default function Layout({ children }) {
           )}
         </div>
       </div>
+
+      {/* Area selector - only show if user can see both */}
+      {canSeeStudio && (
+        <div className="px-4 pb-3">
+          <div className="flex gap-1 p-1 bg-gray-100 rounded-lg" data-testid="area-selector">
+            <button
+              onClick={() => switchArea('studio')}
+              className={`flex-1 text-[11px] font-medium py-1.5 rounded-md transition-all ${
+                area === 'studio' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+              data-testid="area-studio-btn"
+            >
+              Studio
+            </button>
+            <button
+              onClick={() => switchArea('school')}
+              className={`flex-1 text-[11px] font-medium py-1.5 rounded-md transition-all ${
+                area === 'school' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+              data-testid="area-school-btn"
+            >
+              Scuola
+            </button>
+          </div>
+        </div>
+      )}
+
       <Separator />
       <ScrollArea className="flex-1 py-2">
         <nav className="px-3">
-          {navGroups.map((group) => (
+          {currentNavGroups
+            .filter(group => !group.adminOnly || isAdminOrEditor)
+            .map((group) => (
             <div key={group.title} className="mb-1">
               <p className="px-4 pt-4 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-gray-300">{group.title}</p>
               <div className="space-y-0.5">
@@ -127,7 +218,7 @@ export default function Layout({ children }) {
                     to={to}
                     onClick={() => setMobileOpen(false)}
                     className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-                    data-testid={`nav-${to.replace('/', '')}`}
+                    data-testid={`nav-${to.replace(/\//g, '-').replace(/^-/, '')}`}
                   >
                     <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.75} />
                     <span className="flex-1 truncate">{label}</span>

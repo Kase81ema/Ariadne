@@ -130,4 +130,37 @@ export const auditAPI = {
   logs: (limit = 50) => api.get('/audit-logs', { params: { limit } }),
 };
 
+// Community
+export const communityAPI = {
+  dashboard: () => api.get('/community/dashboard'),
+  profile: () => api.get('/community/profile'),
+  saveOnboarding: (data) => api.post('/community/onboarding', data),
+  listFeed: (skip = 0, limit = 20) => api.get('/community/feed', { params: { skip, limit } }),
+  createPost: (data) => api.post('/community/feed', data),
+  deletePost: (postId) => api.delete(`/community/feed/${postId}`),
+  toggleLike: (postId) => api.post(`/community/feed/${postId}/like`),
+  getComments: (postId) => api.get(`/community/feed/${postId}/comments`),
+  addComment: (postId, content) => api.post(`/community/feed/${postId}/comments`, { content }),
+  deleteComment: (commentId) => api.delete(`/community/feed/comments/${commentId}`),
+  uploadImage: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/community/feed/upload-image', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+  listBanners: () => api.get('/community/banners'),
+  listAllBanners: () => api.get('/community/banners/all'),
+  createBanner: (data) => api.post('/community/banners', data),
+  updateBanner: (id, data) => api.put(`/community/banners/${id}`, data),
+  deleteBanner: (id) => api.delete(`/community/banners/${id}`),
+  listEvents: () => api.get('/community/events'),
+};
+
+// Admin
+export const adminAPI = {
+  listUsers: () => api.get('/admin/users'),
+  changeRole: (userId, role) => api.put(`/admin/users/${userId}/role`, { role }),
+  toggleSuspend: (userId) => api.put(`/admin/users/${userId}/suspend`),
+  removeContent: (userId) => api.delete(`/admin/users/${userId}/content`),
+};
+
 export default api;

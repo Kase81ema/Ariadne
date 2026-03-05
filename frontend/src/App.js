@@ -16,8 +16,14 @@ import ExportPage from "./pages/ExportPage";
 import RepositoryPage from "./pages/RepositoryPage";
 import AgentsPage from "./pages/AgentsPage";
 import StartCampaignPage from "./pages/StartCampaignPage";
+import CommunityDashboardPage from "./pages/CommunityDashboardPage";
+import FeedPage from "./pages/FeedPage";
+import UsersAdminPage from "./pages/UsersAdminPage";
+import BannersAdminPage from "./pages/BannersAdminPage";
+import CommunityEventsPage from "./pages/CommunityEventsPage";
+import PlaceholderPage from "./pages/PlaceholderPage";
 
-function ProtectedRoute({ children }) {
+function ProtectedRoute({ children, requiredRole }) {
   const { user, loading } = useAuth();
   if (loading) {
     return (
@@ -30,7 +36,26 @@ function ProtectedRoute({ children }) {
     );
   }
   if (!user) return <Navigate to="/login" replace />;
+  if (requiredRole && user.role !== requiredRole && user.role !== 'admin') {
+    return <Navigate to="/community" replace />;
+  }
   return <Layout>{children}</Layout>;
+}
+
+function AdminEditorRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== 'admin' && user.role !== 'editor') return <Navigate to="/community" replace />;
+  return <Layout>{children}</Layout>;
+}
+
+function DefaultRedirect() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role === 'user') return <Navigate to="/community" replace />;
+  return <Navigate to="/dashboard" replace />;
 }
 
 function AppRouter() {
@@ -41,19 +66,38 @@ function AppRouter() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-      <Route path="/profiles" element={<ProtectedRoute><ProfilesPage /></ProtectedRoute>} />
-      <Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
-      <Route path="/editorial" element={<ProtectedRoute><EditorialPage /></ProtectedRoute>} />
-      <Route path="/rules" element={<ProtectedRoute><RulesPage /></ProtectedRoute>} />
-      <Route path="/workflow" element={<ProtectedRoute><WorkflowPage /></ProtectedRoute>} />
-      <Route path="/approvals" element={<ProtectedRoute><ApprovalsPage /></ProtectedRoute>} />
-      <Route path="/export" element={<ProtectedRoute><ExportPage /></ProtectedRoute>} />
-      <Route path="/repository" element={<ProtectedRoute><RepositoryPage /></ProtectedRoute>} />
-      <Route path="/agents" element={<ProtectedRoute><AgentsPage /></ProtectedRoute>} />
-      <Route path="/start" element={<ProtectedRoute><StartCampaignPage /></ProtectedRoute>} />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+
+      {/* Studio comunicazione (admin/editor) */}
+      <Route path="/dashboard" element={<AdminEditorRoute><DashboardPage /></AdminEditorRoute>} />
+      <Route path="/profiles" element={<AdminEditorRoute><ProfilesPage /></AdminEditorRoute>} />
+      <Route path="/courses" element={<AdminEditorRoute><CoursesPage /></AdminEditorRoute>} />
+      <Route path="/editorial" element={<AdminEditorRoute><EditorialPage /></AdminEditorRoute>} />
+      <Route path="/rules" element={<AdminEditorRoute><RulesPage /></AdminEditorRoute>} />
+      <Route path="/workflow" element={<AdminEditorRoute><WorkflowPage /></AdminEditorRoute>} />
+      <Route path="/approvals" element={<AdminEditorRoute><ApprovalsPage /></AdminEditorRoute>} />
+      <Route path="/export" element={<AdminEditorRoute><ExportPage /></AdminEditorRoute>} />
+      <Route path="/repository" element={<AdminEditorRoute><RepositoryPage /></AdminEditorRoute>} />
+      <Route path="/agents" element={<AdminEditorRoute><AgentsPage /></AdminEditorRoute>} />
+      <Route path="/start" element={<AdminEditorRoute><StartCampaignPage /></AdminEditorRoute>} />
+
+      {/* Scuola e community (tutti i ruoli) */}
+      <Route path="/community" element={<ProtectedRoute><CommunityDashboardPage /></ProtectedRoute>} />
+      <Route path="/feed" element={<ProtectedRoute><FeedPage /></ProtectedRoute>} />
+      <Route path="/community/events" element={<ProtectedRoute><CommunityEventsPage /></ProtectedRoute>} />
+      <Route path="/my-journey" element={<ProtectedRoute><PlaceholderPage title="Il mio percorso" description="Formazione, credenziale e business" backTo="/community" /></ProtectedRoute>} />
+      <Route path="/materials" element={<ProtectedRoute><PlaceholderPage title="Materiali" description="Materiali per percorso ed edizione" backTo="/community" /></ProtectedRoute>} />
+      <Route path="/assistant" element={<ProtectedRoute><PlaceholderPage title="Assistente" description="Chiedi informazioni su corsi e servizi" backTo="/community" /></ProtectedRoute>} />
+
+      {/* Admin/Editor only - Scuola e community management */}
+      <Route path="/inbox" element={<AdminEditorRoute><PlaceholderPage title="Inbox" description="Gestione richieste in ingresso" backTo="/community" /></AdminEditorRoute>} />
+      <Route path="/routing-rules" element={<AdminEditorRoute><PlaceholderPage title="Regole smistamento" description="Configurazione regole di assegnazione automatica" backTo="/community" /></AdminEditorRoute>} />
+      <Route path="/email-templates" element={<AdminEditorRoute><PlaceholderPage title="Template email" description="Modelli per risposte rapide" backTo="/community" /></AdminEditorRoute>} />
+      <Route path="/users-admin" element={<AdminEditorRoute><UsersAdminPage /></AdminEditorRoute>} />
+      <Route path="/cohorts-admin" element={<AdminEditorRoute><PlaceholderPage title="Cohort e materiali" description="Gestione percorsi, edizioni e materiali" backTo="/community" /></AdminEditorRoute>} />
+      <Route path="/banners-admin" element={<AdminEditorRoute><BannersAdminPage /></AdminEditorRoute>} />
+
+      <Route path="/" element={<DefaultRedirect />} />
+      <Route path="*" element={<DefaultRedirect />} />
     </Routes>
   );
 }
