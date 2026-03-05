@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
-import os, uuid, logging, json, csv, io, hashlib, aiofiles
+import os, uuid, logging, json, csv, io, hashlib, aiofiles, asyncio
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
@@ -29,8 +29,8 @@ logging.basicConfig(level=logging.INFO)
 # ===== PYDANTIC MODELS =====
 class UserRegister(BaseModel):
     email: str
-    password: str
-    name: str
+    password: Optional[str] = None
+    name: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: str
@@ -199,9 +199,16 @@ async def register(data: UserRegister, response: Response):
         raise HTTPException(400, "Email gia registrata")
     role = await determine_role(data.email)
     user_id = f"user_{uuid.uuid4().hex[:12]}"
+    name = data.name or data.email.split("@")[0].replace(".", " ").title()
+    generated_password = None
+    if data.password:
+        password_hash = hash_password(data.password)
+    else:
+        generated_password = uuid.uuid4().hex[:10]
+        password_hash = hash_password(generated_password)
     user = {
-        "user_id": user_id, "email": data.email, "name": data.name,
-        "password_hash": hash_password(data.password), "role": role,
+        "user_id": user_id, "email": data.email, "name": name,
+        "password_hash": password_hash, "role": role,
         "picture": "", "auth_type": "jwt", "suspended": False,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
@@ -214,7 +221,10 @@ async def register(data: UserRegister, response: Response):
         "created_at": datetime.now(timezone.utc).isoformat()
     })
     response.set_cookie("session_token", session_token, httponly=True, secure=True, samesite="none", path="/", max_age=7*24*3600)
-    return {"token": token, "user": {"user_id": user_id, "email": data.email, "name": data.name, "role": role, "picture": ""}}
+    result = {"token": token, "user": {"user_id": user_id, "email": data.email, "name": name, "role": role, "picture": ""}}
+    if generated_password:
+        result["generated_password"] = generated_password
+    return result
 
 @api_router.post("/auth/login")
 async def login(data: UserLogin, response: Response):
@@ -794,6 +804,105 @@ async def gen_texts(data: GenerateTextsRequest, request: Request):
     await db.campaigns.update_one({"campaign_id": data.campaign_id}, {"$set": {"status": "review"}})
     await log_audit(user["user_id"], "generate_texts", {"campaign_id": data.campaign_id, "count": len(results)})
     return {"generated": results}
+
+# ===== ASYNC JOB SYSTEM =====
+_background_jobs = {}
+
+async def _run_text_generation_job(job_id: str, campaign_id: str, post_ids: list, active_agents: list, user_id: str):
+    """Background task for text generation with progress tracking."""
+    from agents import generate_post_text
+    try:
+        campaign = await db.campaigns.find_one({"campaign_id": campaign_id}, {"_id": 0})
+        if not campaign:
+            _background_jobs[job_id]["status"] = "error"
+            _background_jobs[job_id]["error"] = "Campagna non trovata"
+            return
+        course = None
+        if campaign.get("course_id"):
+            course = await db.courses_events.find_one({"course_id": campaign["course_id"]}, {"_id": 0})
+        repo_ctx = await get_repo_context_str()
+        if not post_ids:
+            posts = await db.posts.find({"campaign_id": campaign_id, "status": "draft"}, {"_id": 0}).to_list(50)
+            post_ids = [p["post_id"] for p in posts]
+        total = len(post_ids)
+        _background_jobs[job_id]["total"] = total
+        results = []
+        for idx, pid in enumerate(post_ids):
+            _background_jobs[job_id]["current"] = idx + 1
+            _background_jobs[job_id]["current_label"] = f"Post {idx + 1}/{total}"
+            post = await db.posts.find_one({"post_id": pid}, {"_id": 0})
+            if not post or post.get("locked"):
+                continue
+            profile = await db.social_profiles.find_one({"profile_id": post.get("profile_id", "")}, {"_id": 0})
+            context = {
+                "campaign_title": campaign.get("title", ""),
+                "campaign_type": campaign.get("type", ""),
+                "course_title": course.get("title", "") if course else "",
+                "course_description": course.get("description", "") if course else "",
+                "course_dates": str(course.get("dates", [])) if course else "",
+                "trainers": course.get("trainers", []) if course else [],
+                "location": course.get("location", "") if course else "",
+                "price": course.get("price", "") if course else "",
+                "link": course.get("link", "") if course else "",
+                "profile_name": profile.get("name", "") if profile else "",
+                "style_guide": profile.get("style_guide", "") if profile else "",
+            }
+            result = await generate_post_text(
+                platform=post.get("platform", "linkedin_company"),
+                intention=post.get("intention", "annuncio"),
+                context=context,
+                active_agents=active_agents,
+                repository_context=repo_ctx
+            )
+            await db.posts.update_one({"post_id": pid}, {"$set": {
+                "content": result["content"], "content_short": result["content_short"],
+                "hashtags": result["hashtags"], "quality_issues": result["quality_issues"],
+                "status": "generated"
+            }})
+            results.append({"post_id": pid, "agents_used": result["agents_used"]})
+        await db.campaigns.update_one({"campaign_id": campaign_id}, {"$set": {"status": "review"}})
+        await log_audit(user_id, "generate_texts", {"campaign_id": campaign_id, "count": len(results)})
+        _background_jobs[job_id]["status"] = "completed"
+        _background_jobs[job_id]["result"] = {"generated": results}
+    except Exception as e:
+        logger.error(f"Background job {job_id} failed: {e}")
+        _background_jobs[job_id]["status"] = "error"
+        _background_jobs[job_id]["error"] = str(e)
+
+@api_router.post("/generate/texts-job")
+async def start_texts_job(data: GenerateTextsRequest, request: Request):
+    user = await get_current_user(request)
+    job_id = f"job_{uuid.uuid4().hex[:12]}"
+    _background_jobs[job_id] = {
+        "job_id": job_id,
+        "status": "running",
+        "total": 0,
+        "current": 0,
+        "current_label": "Avvio...",
+        "error": None,
+        "result": None,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    asyncio.create_task(_run_text_generation_job(
+        job_id, data.campaign_id, data.post_ids, data.active_agents, user["user_id"]
+    ))
+    return {"job_id": job_id}
+
+@api_router.get("/generate/texts-job/{job_id}")
+async def get_texts_job_status(job_id: str, request: Request):
+    await get_current_user(request)
+    job = _background_jobs.get(job_id)
+    if not job:
+        raise HTTPException(404, "Job non trovato")
+    return {
+        "job_id": job["job_id"],
+        "status": job["status"],
+        "total": job["total"],
+        "current": job["current"],
+        "current_label": job["current_label"],
+        "error": job["error"],
+        "result": job["result"],
+    }
 
 @api_router.post("/posts/{post_id}/regenerate")
 async def regenerate_post(post_id: str, data: RegeneratePostRequest, request: Request):

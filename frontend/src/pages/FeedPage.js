@@ -159,6 +159,10 @@ export default function FeedPage() {
   const [newContent, setNewContent] = useState('');
   const [posting, setPosting] = useState(false);
   const [expandedComments, setExpandedComments] = useState({});
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef(null);
 
   const load = () => {
     communityAPI.listFeed().then(r => { setPosts(r.data); setLoading(false); }).catch(() => setLoading(false));
@@ -166,18 +170,44 @@ export default function FeedPage() {
 
   useEffect(() => { load(); }, []);
 
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Immagine troppo grande (max 5MB)');
+      return;
+    }
+    setSelectedImage(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const clearImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handlePost = async () => {
-    if (!newContent.trim()) return;
+    if (!newContent.trim() && !selectedImage) return;
     setPosting(true);
     try {
-      const res = await communityAPI.createPost({ content: newContent.trim() });
+      let imageUrl = '';
+      if (selectedImage) {
+        setUploadingImage(true);
+        const uploadRes = await communityAPI.uploadImage(selectedImage);
+        imageUrl = uploadRes.data.url;
+        setUploadingImage(false);
+      }
+      const res = await communityAPI.createPost({ content: newContent.trim(), image_url: imageUrl });
       setPosts(prev => [res.data, ...prev]);
       setNewContent('');
+      clearImage();
       toast.success('Post pubblicato');
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Errore');
     } finally {
       setPosting(false);
+      setUploadingImage(false);
     }
   };
 
@@ -223,10 +253,41 @@ export default function FeedPage() {
             className="mb-3 text-sm resize-none"
             data-testid="new-post-input"
           />
-          <div className="flex items-center justify-end">
-            <Button onClick={handlePost} disabled={posting || !newContent.trim()} className="gap-2" data-testid="publish-post-btn">
+          {imagePreview && (
+            <div className="relative mb-3 inline-block">
+              <img src={imagePreview} alt="Anteprima" className="rounded-lg max-h-48 object-cover" />
+              <button
+                onClick={clearImage}
+                className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-black/80"
+                data-testid="remove-image-btn"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                onChange={handleImageSelect}
+                className="hidden"
+                data-testid="image-file-input"
+              />
+              <Button
+                variant="ghost" size="sm"
+                className="gap-1.5 text-gray-400 hover:text-gray-600"
+                onClick={() => fileInputRef.current?.click()}
+                data-testid="add-image-btn"
+              >
+                <Image className="w-4 h-4" />
+                <span className="text-xs">Immagine</span>
+              </Button>
+            </div>
+            <Button onClick={handlePost} disabled={posting || (!newContent.trim() && !selectedImage)} className="gap-2" data-testid="publish-post-btn">
               {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              Pubblica
+              {uploadingImage ? 'Caricamento...' : 'Pubblica'}
             </Button>
           </div>
         </CardContent>

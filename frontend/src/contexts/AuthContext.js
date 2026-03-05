@@ -36,7 +36,10 @@ export function AuthProvider({ children }) {
   };
 
   const registerJWT = async (email, password, name) => {
-    const res = await authAPI.register({ email, password, name });
+    const payload = { email };
+    if (password) payload.password = password;
+    if (name) payload.name = name;
+    const res = await authAPI.register(payload);
     localStorage.setItem('ariadne_token', res.data.token);
     setUser(res.data.user);
     return res.data;
