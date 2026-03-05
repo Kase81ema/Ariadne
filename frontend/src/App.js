@@ -29,6 +29,7 @@ import MaterialsPage from "./pages/MaterialsPage";
 import MyJourneyPage from "./pages/MyJourneyPage";
 import AssistantPage from "./pages/AssistantPage";
 import WelcomePage from "./pages/WelcomePage";
+import CourseDetailPage from "./pages/CourseDetailPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 
 function ProtectedRoute({ children, requiredRole }) {
@@ -91,6 +92,7 @@ function AppRouter() {
       {/* Scuola e community (tutti i ruoli) */}
       <Route path="/community" element={<ProtectedRoute><CommunityDashboardPage /></ProtectedRoute>} />
       <Route path="/welcome" element={<ProtectedRoute><WelcomePage /></ProtectedRoute>} />
+      <Route path="/course/:courseId" element={<ProtectedRoute><CourseDetailPage /></ProtectedRoute>} />
       <Route path="/feed" element={<ProtectedRoute><FeedPage /></ProtectedRoute>} />
       <Route path="/community/events" element={<ProtectedRoute><CommunityEventsPage /></ProtectedRoute>} />
       <Route path="/my-journey" element={<ProtectedRoute><MyJourneyPage /></ProtectedRoute>} />

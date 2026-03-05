@@ -48,26 +48,26 @@
     --ariadne-accent-2: 82 75% 48%;
   }
 
-  /* ===== STUDIO THEME (Blue-Purple, refined dark) ===== */
+  /* ===== STUDIO THEME (Blue-Purple, light-dark) ===== */
   [data-area="studio"] {
-    --background: 225 20% 12%;
-    --foreground: 210 25% 93%;
-    --card: 225 18% 16%;
-    --card-foreground: 210 25% 93%;
-    --popover: 225 18% 18%;
-    --popover-foreground: 210 25% 93%;
+    --background: 225 15% 18%;
+    --foreground: 0 0% 98%;
+    --card: 225 12% 22%;
+    --card-foreground: 0 0% 97%;
+    --popover: 225 12% 24%;
+    --popover-foreground: 0 0% 97%;
     --primary: 195 100% 55%;
     --primary-foreground: 225 20% 8%;
-    --secondary: 225 16% 20%;
-    --secondary-foreground: 210 20% 85%;
-    --muted: 225 14% 18%;
-    --muted-foreground: 210 15% 82%;
-    --accent: 225 14% 20%;
-    --accent-foreground: 210 25% 93%;
+    --secondary: 225 12% 26%;
+    --secondary-foreground: 210 15% 90%;
+    --muted: 225 10% 24%;
+    --muted-foreground: 210 10% 88%;
+    --accent: 225 10% 26%;
+    --accent-foreground: 0 0% 97%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 225 14% 24%;
-    --input: 225 14% 24%;
+    --border: 225 10% 30%;
+    --input: 225 10% 30%;
     --ring: 195 100% 55%;
     --ariadne-accent: 195 100% 55%;
     --ariadne-accent-2: 278 60% 55%;
