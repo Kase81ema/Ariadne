@@ -6,94 +6,77 @@ Console operativa per Ariadne Training: gestione comunicazione social (calendari
 ## Architecture
 - **Frontend**: React + Tailwind + Shadcn/UI
 - **Backend**: FastAPI (Python) - modulare:
-  - server.py (core, auth, studio comunicazione, async job system)
-  - community_routes.py (feed, banners, onboarding, dashboard, image upload)
+  - server.py (core, auth, studio comunicazione, async job system, post image upload)
+  - community_routes.py (feed, banners, onboarding, dashboard, image upload, seed samples)
   - admin_routes.py (gestione utenti)
   - inbox_routes.py (inbox, regole, template, bozze)
   - school_routes.py (programmi, edizioni, materiali, catalogo corsi, percorso, assistente, user details, pagamenti)
-- **Database**: MongoDB (20+ collections)
+- **Database**: MongoDB (25+ collections)
 - **AI**: Claude Sonnet 4.5 via emergentintegrations (ATTIVO per bozze email, assistente, generazione testi post)
 - **Auth**: JWT + Google OAuth (Emergent Auth)
 
-## Aree applicazione
-1. **Studio comunicazione** (admin/editor): tema scuro, calendario, workflow, export
-2. **Scuola e community** (tutti + admin/editor gestione): tema chiaro, feed, percorso corsi, materiali, inbox, edizioni
-
-## Roles
-- admin: pieno accesso, modera feed, approva bozze, gestisce utenti/edizioni, billing
-- editor: studio + gestione community (no approvazione bozze, no moderazione)
-- user: solo community (feed, percorso, materiali propri, assistente)
+## Tema colori dal logo Ariadne
+- Arancione: #FF9933, Giallo-verde: #99CC33, Rosa: #FF3366, Azzurro: #33CCFF, Viola: #9933CC
+- **Studio**: dark theme con azzurro (#33CCFF) e viola (#9933CC) come accenti
+- **Scuola**: light theme con giallo-verde (#99CC33) come accento primario
 
 ## What's Been Implemented
 
-### Fase 0 - Studio comunicazione
-Auth, Dashboard, Profili Social, Corsi/Eventi, Workflow, Approvazioni, Export, Repository, Regole, Agenti, Setup vs Produzione UX.
+### Fase 0-3 (Precedenti)
+Studio comunicazione, Community core, School Operations, Community avanzata - tutti completati e testati.
 
-### Fase 1 - Community Core (05/03/2026)
-Sistema ruoli (ADMIN_EMAILS), selettore area, community dashboard + onboarding, feed (post/commenti/like/moderazione), gestione utenti, banner consigli.
+### Fase 4 - UX Overhaul Batch 1 (05/03/2026) - COMPLETATO
+- Tema scuro Studio / chiaro Scuola, sidebar collassabile, etichette italiane, logo Ariadne, registrazione semplificata
 
-### Fase 2 - School Operations (05/03/2026)
-Inbox, Regole smistamento, Template email, Bozze AI, Workflow approvazione, Note di attenzione.
+### Fase 5 - UX Overhaul Batch 2 (05/03/2026) - COMPLETATO
+- Generazione testi asincrona, upload immagini feed, dashboard community umanizzata
 
-### Fase 3 - Community Avanzata (05/03/2026)
-Programmi e Edizioni, Materiali, Percorso personale, Assistente AI.
+### Fase 6 - UX Overhaul Batch 3 (05/03/2026) - COMPLETATO
+- Catalogo corsi semplificato, gestione utenti/fatturazione, rate pagamenti, terminologia Edizioni
 
-### Fase 4 - UX Overhaul Batch 1 (05/03/2026) - COMPLETATO E TESTATO
-- **Tema scuro Studio**: variabili CSS sotto `[data-area="studio"]`, override automatici per classi Tailwind
-- **Tema chiaro Scuola**: tema default per area school
-- **Sidebar collassabile**: gruppi con stato persistito in localStorage, chevron animati
-- **Etichette italiane**: tutte le label sidebar tradotte
-- **Logo Ariadne**: integrato in sidebar e login page con fallback
-- **Registrazione semplificata**: solo email obbligatoria, sezione espandibile per nome/password opzionali
-- **Password auto-generata**: backend genera password se non fornita, mostrata all'utente
+### Fase 7 - Grande Overhaul UX (05/03/2026) - COMPLETATO E TESTATO
+**SCUOLA:**
+- Feed rinominato "Bacheca della Community" con layout stile LinkedIn
+- 5 post di esempio da trainer (Maria Rossi, Luca Bianchi, Giulia Verdi, Marco Ferrari, Elena Conti)
+- Upload immagine prominente nel composer ("Aggiungi foto")
+- Banner consigli con spazio immagine + 3 banner di esempio
+- "Il mio percorso" spostato in alto nella dashboard sotto il benvenuto
+- Sezione avanzamento credenziali ICF (ACC/PCC/MCC) nel percorso
+- Pagina Benvenuto (/welcome) per utenti interessati: storia scuola, trainer, approccio, bibliografia, corsi in partenza, video placeholder, banner sconto, CTA Calendly, foto edizioni precedenti
+- Menu riordinato: Feed dopo Il mio percorso
+- "Assistente" rinominato "Ariadne AI"
+- Gruppo RISORSE con accesso a Corsi ed eventi e Repository anche da Scuola
 
-### Fase 5 - UX Overhaul Batch 2 (05/03/2026) - COMPLETATO E TESTATO
-- **Generazione testi asincrona**: job in background via `asyncio.create_task`, endpoint start/poll, progress bar nel frontend
-- **Upload immagini feed**: selezione file, preview, upload e visualizzazione nel feed
-- **Dashboard community umanizzata**: sezione "Volti della community" con avatar colorati, immagini dal feed nei post recenti
-
-### Fase 6 - UX Overhaul Batch 3 (05/03/2026) - COMPLETATO E TESTATO
-- **"Il mio percorso" semplificato**: catalogo corsi con 2 tab (Ariadne/business), 7 corsi seed, status toggle per utente
-- **Gestione utenti e fatturazione**: dialog dettagli con campi fatturazione (CF, P.IVA, SDI, PEC, indirizzo), gestione rate pagamenti
-- **Rate e pagamenti**: CRUD completo, alert scadenze, stati pending/paid/overdue
-- **Terminologia "Edizioni"**: sostituzione "Cohort" con "Edizioni" in tutti i componenti user-facing
+**STUDIO:**
+- Tema dark raffinato con colori logo (azzurro/viola), testi sidebar piu leggibili
+- Dashboard stat cards cliccabili: link a Bozze, Generati, Esportati, Campagne attive
+- Upload immagini per singoli post dopo generazione testi (step 5 Revisione)
 
 ## Prioritized Backlog
 
 ### P0 - COMPLETATO
-- [x] Studio comunicazione
-- [x] Community core
-- [x] School Operations
-- [x] Community avanzata
-- [x] UX Overhaul Batch 1 (temi, sidebar, registrazione, logo)
-- [x] UX Overhaul Batch 2 (async gen, immagini feed, dashboard umana)
-- [x] UX Overhaul Batch 3 (catalogo corsi, billing, pagamenti, terminologia)
+- [x] Tutte le fasi 0-7
 
 ### P1 (Improvements)
-- [ ] Gmail OAuth per sync automatico inbox
-- [ ] Invio email reale (SMTP o Gmail API)
+- [ ] Quick tour interattivo per primo accesso
+- [ ] Schede corso dettagliate con foto, orari, certificazione, testimonianze
+- [ ] Gestione abbinamento partecipanti per edizione nei materiali
+- [ ] Gmail OAuth per sync inbox
 - [ ] Google Drive integration per repository
 - [ ] Notifiche in-app per pagamenti in scadenza
-- [ ] Password reset / cambio password utente
-- [ ] Esportazione dati pagamenti (CSV)
-
-### P2 (Enhancement)
-- [ ] Buffer API adapter per export
-- [ ] Drag & drop calendario
-- [ ] Notifiche in-app per approvazioni e SLA
-- [ ] Dashboard analytics (post performance, inbox metrics)
-- [ ] Ricerca avanzata inbox
-- [ ] Template percorso personalizzabili da admin
+- [ ] Password reset / cambio password
+- [ ] Esportazione dati pagamenti CSV
 - [ ] Catalogo corsi gestibile da admin (CRUD)
 
-## Collections
-users, user_profiles, user_sessions, user_details, social_profiles, courses_events, campaigns, posts, planning_rules, agent_configs, repository_files, templates, audit_logs, suggestion_banners, feed_posts, feed_comments, feed_likes, inbox_threads, inbox_messages, inbox_rules, inbox_templates, inbox_drafts, programs, cohorts, cohort_memberships, materials, journey_templates, journey_progress, course_catalog, user_course_progress, payment_installments
+### P2 (Enhancement)
+- [ ] Buffer API per export
+- [ ] Drag & drop calendario
+- [ ] Dashboard analytics
+- [ ] Ricerca avanzata inbox
 
 ## Test Reports
-- iteration_1-3: Studio comunicazione (100%)
-- iteration_4: Community Phase 1 (100%, 27 backend tests)
-- iteration_5: Phase 2+3 (100%, 35 backend tests + all frontend)
-- iteration_6: Batch 3 features (100%, 17 backend + 10 frontend)
+- iteration_6: Batch 1-3 (100%)
+- iteration_7: Fase 7 grande overhaul (100%, 13 backend + 20 frontend)
 
 ## Test Credentials
 - Admin: admin@ariadne.training / admin123
