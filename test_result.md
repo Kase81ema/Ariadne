@@ -207,8 +207,101 @@ test_plan:
   test_all: false
   test_priority: "sequential"
 
+backend:
+  - task: "POST /api/auth/login - Login editor autenticazione"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Test creato - verifica autenticazione editor con credenziali arianna.perrone@ariadne.test"
+      - working: true
+        agent: "testing"
+        comment: "✅ Login funzionante. Token JWT ricevuto correttamente, user: Arianna Perrone (editor). Endpoint risponde HTTP 200 con payload completo"
+
+  - task: "GET /api/dashboard/stats - Dashboard statistics"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Test creato - verifica statistiche dashboard con autenticazione"
+      - working: true
+        agent: "testing"
+        comment: "✅ Dashboard stats funzionante. Dati restituiti: 8 post, 4 campagne attive. Tutti i campi richiesti (total_posts, total_campaigns, active_campaigns) presenti"
+
+  - task: "GET /api/school/catalog - School catalog courses"
+    implemented: true
+    working: true
+    file: "backend/school_routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Test creato - verifica catalogo corsi nelle categorie ariadne/tecnica/business"
+      - working: true
+        agent: "testing"
+        comment: "✅ School catalog funzionante. 10 corsi trovati nelle categorie richieste: ariadne, tecnica, business. Struttura dati corretta con course_id e categorie"
+
+  - task: "POST /api/school/catalog/progress - Update course progress"
+    implemented: true
+    working: true
+    file: "backend/school_routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Test creato - verifica aggiornamento stato progresso corso"
+      - working: true
+        agent: "testing"
+        comment: "✅ Update progress funzionante. Progresso corso cat_cc2026 aggiornato correttamente a 'in_progress'. Endpoint accetta e persiste modifiche"
+
+  - task: "GET /api/community/feed - Community feed posts"
+    implemented: true
+    working: true
+    file: "backend/community_routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Test creato - verifica feed community con post"
+      - working: true
+        agent: "testing"
+        comment: "✅ Community feed funzionante. 11 post nel feed, tutti con contenuto. Lista restituita correttamente con metadati post"
+
+  - task: "GET /api/community/dashboard - Community dashboard sections"
+    implemented: true
+    working: true
+    file: "backend/community_routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Test creato - verifica dashboard community con sezioni principali"
+      - working: true
+        agent: "testing"
+        comment: "✅ Community dashboard funzionante. Tutte le sezioni principali presenti: onboarded, banners, upcoming_events, recent_posts. Struttura dati completa"
+
 agent_communication:
   - agent: "testing"
     message: "Inizializzato smoke test frontend Ariadne. URL: https://content-academy-12.preview.emergentagent.com. Credenziali editor: arianna.perrone@ariadne.test / password123. Verifica flusso: login -> dashboard Studio -> switch Scuola -> navigazione percorso/community/corso"
   - agent: "testing"
     message: "✅ SMOKE TEST COMPLETATO CON SUCCESSO. Tutti i 6 test passati senza errori critici. Login funzionante, dashboard Studio con sidebar leggibile e card cliccabili, switch Studio<->Scuola fluido, pagina Il mio percorso con tutti i tab, Bacheca Community con 11 post (1+ con immagini), dettaglio corso completo con tutte le sezioni. App in stato ottimale per utente editor."
+  - agent: "testing"
+    message: "🚀 BACKEND SMOKE TEST COMPLETATO. Tutti i 6 endpoint API testati e funzionanti: 1) Login editor ✅ 2) Dashboard stats ✅ 3) School catalog ✅ 4) Catalog progress update ✅ 5) Community feed ✅ 6) Community dashboard ✅. Autenticazione JWT, dati persistiti correttamente, API rispondono con payloads completi. Backend in stato ottimale."
