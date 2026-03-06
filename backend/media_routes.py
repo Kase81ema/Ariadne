@@ -289,22 +289,161 @@ async def _validate_public_image(url: str):
             raise ValueError(str(exc))
 
 
-async def _buffer_get_profiles():
+async def _buffer_graphql(query: str, variables: dict | None = None):
     if not BUFFER_ACCESS_TOKEN:
         raise HTTPException(400, 'BUFFER_ACCESS_TOKEN non configurato')
     if not BUFFER_API_BASE_URL:
         raise HTTPException(500, 'BUFFER_API_BASE_URL non configurato')
-    url = f'{BUFFER_API_BASE_URL}/profiles.json'
-    async with httpx.AsyncClient(timeout=20.0) as client:
-        response = await client.get(url, headers={'Accept': 'application/json', 'Authorization': f'Bearer {BUFFER_ACCESS_TOKEN}'})
-        if response.status_code >= 400:
-            response = await client.get(url, params={'access_token': BUFFER_ACCESS_TOKEN}, headers={'Accept': 'application/json'})
-        if response.status_code >= 400:
-            raise HTTPException(response.status_code, f'Errore Buffer: {response.text}')
-        return response.json()
+    payload = {'query': query}
+    if variables:
+        payload['variables'] = variables
+    async with httpx.AsyncClient(timeout=25.0) as client:
+        response = await client.post(
+            BUFFER_API_BASE_URL,
+            json=payload,
+            headers={'Content-Type': 'application/json', 'Authorization': f'Bearer {BUFFER_ACCESS_TOKEN}'},
+        )
+    content_type = response.headers.get('content-type', '')
+    if 'application/json' not in content_type:
+        raise HTTPException(response.status_code or 502, 'Buffer ha restituito una risposta non JSON')
+    data = response.json()
+    if response.status_code >= 400:
+        message = ''
+        if isinstance(data, dict):
+            if data.get('errors'):
+                first_error = data['errors'][0]
+                if isinstance(first_error, dict):
+                    message = first_error.get('message', '')
+            message = message or data.get('message', '')
+        raise HTTPException(response.status_code, message or 'Errore Buffer GraphQL')
+    return data
 
 
-def _scheduled_unix(post: dict):
+async def _buffer_get_profiles():
+    org_query = """
+    query GetOrganizations {
+      account {
+        organizations {
+          id
+          name
+        }
+      }
+    }
+    """
+    org_response = await _buffer_graphql(org_query)
+    organizations = (((org_response or {}).get('data') or {}).get('account') or {}).get('organizations') or []
+
+    flattened_channels = []
+    channel_queries = [
+        """
+        query GetOrganizationChannels($organizationId: ID!) {
+          organization(id: $organizationId) {
+            id
+            name
+            channels {
+              id
+              name
+              displayName
+              service
+              serviceUsername
+              formattedUsername
+            }
+          }
+        }
+        """,
+        """
+        query GetOrganizationsWithChannels {
+          account {
+            organizations {
+              id
+              name
+              channels {
+                id
+                name
+                displayName
+                service
+                serviceUsername
+                formattedUsername
+              }
+            }
+          }
+        }
+        """,
+        """
+        query GetViewerProfiles {
+          viewer {
+            profiles {
+              id
+              displayName
+              service
+              serviceUsername
+              formattedUsername
+            }
+          }
+        }
+        """,
+    ]
+
+    for organization in organizations:
+        for query in channel_queries[:1]:
+            try:
+                response = await _buffer_graphql(query, {'organizationId': organization['id']})
+                org_data = ((response or {}).get('data') or {}).get('organization') or {}
+                channels = org_data.get('channels') or []
+                if channels:
+                    for channel in channels:
+                        flattened_channels.append({
+                            'id': channel.get('id', ''),
+                            'service': channel.get('service', ''),
+                            'name': channel.get('name') or channel.get('displayName') or channel.get('formattedUsername') or channel.get('serviceUsername') or channel.get('id', ''),
+                            'display_name': channel.get('displayName') or channel.get('name') or '',
+                            'formatted_username': channel.get('formattedUsername') or '',
+                            'service_username': channel.get('serviceUsername') or '',
+                            'organization_id': organization.get('id', ''),
+                            'organization_name': organization.get('name', ''),
+                        })
+            except HTTPException:
+                continue
+
+    if not flattened_channels:
+        for query in channel_queries[1:]:
+            try:
+                response = await _buffer_graphql(query)
+                data = (response or {}).get('data') or {}
+                if data.get('account'):
+                    for organization in data['account'].get('organizations') or []:
+                        for channel in organization.get('channels') or []:
+                            flattened_channels.append({
+                                'id': channel.get('id', ''),
+                                'service': channel.get('service', ''),
+                                'name': channel.get('name') or channel.get('displayName') or channel.get('formattedUsername') or channel.get('serviceUsername') or channel.get('id', ''),
+                                'display_name': channel.get('displayName') or channel.get('name') or '',
+                                'formatted_username': channel.get('formattedUsername') or '',
+                                'service_username': channel.get('serviceUsername') or '',
+                                'organization_id': organization.get('id', ''),
+                                'organization_name': organization.get('name', ''),
+                            })
+                    break
+                if data.get('viewer'):
+                    for channel in data['viewer'].get('profiles') or []:
+                        flattened_channels.append({
+                            'id': channel.get('id', ''),
+                            'service': channel.get('service', ''),
+                            'name': channel.get('displayName') or channel.get('formattedUsername') or channel.get('serviceUsername') or channel.get('id', ''),
+                            'display_name': channel.get('displayName') or '',
+                            'formatted_username': channel.get('formattedUsername') or '',
+                            'service_username': channel.get('serviceUsername') or '',
+                            'organization_id': '',
+                            'organization_name': '',
+                        })
+                    break
+            except HTTPException:
+                continue
+
+    return flattened_channels
+
+
+def _scheduled_due_at(post: dict):
     date_value = post.get('scheduled_date', '')
     if not date_value:
         return None
@@ -312,7 +451,7 @@ def _scheduled_unix(post: dict):
     try:
         naive = datetime.fromisoformat(f'{date_value}T{time_value}:00')
         aware = naive.replace(tzinfo=timezone.utc)
-        return int(aware.timestamp())
+        return aware.isoformat().replace('+00:00', 'Z')
     except Exception:
         return None
 
@@ -322,62 +461,64 @@ async def _create_buffer_post(post: dict, buffer_profile_id: str, image_url: str
         raise ValueError('Buffer non configurato')
     if not BUFFER_API_BASE_URL:
         raise ValueError('BUFFER_API_BASE_URL non configurato')
+    due_at = _scheduled_due_at(post)
 
-    scheduled_at = _scheduled_unix(post)
-    api_url = f'{BUFFER_API_BASE_URL}/updates/create.json'
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        if image_url:
-            modern_payload = {
-                'text': post.get('content', ''),
-                'profile_ids': [buffer_profile_id],
-                'assets': {'images': [{'url': image_url}]},
-            }
-            if scheduled_at:
-                modern_payload['scheduled_at'] = scheduled_at
-            modern_response = await client.post(
-                api_url,
-                json=modern_payload,
-                headers={'Accept': 'application/json', 'Authorization': f'Bearer {BUFFER_ACCESS_TOKEN}'},
-            )
-            if modern_response.status_code >= 400:
-                modern_response = await client.post(
-                    api_url,
-                    json=modern_payload,
-                    params={'access_token': BUFFER_ACCESS_TOKEN},
-                    headers={'Accept': 'application/json'},
-                )
-            if modern_response.status_code < 400:
-                return modern_response.json()
-
-        form_payload = {
+    def _input_payload(asset_mode: str):
+        payload = {
             'text': post.get('content', ''),
-            'profile_ids[0]': buffer_profile_id,
-            'shorten': 'false',
+            'channelId': buffer_profile_id,
+            'schedulingType': 'automatic',
+            'mode': 'customSchedule' if due_at else 'shareNow',
         }
-        if scheduled_at:
-            form_payload['scheduled_at'] = str(scheduled_at)
+        if due_at:
+            payload['dueAt'] = due_at
         if image_url:
-            form_payload['assets[images][0][url]'] = image_url
-        response = await client.post(
-            api_url,
-            data=form_payload,
-            headers={'Accept': 'application/json', 'Authorization': f'Bearer {BUFFER_ACCESS_TOKEN}'},
-        )
-        if response.status_code >= 400:
-            legacy_payload = dict(form_payload)
-            if image_url:
-                legacy_payload.pop('assets[images][0][url]', None)
-                legacy_payload['media[picture]'] = image_url
-            response = await client.post(
-                api_url,
-                data=legacy_payload,
-                params={'access_token': BUFFER_ACCESS_TOKEN},
-                headers={'Accept': 'application/json'},
-            )
-        data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {'error': response.text}
-        if response.status_code >= 400 or (isinstance(data, dict) and data.get('success') is False):
-            raise ValueError(data.get('error') or data.get('message') or response.text or 'Errore Buffer')
-        return data
+            if asset_mode == 'images':
+                payload['assets'] = {'images': [{'url': image_url}]}
+            elif asset_mode == 'assetUrls':
+                payload['assets'] = {'assetUrls': [image_url]}
+        return payload
+
+    mutation = """
+    mutation CreatePost($input: CreatePostInput!) {
+      createPost(input: $input) {
+        ... on PostActionSuccess {
+          post {
+            id
+            text
+            assets {
+              id
+              mimeType
+            }
+          }
+        }
+        ... on MutationError {
+          message
+        }
+      }
+    }
+    """
+
+    attempts = ['images', 'assetUrls'] if image_url else ['none']
+    last_error = 'Errore Buffer GraphQL'
+    for asset_mode in attempts:
+        try:
+            response = await _buffer_graphql(mutation, {'input': _input_payload(asset_mode)})
+        except HTTPException as exc:
+            last_error = exc.detail or 'Errore Buffer GraphQL'
+            continue
+        if response.get('errors'):
+            last_error = response['errors'][0].get('message', last_error)
+            continue
+        result = ((response or {}).get('data') or {}).get('createPost') or {}
+        if result.get('message'):
+            last_error = result['message']
+            continue
+        post_data = result.get('post') or {}
+        if post_data.get('id'):
+            return post_data
+
+    raise ValueError(last_error)
 
 
 async def _publish_post_to_buffer(db, post: dict):
