@@ -141,6 +141,17 @@ Studio comunicazione, Community core, School Operations, Community avanzata - tu
 - Report `iteration_11.json`: backend 100%, frontend 100%
 - Confermati funzionanti: pattern sidebar, scheda corso raggiungibile, riepilogo admin corso, aggiornamento stato inline, deep-link a utenti admin
 
+### Fase 13 - Sidebar item layout fix definitivo (06/03/2026) - COMPLETATO E TESTATO
+**FOCUS SOLO SIDEBAR, COME RICHIESTO:**
+- Corretto il problema strutturale dei nav item: il `NavLink` ora usa il pattern compatibile con la versione del router (`className="sidebar-link" + activeClassName="active" + exact`)
+- Ogni voce sidebar ora è una singola riga compatta: icona a sinistra, label a destra, area cliccabile piena e stato attivo finalmente visibile
+- Rafforzato lo stato attivo in Studio e School con trattamento più netto, mantenendo invariata la grouped card structure
+- Nessun altro blocco funzionale dell’app è stato modificato in questo passaggio
+
+**TEST:**
+- Smoke test visivo Studio + School con verifica `ACTIVE COUNT = 1` in entrambe le aree
+- Verifica frontend dedicata completata: layout orizzontale compatto, active state chiaro, nessun difetto residuo rilevato
+
 ## Prioritized Backlog
 
 ### P0 - COMPLETATO
