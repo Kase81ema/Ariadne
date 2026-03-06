@@ -168,81 +168,21 @@ export default function CommunityDashboardPage() {
         <p className="text-base text-gray-500">Uno spazio pensato per orientarti, nutrire la tua crescita e sentirti parte della community Ariadne.</p>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-6 mb-6">
-        <Card className="border-gray-100" data-testid="journey-summary-card">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[hsl(82,60%,42%)]/8 flex items-center justify-center">
-                  <Map className="w-5 h-5 text-[hsl(82,60%,42%)]" />
-                </div>
-                <div>
-                  <h2 className="text-base font-semibold">Il mio percorso</h2>
-                  <p className="text-xs text-gray-400">
-                    {completedCourses}/{totalCourses} corsi completati
-                    {inProgressCourses > 0 && ` · ${inProgressCourses} in corso`}
-                  </p>
-                </div>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => navigate('/my-journey')} className="gap-1" data-testid="goto-journey">
-                Vai al percorso <ArrowRight className="w-3 h-3" />
-              </Button>
-            </div>
-            <Progress value={progressPct} className="h-2 mb-4" />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-gray-500">
-              <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
-                <p className="font-semibold text-gray-700 mb-1">Dove sei ora</p>
-                <p>{completedCourses > 0 ? `Hai già consolidato ${completedCourses} passaggi del tuo cammino.` : 'Stai iniziando a dare forma al tuo percorso con Ariadne.'}</p>
-              </div>
-              <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
-                <p className="font-semibold text-gray-700 mb-1">Cosa puoi far crescere</p>
-                <p>{inProgressCourses > 0 ? `Hai ${inProgressCourses} esperienza/e da far maturare nelle prossime settimane.` : 'Puoi scegliere il prossimo passo formativo più adatto al momento che stai vivendo.'}</p>
-              </div>
-              <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
-                <p className="font-semibold text-gray-700 mb-1">Come orientarti</p>
-                <p>Usa dashboard, bacheca e prossime occasioni per restare presente e dare continuità alla tua crescita.</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {openEnrollmentBanner && (
-          <Card className="border-gray-100 overflow-hidden" data-testid="open-enrolment-banner-card">
-            {openEnrollmentBanner.image_url && (
-              <div className="aspect-[16/9] overflow-hidden">
-                <img src={openEnrollmentBanner.image_url} alt="Iscrizioni aperte" className="w-full h-full object-cover" />
-              </div>
-            )}
-            <CardContent className="p-5 space-y-3">
-              <Badge variant="outline" className="text-[10px] badge-green">Iscrizioni aperte ora</Badge>
-              <div>
-                <h2 className="text-lg font-semibold leading-tight">{openEnrollmentBanner.title}</h2>
-                <p className="text-sm text-gray-500 mt-2 leading-relaxed">{openEnrollmentBanner.body}</p>
-              </div>
-              <Button className="w-full gap-2" onClick={() => navigate(openEnrollmentCourse ? `/course/${openEnrollmentCourse.course_id}` : '/training-courses')} data-testid="open-enrolment-banner-cta">
-                Scopri il programma <ArrowRight className="w-4 h-4" />
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-[0.84fr_1.16fr] gap-6 mb-6 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-[1.02fr_0.98fr] gap-6 mb-6 items-start">
         <Card className="border-gray-100" data-testid="school-welcome-card">
-          <CardContent className="p-6 space-y-5">
-            <div>
-              <Badge variant="outline" className="text-[10px] badge-yellow mb-3">Benvenuto nella community Ariadne</Badge>
-              <h2 className="text-xl font-semibold ariadne-heading mb-3">{firstName}, questo è uno spazio che può accompagnarti davvero.</h2>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Qui non trovi solo contenuti: trovi occasioni per metterti in gioco, chiarire la direzione, riconoscere il tuo valore e coltivare una presenza professionale più consapevole.
-              </p>
-              <p className="text-sm text-gray-600 leading-relaxed mt-3">
-                Ti invitiamo a usare questa area come una casa viva: entra nella relazione con la community, fai spazio alla tua crescita e resta vicino alle opportunità che possono aprirti un passo nuovo.
-              </p>
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
+              <div>
+                <Badge variant="outline" className="text-[10px] badge-yellow mb-3">Benvenuto</Badge>
+                <h2 className="text-xl font-semibold ariadne-heading mb-3">{firstName}, questo spazio può accompagnarti con cura e concretezza.</h2>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Qui puoi orientarti, restare in connessione con la community e dare continuità al tuo cammino professionale con uno sguardo più presente, consapevole e personale.
+                </p>
+              </div>
             </div>
-            <div className="rounded-2xl bg-[hsl(82,60%,42%)]/6 border border-[hsl(82,60%,42%)]/12 p-4">
+            <div className="rounded-2xl bg-[hsl(82,60%,42%)]/6 border border-[hsl(82,60%,42%)]/12 p-4 mb-4">
               <p className="text-sm font-medium text-gray-700">Un saluto da Emanuele, Arianna e Emanuele</p>
-              <p className="text-xs text-gray-500 mt-1">Con la cura di chi accompagna processi di crescita, presenza e trasformazione.</p>
+              <p className="text-xs text-gray-500 mt-1">Con la cura di chi accompagna processi di crescita, presenza e trasformazione nella relazione con sé e con gli altri.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Button variant="outline" className="justify-between h-auto py-3" onClick={() => navigate('/feed')} data-testid="welcome-connect-community">
@@ -269,6 +209,123 @@ export default function CommunityDashboardPage() {
             </div>
           </CardContent>
         </Card>
+
+        {openEnrollmentBanner && (
+          <Card className="border-gray-100 overflow-hidden" data-testid="open-enrolment-banner-card">
+            {openEnrollmentBanner.image_url && (
+              <div className="aspect-[16/9] overflow-hidden">
+                <img src={openEnrollmentBanner.image_url} alt="Iscrizioni aperte" className="w-full h-full object-cover" />
+              </div>
+            )}
+            <CardContent className="p-5 space-y-3">
+              <Badge variant="outline" className="text-[10px] badge-green">Iscrizioni aperte</Badge>
+              <div>
+                <h2 className="text-lg font-semibold leading-tight">{openEnrollmentBanner.title}</h2>
+                <p className="text-sm text-gray-500 mt-2 leading-relaxed">{openEnrollmentBanner.body}</p>
+              </div>
+              <Button className="w-full gap-2" onClick={() => navigate(openEnrollmentCourse ? `/course/${openEnrollmentCourse.course_id}` : '/training-courses')} data-testid="open-enrolment-banner-cta">
+                Scopri il programma <ArrowRight className="w-4 h-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      <Card className="border-gray-100 mb-6" data-testid="journey-summary-card">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[hsl(82,60%,42%)]/8 flex items-center justify-center">
+                <Map className="w-5 h-5 text-[hsl(82,60%,42%)]" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold">Il mio percorso</h2>
+                <p className="text-xs text-gray-400">
+                  {completedCourses}/{totalCourses} corsi completati
+                  {inProgressCourses > 0 && ` · ${inProgressCourses} in corso`}
+                </p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => navigate('/my-journey')} className="gap-1" data-testid="goto-journey">
+              Vai al percorso <ArrowRight className="w-3 h-3" />
+            </Button>
+          </div>
+          <Progress value={progressPct} className="h-2 mb-4" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-gray-500">
+            <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
+              <p className="font-semibold text-gray-700 mb-1">Dove sei ora</p>
+              <p>{completedCourses > 0 ? `Hai già consolidato ${completedCourses} passaggi del tuo cammino.` : 'Stai iniziando a dare forma al tuo percorso con Ariadne.'}</p>
+            </div>
+            <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
+              <p className="font-semibold text-gray-700 mb-1">Cosa puoi far crescere</p>
+              <p>{inProgressCourses > 0 ? `Hai ${inProgressCourses} esperienza/e da far maturare nelle prossime settimane.` : 'Puoi scegliere il prossimo passo formativo più adatto al momento che stai vivendo.'}</p>
+            </div>
+            <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
+              <p className="font-semibold text-gray-700 mb-1">Come orientarti</p>
+              <p>Usa dashboard, bacheca e prossime occasioni per restare presente e dare continuità alla tua crescita.</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[0.82fr_1.18fr] gap-6 mb-6 items-start">
+        <div className="space-y-4" data-testid="upcoming-events-card">
+          <Card className="border-gray-100">
+            <CardContent className="p-6 space-y-5">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <h2 className="text-base font-semibold">Le prossime occasioni</h2>
+                  <p className="text-xs text-gray-400 mt-1">Eventi in calendario e passi concreti per restare in contatto con le opportunità che stanno prendendo forma.</p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/community/events')} className="text-xs gap-1" data-testid="goto-events">
+                  Tutte le occasioni <ArrowRight className="w-3 h-3" />
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {data?.upcoming_events?.length > 0 ? (
+                  data.upcoming_events.map((e, i) => (
+                    <div key={i} className="flex items-center gap-3 p-4 rounded-2xl bg-gray-50/70 border border-gray-100">
+                      <div className="w-11 h-11 rounded-xl bg-[hsl(82,60%,42%)]/8 flex items-center justify-center flex-shrink-0">
+                        <Calendar className="w-4 h-4 text-[hsl(82,60%,42%)]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{e.title}</p>
+                        <p className="text-xs text-gray-400">{e.label && `${e.label} · `}{new Date(e.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-400 text-center py-8">Al momento non ci sono eventi in calendario, ma presto troverai nuove occasioni da seguire.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {(featuredProgramCourse || featuredProgramBanner) && (
+            <Card className="border-gray-100 overflow-hidden bg-gradient-to-br from-[hsl(82,60%,42%)]/6 to-white" data-testid="featured-program-card">
+              {featuredProgramBanner?.image_url && (
+                <div className="aspect-[16/9] overflow-hidden">
+                  <img src={featuredProgramBanner.image_url} alt="Percorso in evidenza" className="w-full h-full object-cover" />
+                </div>
+              )}
+              <CardContent className="p-5 space-y-3">
+                <Badge variant="outline" className="text-[10px] badge-yellow">Percorso in evidenza</Badge>
+                <div>
+                  <h3 className="text-lg font-semibold">{featuredProgramBanner?.title || featuredProgramCourse?.title}</h3>
+                  <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+                    {featuredProgramBanner?.body || featuredProgramCourse?.description}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-white/90 border border-white p-3">
+                  <p className="text-xs text-gray-500">Aprendo la scheda corso puoi segnalarci con un clic che vuoi saperne di più: il tuo interesse verrà registrato e sarà visibile anche al team Ariadne.</p>
+                </div>
+                <Button className="w-full gap-2" onClick={() => navigate(featuredProgramCourse ? `/course/${featuredProgramCourse.course_id}` : '/training-courses')} data-testid="featured-program-cta">
+                  Voglio saperne di più <ArrowRight className="w-4 h-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         <Card className="border-gray-100" data-testid="dashboard-board-card">
           <CardContent className="p-6">
@@ -318,65 +375,6 @@ export default function CommunityDashboardPage() {
           </CardContent>
         </Card>
       </div>
-
-      <Card className="border-gray-100" data-testid="upcoming-events-card">
-        <CardContent className="p-6 space-y-5">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <h2 className="text-base font-semibold">Prossime occasioni</h2>
-              <p className="text-xs text-gray-400 mt-1">Eventi in calendario e percorsi in evidenza su cui puoi esprimere interesse e approfondire.</p>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/community/events')} className="text-xs gap-1" data-testid="goto-events">
-              Tutte le occasioni <ArrowRight className="w-3 h-3" />
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-5">
-            <div className="space-y-3">
-              {data?.upcoming_events?.length > 0 ? (
-                data.upcoming_events.map((e, i) => (
-                  <div key={i} className="flex items-center gap-3 p-4 rounded-2xl bg-gray-50/70 border border-gray-100">
-                    <div className="w-11 h-11 rounded-xl bg-[hsl(82,60%,42%)]/8 flex items-center justify-center flex-shrink-0">
-                      <Calendar className="w-4 h-4 text-[hsl(82,60%,42%)]" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{e.title}</p>
-                      <p className="text-xs text-gray-400">{e.label && `${e.label} · `}{new Date(e.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-400 text-center py-8">Al momento non ci sono eventi in calendario, ma presto troverai nuove occasioni da seguire.</p>
-              )}
-            </div>
-
-            {(featuredProgramCourse || featuredProgramBanner) && (
-              <Card className="border-gray-100 overflow-hidden bg-gradient-to-br from-[hsl(82,60%,42%)]/6 to-white" data-testid="featured-program-card">
-                {featuredProgramBanner?.image_url && (
-                  <div className="aspect-[16/9] overflow-hidden">
-                    <img src={featuredProgramBanner.image_url} alt="Percorso in evidenza" className="w-full h-full object-cover" />
-                  </div>
-                )}
-                <CardContent className="p-5 space-y-3">
-                  <Badge variant="outline" className="text-[10px] badge-yellow">Percorso in evidenza</Badge>
-                  <div>
-                    <h3 className="text-lg font-semibold">{featuredProgramBanner?.title || featuredProgramCourse?.title}</h3>
-                    <p className="text-sm text-gray-500 mt-2 leading-relaxed">
-                      {featuredProgramBanner?.body || featuredProgramCourse?.description}
-                    </p>
-                  </div>
-                  <div className="rounded-xl bg-white/90 border border-white p-3">
-                    <p className="text-xs text-gray-500">Aprendo la scheda corso puoi segnalarci con un clic che vuoi saperne di più: il tuo interesse verrà registrato e sarà visibile anche al team Ariadne.</p>
-                  </div>
-                  <Button className="w-full gap-2" onClick={() => navigate(featuredProgramCourse ? `/course/${featuredProgramCourse.course_id}` : '/training-courses')} data-testid="featured-program-cta">
-                    Voglio saperne di più <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
