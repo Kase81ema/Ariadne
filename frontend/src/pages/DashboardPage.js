@@ -2,21 +2,29 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
+import { Progress } from '../components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import { useNavigate } from 'react-router-dom';
 import { dashboardAPI, profilesAPI } from '../lib/api';
-import { Calendar as CalIcon, FileText, CheckCircle2, Download, Clock, AlertTriangle, ChevronLeft, ChevronRight, MousePointerClick } from 'lucide-react';
+import {
+  Calendar as CalIcon, FileText, CheckCircle2, Download, Clock,
+  AlertTriangle, ChevronLeft, ChevronRight, Zap, PlayCircle,
+  ArrowRight, Eye, BarChart3
+} from 'lucide-react';
 
 const STATUS_COLORS = {
   draft: 'badge-blue', generated: 'badge-purple', review: 'badge-orange',
   approved: 'badge-green', exported: 'badge-green',
 };
-const STATUS_LABELS = {
-  draft: 'Bozza', generated: 'Generato', review: 'In revisione',
-  approved: 'Approvato', exported: 'Esportato',
-};
 const DAYS_IT = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+
+const CAMPAIGN_STATUS = {
+  draft: { label: 'Bozza', color: 'badge-blue' },
+  planning: { label: 'Pianificazione', color: 'badge-purple' },
+  review: { label: 'In revisione', color: 'badge-orange' },
+  exported: { label: 'Esportata', color: 'badge-green' },
+};
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -62,7 +70,6 @@ export default function DashboardPage() {
     setCurrentMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
   };
 
-  // Detect conflicts (multiple posts for same profile on same day)
   const conflicts = useMemo(() => {
     const map = {};
     calendarPosts.forEach(p => {
@@ -72,31 +79,116 @@ export default function DashboardPage() {
     return Object.entries(map).filter(([, c]) => c > 2).map(([k]) => k.split('_')[0]);
   }, [calendarPosts]);
 
+  const recentCampaigns = stats.recent_campaigns || [];
+
   return (
     <div data-testid="dashboard-page">
-      <div className="mb-10">
-        <h1 className="text-4xl font-semibold ariadne-heading mb-2">Studio comunicazione</h1>
-        <p className="text-base text-gray-500">Il tuo centro di controllo per il calendario editoriale. Qui trovi una visione d'insieme dei contenuti, le campagne attive e il calendario delle pubblicazioni.</p>
+      <div className="flex items-center justify-between mb-10">
+        <div>
+          <h1 className="text-4xl font-semibold ariadne-heading mb-2">Centro di controllo</h1>
+          <p className="text-base text-gray-500">
+            Panoramica operativa: campagne attive, post in lavorazione e calendario editoriale.
+          </p>
+        </div>
+        <Button onClick={() => navigate('/workflow')} className="gap-2 h-11 px-6" data-testid="quick-new-campaign">
+          <PlayCircle className="w-4 h-4" /> Nuova campagna
+        </Button>
       </div>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-        <StatCard icon={Clock} label="Oggi" value={stats.today_posts || 0} accent="purple" testId="stat-today" />
+      {/* Operational overview row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <StatCard
+          icon={Zap} label="Campagne attive" value={stats.active_campaigns || 0}
+          accent="purple" testId="stat-active-campaigns"
+          onClick={() => navigate('/editorial')}
+          subtitle="Gestisci campagne"
+        />
+        <StatCard
+          icon={Eye} label="Post da approvare" value={(stats.generated_posts || 0) + (stats.review_posts || 0)}
+          accent="orange" testId="stat-pending-review"
+          onClick={() => navigate('/approvals')}
+          subtitle="Vai alle approvazioni"
+        />
+        <StatCard
+          icon={CheckCircle2} label="Post approvati" value={stats.approved_posts || 0}
+          accent="green" testId="stat-approved"
+          onClick={() => navigate('/export')}
+          subtitle="Pronto per export"
+        />
+        <StatCard
+          icon={CalIcon} label="Pubblicazioni oggi" value={stats.today_posts || 0}
+          accent="blue" testId="stat-today"
+        />
+      </div>
+
+      {/* Campaign pipeline + stats row */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-8">
+        <Card className="border-gray-100 lg:col-span-2" data-testid="campaign-pipeline">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold ariadne-heading">Pipeline campagne</h2>
+              <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => navigate('/editorial')}>
+                Tutte <ArrowRight className="w-3 h-3" />
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <PipelineItem label="Bozza" count={stats.campaigns_draft || 0} color="#3B82F6" />
+              <PipelineItem label="Pianificazione" count={stats.campaigns_planning || 0} color="#7B61FF" />
+              <PipelineItem label="In revisione" count={stats.campaigns_review || 0} color="#F5A623" />
+              <PipelineItem label="Esportate" count={stats.campaigns_exported || 0} color="#10B981" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-gray-100 lg:col-span-3" data-testid="recent-campaigns-card">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold ariadne-heading">Campagne recenti</h2>
+            </div>
+            {recentCampaigns.length > 0 ? (
+              <div className="space-y-2.5">
+                {recentCampaigns.map(rc => {
+                  const scfg = CAMPAIGN_STATUS[rc.status] || CAMPAIGN_STATUS.draft;
+                  const pct = rc.posts_total > 0 ? Math.round((rc.posts_approved / rc.posts_total) * 100) : 0;
+                  return (
+                    <div
+                      key={rc.campaign_id}
+                      className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:border-gray-200 cursor-pointer transition-colors"
+                      onClick={() => navigate('/workflow', { state: { resumeCampaignId: rc.campaign_id } })}
+                      data-testid={`recent-campaign-${rc.campaign_id}`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-medium text-gray-800 truncate">{rc.title}</span>
+                          <Badge variant="outline" className={`text-[10px] ${scfg.color}`}>{scfg.label}</Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Progress value={pct} className="h-1 flex-1" />
+                          <span className="text-[10px] text-gray-400 whitespace-nowrap">{rc.posts_approved}/{rc.posts_total}</span>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400 py-4 text-center">Nessuna campagna recente</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Post stats row */}
+      <div className="grid grid-cols-4 gap-4 mb-8">
+        <StatCard icon={FileText} label="Bozze" value={stats.draft_posts || 0} accent="blue" testId="stat-draft" />
+        <StatCard icon={BarChart3} label="Generati" value={stats.generated_posts || 0} accent="purple" testId="stat-generated" />
+        <StatCard icon={Download} label="Esportati" value={stats.exported_posts || 0} accent="green" testId="stat-exported" />
         <StatCard icon={CalIcon} label="Questa settimana" value={stats.week_posts || 0} accent="blue" testId="stat-week" />
-        <StatCard icon={FileText} label="In revisione" value={stats.review_posts || 0} accent="orange" testId="stat-review" />
-        <StatCard icon={CheckCircle2} label="Approvati" value={stats.approved_posts || 0} accent="green" testId="stat-approved" />
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-        <StatCard icon={FileText} label="Post in bozza" value={stats.draft_posts || 0} accent="blue" testId="stat-draft" onClick={() => navigate('/editorial')} subtitle="Apri il calendario editoriale" />
-        <StatCard icon={FileText} label="Post generati" value={stats.generated_posts || 0} accent="purple" testId="stat-generated" onClick={() => navigate('/editorial')} subtitle="Vedi i post generati" />
-        <StatCard icon={Download} label="Post esportati" value={stats.exported_posts || 0} accent="green" testId="stat-exported" onClick={() => navigate('/export')} subtitle="Vai alla sezione export" />
-        <StatCard icon={CalIcon} label="Campagne attive" value={stats.active_campaigns || 0} accent="orange" testId="stat-campaigns" onClick={() => navigate('/workflow')} subtitle="Gestisci le campagne" />
       </div>
 
       {/* Calendar section */}
       <div className="ariadne-card p-6">
-        <p className="text-xs text-gray-400 mb-4">Visualizza i post pianificati nel calendario editoriale. Clicca su un giorno per vederne i dettagli.</p>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => changeMonth(-1)} data-testid="cal-prev">
@@ -173,7 +265,6 @@ function StatCard({ icon: Icon, label, value, accent, testId, onClick, subtitle 
     orange: 'text-[#F5A623] bg-[#F5A623]/8',
     green: 'text-[#10B981] bg-[#10B981]/8',
     blue: 'text-[#3B82F6] bg-[#3B82F6]/8',
-    red: 'text-[#EF4444] bg-[#EF4444]/8',
   };
   return (
     <Card className={`border-gray-100 ${onClick ? 'cursor-pointer hover:border-gray-200 transition-all' : ''}`} data-testid={testId} onClick={onClick}>
@@ -188,5 +279,15 @@ function StatCard({ icon: Icon, label, value, accent, testId, onClick, subtitle 
         {subtitle && onClick && <p className="text-[10px] text-gray-400 mt-1 opacity-60">{subtitle}</p>}
       </CardContent>
     </Card>
+  );
+}
+
+function PipelineItem({ label, count, color }) {
+  return (
+    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50/70">
+      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
+      <span className="text-xs text-gray-500 flex-1">{label}</span>
+      <span className="text-sm font-semibold" style={{ color }}>{count}</span>
+    </div>
   );
 }

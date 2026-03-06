@@ -48,6 +48,7 @@ export const campaignsAPI = {
   create: (data) => api.post('/campaigns', data),
   update: (id, data) => api.put(`/campaigns/${id}`, data),
   delete: (id) => api.delete(`/campaigns/${id}`),
+  saveNotes: (id, notes, title) => api.post(`/campaigns/${id}/save-notes`, { notes, title }),
 };
 
 // Posts

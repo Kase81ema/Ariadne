@@ -81,6 +81,10 @@ class CampaignCreate(BaseModel):
     posts_per_profile: int = 3
     mix_intentions: dict = {}
     rules_id: str = ""
+    source_type: str = ""
+    source_urls: list = []
+    source_notes: str = ""
+    current_step: int = 0
 
 class PostCreate(BaseModel):
     campaign_id: str
@@ -400,7 +404,24 @@ async def clone_course(course_id: str, request: Request):
 @api_router.get("/campaigns")
 async def list_campaigns(request: Request):
     await get_current_user(request)
-    return await db.campaigns.find({}, {"_id": 0}).to_list(200)
+    campaigns = await db.campaigns.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    # Enrich with post counts
+    for c in campaigns:
+        cid = c["campaign_id"]
+        c["posts_total"] = await db.posts.count_documents({"campaign_id": cid})
+        c["posts_draft"] = await db.posts.count_documents({"campaign_id": cid, "status": "draft"})
+        c["posts_generated"] = await db.posts.count_documents({"campaign_id": cid, "status": "generated"})
+        c["posts_approved"] = await db.posts.count_documents({"campaign_id": cid, "status": "approved"})
+        c["posts_exported"] = await db.posts.count_documents({"campaign_id": cid, "status": "exported"})
+    # Enrich with course titles
+    course_ids = list(set(c.get("course_id", "") for c in campaigns if c.get("course_id")))
+    courses_map = {}
+    if course_ids:
+        courses = await db.courses_events.find({"course_id": {"$in": course_ids}}, {"_id": 0, "course_id": 1, "title": 1}).to_list(100)
+        courses_map = {c["course_id"]: c["title"] for c in courses}
+    for c in campaigns:
+        c["course_title"] = courses_map.get(c.get("course_id", ""), "")
+    return campaigns
 
 @api_router.get("/campaigns/{campaign_id}")
 async def get_campaign(campaign_id: str, request: Request):
@@ -408,6 +429,15 @@ async def get_campaign(campaign_id: str, request: Request):
     c = await db.campaigns.find_one({"campaign_id": campaign_id}, {"_id": 0})
     if not c:
         raise HTTPException(404, "Campagna non trovata")
+    c["posts_total"] = await db.posts.count_documents({"campaign_id": campaign_id})
+    c["posts_draft"] = await db.posts.count_documents({"campaign_id": campaign_id, "status": "draft"})
+    c["posts_generated"] = await db.posts.count_documents({"campaign_id": campaign_id, "status": "generated"})
+    c["posts_approved"] = await db.posts.count_documents({"campaign_id": campaign_id, "status": "approved"})
+    c["posts_exported"] = await db.posts.count_documents({"campaign_id": campaign_id, "status": "exported"})
+    c["course_title"] = ""
+    if c.get("course_id"):
+        course = await db.courses_events.find_one({"course_id": c["course_id"]}, {"_id": 0, "title": 1})
+        c["course_title"] = course["title"] if course else ""
     return c
 
 @api_router.post("/campaigns")
@@ -434,6 +464,27 @@ async def delete_campaign(campaign_id: str, request: Request):
     await db.posts.delete_many({"campaign_id": campaign_id})
     await log_audit(user["user_id"], "delete_campaign", {"campaign_id": campaign_id})
     return {"ok": True}
+
+@api_router.post("/campaigns/{campaign_id}/save-notes")
+async def save_campaign_notes_to_repo(campaign_id: str, request: Request):
+    user = await get_current_user(request)
+    body = await request.json()
+    notes = body.get("notes", "")
+    title = body.get("title", f"Note campagna {campaign_id}")
+    if not notes.strip():
+        raise HTTPException(400, "Note vuote")
+    doc = {
+        "file_id": f"repo_{uuid.uuid4().hex[:12]}",
+        "filename": f"{title}.md",
+        "category": "note_campagna",
+        "content": notes,
+        "uploaded_by": user["user_id"],
+        "uploaded_at": datetime.now(timezone.utc).isoformat(),
+        "campaign_id": campaign_id,
+    }
+    await db.repository_files.insert_one(doc)
+    await log_audit(user["user_id"], "save_campaign_notes", {"campaign_id": campaign_id})
+    return {"ok": True, "file_id": doc["file_id"]}
 
 # ===== POSTS =====
 @api_router.get("/posts")
@@ -1157,11 +1208,24 @@ async def dashboard_stats(request: Request):
     exported_posts = await db.posts.count_documents({"status": "exported"})
     total_campaigns = await db.campaigns.count_documents({})
     active_campaigns = await db.campaigns.count_documents({"status": {"$nin": ["exported", "archived"]}})
+    campaigns_draft = await db.campaigns.count_documents({"status": "draft"})
+    campaigns_planning = await db.campaigns.count_documents({"status": "planning"})
+    campaigns_review = await db.campaigns.count_documents({"status": "review"})
+    campaigns_exported = await db.campaigns.count_documents({"status": "exported"})
+    # Recent campaigns (last 5)
+    recent_campaigns = await db.campaigns.find({}, {"_id": 0}).sort("created_at", -1).to_list(5)
+    for rc in recent_campaigns:
+        cid = rc["campaign_id"]
+        rc["posts_total"] = await db.posts.count_documents({"campaign_id": cid})
+        rc["posts_approved"] = await db.posts.count_documents({"campaign_id": cid, "status": "approved"})
     return {
         "total_posts": total_posts, "today_posts": today_posts, "week_posts": week_posts,
         "draft_posts": draft_posts, "generated_posts": generated_posts,
         "review_posts": review_posts, "approved_posts": approved_posts, "exported_posts": exported_posts,
         "total_campaigns": total_campaigns, "active_campaigns": active_campaigns,
+        "campaigns_draft": campaigns_draft, "campaigns_planning": campaigns_planning,
+        "campaigns_review": campaigns_review, "campaigns_exported": campaigns_exported,
+        "recent_campaigns": recent_campaigns,
     }
 
 @api_router.get("/dashboard/calendar")

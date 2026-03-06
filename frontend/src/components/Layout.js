@@ -21,7 +21,7 @@ const studioNavGroups = [
     id: 'avvio',
     title: 'Avvio',
     items: [
-      { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+      { to: '/dashboard', icon: LayoutDashboard, label: 'Centro di controllo' },
       { to: '/start', icon: PlayCircle, label: 'Avvio contenuti' },
     ],
   },
@@ -29,6 +29,7 @@ const studioNavGroups = [
     id: 'produzione',
     title: 'Produzione',
     items: [
+      { to: '/editorial', icon: FileText, label: 'Campagne' },
       { to: '/workflow', icon: GitBranch, label: 'Produzione guidata' },
       { to: '/approvals', icon: CheckCircle2, label: 'Approvazioni' },
       { to: '/export', icon: Download, label: 'Esporta e pubblica' },
@@ -39,7 +40,6 @@ const studioNavGroups = [
     title: 'Contenuti',
     items: [
       { to: '/courses', icon: GraduationCap, label: 'Corsi ed eventi' },
-      { to: '/editorial', icon: FileText, label: 'Editoriale' },
       { to: '/images', icon: BookOpen, label: 'Immagini' },
     ],
   },

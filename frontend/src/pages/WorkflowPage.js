@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -8,29 +8,27 @@ import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Switch } from '../components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Progress } from '../components/ui/progress';
-import { campaignsAPI, coursesAPI, profilesAPI, rulesAPI, agentsAPI, generateAPI, mediaAPI, postsAPI } from '../lib/api';
-import { ArrowRight, ArrowLeft, CheckCircle2, Loader2, Zap, FileText, ImagePlus, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import {
+  campaignsAPI, coursesAPI, profilesAPI, rulesAPI, agentsAPI,
+  generateAPI, mediaAPI, postsAPI
+} from '../lib/api';
+import {
+  ArrowRight, ArrowLeft, CheckCircle2, Loader2, Zap, FileText,
+  ImagePlus, X, FolderOpen, Link2, BookOpen, Save
+} from 'lucide-react';
 import { toast } from 'sonner';
 
-const INTENTIONS = [
-  { id: 'annuncio', label: 'Annuncio' },
-  { id: 'valore', label: 'Valore/Insight' },
-  { id: 'storia', label: 'Storia' },
-  { id: 'reminder', label: 'Reminder' },
-  { id: 'last_call', label: 'Last call' },
-];
-
-const STEPS = ['Campagna', 'Profili', 'Agenti', 'Pianifica', 'Genera', 'Revisione'];
+const STEPS = ['Sorgente', 'Campagna', 'Profili', 'Agenti', 'Genera', 'Revisione'];
 const PLATFORM_VARIANTS = {
   linkedin_company: 'landscape',
   linkedin_personal: 'landscape',
   instagram: 'portrait',
 };
-
 const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
+/* ===== Post Image Uploader (unchanged logic) ===== */
 function PostImageUploader({ postId, currentImage, onImageSet }) {
   const [uploading, setUploading] = useState(false);
   const imgSrc = currentImage ? (currentImage.startsWith('http') ? currentImage : `${API_BASE}${currentImage}`) : null;
@@ -96,7 +94,9 @@ function PostImageUploader({ postId, currentImage, onImageSet }) {
 
 export default function WorkflowPage() {
   const location = useLocation();
-  const essentialMode = location.state?.essentialMode || false;
+  const navigate = useNavigate();
+  const resumeCampaignId = location.state?.resumeCampaignId || null;
+
   const [step, setStep] = useState(0);
   const [courses, setCourses] = useState([]);
   const [profiles, setProfiles] = useState([]);
@@ -108,17 +108,12 @@ export default function WorkflowPage() {
   const [assignmentsMap, setAssignmentsMap] = useState({});
   const [assignmentJobId, setAssignmentJobId] = useState(null);
   const [assignmentJob, setAssignmentJob] = useState(null);
-  const [imageOptions, setImageOptions] = useState({
-    sourceScope: 'course_only',
-    applyProcess: false,
-    applyImprove: false,
-    platformPreferences: {
-      linkedin_company: 'landscape',
-      linkedin_personal: 'landscape',
-      instagram: 'portrait',
-      default: 'square',
-    },
-  });
+  const [isResuming, setIsResuming] = useState(false);
+
+  // Source step state
+  const [sourceType, setSourceType] = useState('course');
+  const [sourceUrls, setSourceUrls] = useState('');
+  const [sourceNotes, setSourceNotes] = useState('');
 
   // Campaign form
   const [campaignType, setCampaignType] = useState('course_based');
@@ -133,6 +128,24 @@ export default function WorkflowPage() {
   const [planText, setPlanText] = useState('');
   const [planPostIds, setPlanPostIds] = useState([]);
 
+  // Save notes dialog
+  const [showSaveNotes, setShowSaveNotes] = useState(false);
+  const [notesTitle, setNotesTitle] = useState('');
+  const [notesContent, setNotesContent] = useState('');
+
+  const [imageOptions, setImageOptions] = useState({
+    sourceScope: 'course_only',
+    applyProcess: false,
+    applyImprove: false,
+    platformPreferences: {
+      linkedin_company: 'landscape',
+      linkedin_personal: 'landscape',
+      instagram: 'portrait',
+      default: 'square',
+    },
+  });
+
+  // Load reference data
   useEffect(() => {
     coursesAPI.list().then(r => setCourses(r.data)).catch(() => {});
     profilesAPI.list().then(r => setProfiles(r.data)).catch(() => {});
@@ -141,12 +154,57 @@ export default function WorkflowPage() {
       setAgents(r.data);
       setImageOptions(prev => ({
         ...prev,
-        applyProcess: r.data.some(agent => agent.agent_id === 'image_cropper' && agent.active),
-        applyImprove: r.data.some(agent => agent.agent_id === 'image_enhancer' && agent.active),
+        applyProcess: r.data.some(a => a.agent_id === 'image_cropper' && a.active),
+        applyImprove: r.data.some(a => a.agent_id === 'image_enhancer' && a.active),
       }));
     }).catch(() => {});
     mediaAPI.listAssets({ status: 'ready' }).then(r => setMediaAssets(r.data)).catch(() => {});
   }, []);
+
+  // Resume campaign flow
+  useEffect(() => {
+    if (!resumeCampaignId) return;
+    setIsResuming(true);
+    campaignsAPI.get(resumeCampaignId).then(async (r) => {
+      const c = r.data;
+      setCreatedCampaign(c);
+      setCampaignTitle(c.title || '');
+      setCampaignType(c.type || 'editorial');
+      setSelectedCourse(c.course_id || '');
+      setPeriodStart(c.period_start || '');
+      setPeriodEnd(c.period_end || '');
+      setPostsPerProfile(c.posts_per_profile || 3);
+      setSelectedProfiles(c.profiles || []);
+      setSelectedRule(c.rules_id || '');
+      setSourceType(c.source_type || (c.course_id ? 'course' : 'editorial'));
+      setSourceUrls((c.source_urls || []).join('\n'));
+      setSourceNotes(c.source_notes || '');
+
+      // Determine step to resume at based on campaign status
+      if (c.status === 'review' || c.status === 'approved') {
+        // Has generated posts → go to review
+        const postsRes = await postsAPI.list({ campaign_id: c.campaign_id });
+        setGeneratedPosts(postsRes.data);
+        await loadAssignments(c.campaign_id);
+        setStep(5); // Review
+      } else if (c.status === 'planning') {
+        // Plan created but texts not yet generated
+        const postsRes = await postsAPI.list({ campaign_id: c.campaign_id });
+        const postIds = postsRes.data.map(p => p.post_id);
+        setPlanPostIds(postIds);
+        setPlanText(`Piano con ${postIds.length} post creati. Pronto per generare i testi.`);
+        setStep(4); // Generate
+      } else {
+        // Draft — go to source step
+        setStep(0);
+      }
+      setIsResuming(false);
+    }).catch(() => {
+      toast.error('Impossibile riprendere la campagna');
+      setIsResuming(false);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeCampaignId]);
 
   const loadAssignments = async (campaignId) => {
     if (!campaignId) return;
@@ -172,7 +230,7 @@ export default function WorkflowPage() {
 
   const activeAgentIds = agents.filter(a => a.active).map(a => a.agent_id);
 
-  // Step 3: Create campaign and generate plan
+  /* Step 3 → Create or update campaign, then generate plan */
   const handleCreateCampaign = async () => {
     setLoading(true);
     try {
@@ -185,12 +243,23 @@ export default function WorkflowPage() {
         period_end: periodEnd,
         posts_per_profile: postsPerProfile,
         rules_id: selectedRule,
+        source_type: sourceType,
+        source_urls: sourceUrls.split('\n').filter(u => u.trim()),
+        source_notes: sourceNotes,
       };
-      const res = await campaignsAPI.create(data);
-      setCreatedCampaign(res.data);
+
+      let campaign;
+      if (createdCampaign) {
+        // Update existing
+        campaign = (await campaignsAPI.update(createdCampaign.campaign_id, data)).data;
+      } else {
+        campaign = (await campaignsAPI.create(data)).data;
+      }
+      setCreatedCampaign(campaign);
+
       // Generate plan
-      const planRes = await generateAPI.plan(res.data.campaign_id, activeAgentIds);
-      setPlanText(planRes.data.plan_text || 'Piano generato. Controlla il calendario.');
+      const planRes = await generateAPI.plan(campaign.campaign_id, activeAgentIds);
+      setPlanText(planRes.data.plan_text || 'Piano generato.');
       setPlanPostIds(planRes.data.posts_created || []);
       toast.success('Piano editoriale generato');
       setStep(4);
@@ -201,7 +270,7 @@ export default function WorkflowPage() {
     }
   };
 
-  // Step 4: Generate texts via background job with polling
+  /* Step 4 → Generate texts via background job */
   const [jobId, setJobId] = useState(null);
   const [jobProgress, setJobProgress] = useState({ current: 0, total: 0, label: '' });
 
@@ -276,7 +345,6 @@ export default function WorkflowPage() {
     return () => clearInterval(poll);
   }, [assignmentJobId, createdCampaign]);
 
-  // Step 5: Approve posts
   const handleApproveAll = async () => {
     if (!createdCampaign) return;
     const ids = generatedPosts.map(p => p.post_id);
@@ -313,7 +381,7 @@ export default function WorkflowPage() {
       setAssignmentJob(null);
       toast.success('Abbinamento immagini avviato');
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Errore durante l’abbinamento immagini');
+      toast.error(err.response?.data?.detail || 'Errore abbinamento immagini');
     }
   };
 
@@ -330,22 +398,47 @@ export default function WorkflowPage() {
   const handleRemoveAssignment = async (postId) => {
     try {
       await mediaAPI.removeAssignment(postId);
-      setAssignmentsMap(prev => {
-        const next = { ...prev };
-        delete next[postId];
-        return next;
-      });
+      setAssignmentsMap(prev => { const n = { ...prev }; delete n[postId]; return n; });
       toast.success('Immagine rimossa dal post');
     } catch {
       toast.error('Errore nella rimozione immagine');
     }
   };
 
+  const handleSaveNotes = async () => {
+    if (!createdCampaign || !notesContent.trim()) return;
+    try {
+      await campaignsAPI.saveNotes(createdCampaign.campaign_id, notesContent, notesTitle || `Note - ${createdCampaign.title}`);
+      toast.success('Note salvate nel repository');
+      setShowSaveNotes(false);
+      setNotesContent('');
+      setNotesTitle('');
+    } catch {
+      toast.error('Errore nel salvataggio');
+    }
+  };
+
+  if (isResuming) {
+    return (
+      <div className="flex items-center justify-center py-20" data-testid="workflow-loading">
+        <Loader2 className="w-6 h-6 animate-spin text-[#7B61FF] mr-3" />
+        <span className="text-sm text-gray-500">Caricamento campagna...</span>
+      </div>
+    );
+  }
+
   return (
     <div data-testid="workflow-page">
       <div className="mb-10">
-        <h1 className="text-4xl font-semibold ariadne-heading mb-2">Workflow</h1>
-        <p className="text-base text-gray-500">Crea campagna, pianifica, genera testi, approva</p>
+        <h1 className="text-4xl font-semibold ariadne-heading mb-2">
+          {createdCampaign ? createdCampaign.title : 'Produzione guidata'}
+        </h1>
+        <p className="text-base text-gray-500">
+          {createdCampaign
+            ? 'Continua il flusso di produzione per questa campagna'
+            : 'Crea una nuova campagna: scegli la sorgente, configura, genera e approva'
+          }
+        </p>
       </div>
 
       {/* Progress bar */}
@@ -358,6 +451,7 @@ export default function WorkflowPage() {
                 className={`text-xs font-medium px-3 py-1.5 rounded-full transition-all ${
                   i === step ? 'bg-gray-900 text-white' : i < step ? 'bg-[#10B981]/10 text-[#10B981]' : 'bg-gray-100 text-gray-400'
                 }`}
+                disabled={i > step}
                 data-testid={`workflow-step-${i}`}
               >
                 {i < step ? <CheckCircle2 className="w-3.5 h-3.5 inline mr-1" /> : null}
@@ -370,36 +464,49 @@ export default function WorkflowPage() {
         <Progress value={((step + 1) / STEPS.length) * 100} className="h-1" />
       </div>
 
-      {/* Step 0: Campaign type */}
+      {/* ===== STEP 0: Source selection ===== */}
       {step === 0 && (
         <Card className="border-gray-100">
           <CardContent className="p-8 space-y-6">
-            <h2 className="text-xl font-medium ariadne-heading">Tipo di campagna</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <h2 className="text-xl font-medium ariadne-heading">Scegli la sorgente dei contenuti</h2>
+            <p className="text-sm text-gray-500">Da dove partiamo? Seleziona la sorgente principale per questa campagna.</p>
+            <div className="grid grid-cols-3 gap-4">
               <button
-                onClick={() => setCampaignType('course_based')}
+                onClick={() => { setSourceType('course'); setCampaignType('course_based'); }}
                 className={`p-6 rounded-xl border-2 text-left transition-all ${
-                  campaignType === 'course_based' ? 'border-[#7B61FF] bg-[#7B61FF]/[0.03]' : 'border-gray-100 hover:border-gray-200'
+                  sourceType === 'course' ? 'border-[#7B61FF] bg-[#7B61FF]/[0.03]' : 'border-gray-100 hover:border-gray-200'
                 }`}
-                data-testid="workflow-type-course"
+                data-testid="source-type-course"
               >
                 <Zap className="w-5 h-5 mb-3 text-[#7B61FF]" />
-                <h3 className="text-sm font-semibold mb-1">Da corso/evento</h3>
-                <p className="text-xs text-gray-400">Promuovi un corso, evento o webinar specifico</p>
+                <h3 className="text-sm font-semibold mb-1">Corso o evento</h3>
+                <p className="text-xs text-gray-400">Promuovi un corso, evento o webinar dal catalogo</p>
               </button>
               <button
-                onClick={() => setCampaignType('editorial')}
+                onClick={() => { setSourceType('repository'); setCampaignType('editorial'); }}
                 className={`p-6 rounded-xl border-2 text-left transition-all ${
-                  campaignType === 'editorial' ? 'border-[#7B61FF] bg-[#7B61FF]/[0.03]' : 'border-gray-100 hover:border-gray-200'
+                  sourceType === 'repository' ? 'border-[#7B61FF] bg-[#7B61FF]/[0.03]' : 'border-gray-100 hover:border-gray-200'
                 }`}
-                data-testid="workflow-type-editorial"
+                data-testid="source-type-repository"
               >
-                <FileText className="w-5 h-5 mb-3 text-[#F5A623]" />
-                <h3 className="text-sm font-semibold mb-1">Editoriale</h3>
-                <p className="text-xs text-gray-400">Insight, valori, testimonianze, riflessioni</p>
+                <FolderOpen className="w-5 h-5 mb-3 text-[#F5A623]" />
+                <h3 className="text-sm font-semibold mb-1">Repository</h3>
+                <p className="text-xs text-gray-400">Usa i documenti guida dal tuo repository Ariadne</p>
+              </button>
+              <button
+                onClick={() => { setSourceType('freeform'); setCampaignType('editorial'); }}
+                className={`p-6 rounded-xl border-2 text-left transition-all ${
+                  sourceType === 'freeform' ? 'border-[#7B61FF] bg-[#7B61FF]/[0.03]' : 'border-gray-100 hover:border-gray-200'
+                }`}
+                data-testid="source-type-freeform"
+              >
+                <FileText className="w-5 h-5 mb-3 text-[#10B981]" />
+                <h3 className="text-sm font-semibold mb-1">Testo libero / URL</h3>
+                <p className="text-xs text-gray-400">Insight, valori, riflessioni da URL o note personali</p>
               </button>
             </div>
-            {campaignType === 'course_based' && (
+
+            {sourceType === 'course' && (
               <div className="space-y-2">
                 <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Seleziona corso/evento</Label>
                 <Select value={selectedCourse} onValueChange={setSelectedCourse}>
@@ -410,9 +517,58 @@ export default function WorkflowPage() {
                 </Select>
               </div>
             )}
+
+            {sourceType === 'freeform' && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">URL di riferimento (uno per riga)</Label>
+                  <Textarea
+                    value={sourceUrls}
+                    onChange={e => setSourceUrls(e.target.value)}
+                    placeholder="https://esempio.com/articolo&#10;https://blog.esempio.com/post"
+                    rows={3}
+                    data-testid="workflow-source-urls"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Note e appunti</Label>
+                  <Textarea
+                    value={sourceNotes}
+                    onChange={e => setSourceNotes(e.target.value)}
+                    placeholder="Scrivi qui le idee, i temi o le note per questa campagna..."
+                    rows={4}
+                    data-testid="workflow-source-notes"
+                  />
+                </div>
+              </div>
+            )}
+
+            {sourceType === 'repository' && (
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-xs text-gray-500">
+                  Il contenuto del repository sara incluso automaticamente nel contesto di generazione.
+                  Puoi gestire i documenti dalla pagina <button onClick={() => navigate('/repository')} className="text-[#7B61FF] underline">Repository</button>.
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <Button onClick={() => setStep(1)} className="gap-2" data-testid="workflow-next-0">
+                Avanti <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ===== STEP 1: Campaign config ===== */}
+      {step === 1 && (
+        <Card className="border-gray-100">
+          <CardContent className="p-8 space-y-6">
+            <h2 className="text-xl font-medium ariadne-heading">Configura la campagna</h2>
             <div className="space-y-2">
               <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Titolo campagna</Label>
-              <Input value={campaignTitle} onChange={e => setCampaignTitle(e.target.value)} placeholder="Titolo della campagna" data-testid="workflow-title-input" />
+              <Input value={campaignTitle} onChange={e => setCampaignTitle(e.target.value)} placeholder="es. Lancio CCP Primavera 2026" data-testid="workflow-title-input" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -424,37 +580,31 @@ export default function WorkflowPage() {
                 <Input type="date" value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} data-testid="workflow-end-input" />
               </div>
             </div>
-            {!essentialMode && (
-              <>
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Post per profilo</Label>
-                  <Input type="number" min={1} max={20} value={postsPerProfile} onChange={e => setPostsPerProfile(parseInt(e.target.value) || 1)} className="w-24" data-testid="workflow-posts-input" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Regola di pianificazione</Label>
-                  <Select value={selectedRule} onValueChange={setSelectedRule}>
-                    <SelectTrigger data-testid="workflow-rule-select"><SelectValue placeholder="Seleziona regola..." /></SelectTrigger>
-                    <SelectContent>
-                      {rules.map(r => <SelectItem key={r.rule_id} value={r.rule_id}>{r.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
-            )}
-            {essentialMode && (
-              <p className="text-xs text-gray-400 bg-gray-50 rounded-lg px-4 py-2">
-                Modalita essenziale: 3 post per profilo, regola predefinita. Modifica in Workflow avanzato.
-              </p>
-            )}
-            <div className="flex justify-end">
-              <Button onClick={() => setStep(1)} className="gap-2" data-testid="workflow-next-0">Avanti <ArrowRight className="w-4 h-4" /></Button>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Post per profilo</Label>
+                <Input type="number" min={1} max={20} value={postsPerProfile} onChange={e => setPostsPerProfile(parseInt(e.target.value) || 1)} className="w-24" data-testid="workflow-posts-input" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Regola di pianificazione</Label>
+                <Select value={selectedRule} onValueChange={setSelectedRule}>
+                  <SelectTrigger data-testid="workflow-rule-select"><SelectValue placeholder="Seleziona regola..." /></SelectTrigger>
+                  <SelectContent>
+                    {rules.map(r => <SelectItem key={r.rule_id} value={r.rule_id}>{r.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => setStep(0)} className="gap-2"><ArrowLeft className="w-4 h-4" /> Indietro</Button>
+              <Button onClick={() => setStep(2)} className="gap-2" data-testid="workflow-next-1">Avanti <ArrowRight className="w-4 h-4" /></Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Step 1: Select profiles */}
-      {step === 1 && (
+      {/* ===== STEP 2: Select profiles ===== */}
+      {step === 2 && (
         <Card className="border-gray-100">
           <CardContent className="p-8 space-y-6">
             <h2 className="text-xl font-medium ariadne-heading">Seleziona profili target</h2>
@@ -476,15 +626,15 @@ export default function WorkflowPage() {
               ))}
             </div>
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(0)} className="gap-2"><ArrowLeft className="w-4 h-4" /> Indietro</Button>
-              <Button onClick={() => setStep(2)} className="gap-2" disabled={selectedProfiles.length === 0} data-testid="workflow-next-1">Avanti <ArrowRight className="w-4 h-4" /></Button>
+              <Button variant="outline" onClick={() => setStep(1)} className="gap-2"><ArrowLeft className="w-4 h-4" /> Indietro</Button>
+              <Button onClick={() => setStep(3)} className="gap-2" disabled={selectedProfiles.length === 0} data-testid="workflow-next-2">Avanti <ArrowRight className="w-4 h-4" /></Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Step 2: Select agents */}
-      {step === 2 && (
+      {/* ===== STEP 3: Select agents → generate plan ===== */}
+      {step === 3 && (
         <Card className="border-gray-100">
           <CardContent className="p-8 space-y-6">
             <h2 className="text-xl font-medium ariadne-heading">Agenti attivi</h2>
@@ -509,7 +659,7 @@ export default function WorkflowPage() {
               ))}
             </div>
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(1)} className="gap-2"><ArrowLeft className="w-4 h-4" /> Indietro</Button>
+              <Button variant="outline" onClick={() => setStep(2)} className="gap-2"><ArrowLeft className="w-4 h-4" /> Indietro</Button>
               <Button onClick={handleCreateCampaign} disabled={loading} className="gap-2" data-testid="workflow-generate-plan">
                 {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generazione piano...</> : <>Genera piano <ArrowRight className="w-4 h-4" /></>}
               </Button>
@@ -518,9 +668,7 @@ export default function WorkflowPage() {
         </Card>
       )}
 
-      {/* Step 3: Plan review (skipped to step 4 after generation) */}
-
-      {/* Step 4: Generate texts */}
+      {/* ===== STEP 4: Generate texts ===== */}
       {step === 4 && (
         <Card className="border-gray-100">
           <CardContent className="p-8 space-y-6">
@@ -540,7 +688,7 @@ export default function WorkflowPage() {
               </div>
             )}
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(2)} className="gap-2" disabled={loading}><ArrowLeft className="w-4 h-4" /> Indietro</Button>
+              <Button variant="outline" onClick={() => setStep(3)} className="gap-2" disabled={loading}><ArrowLeft className="w-4 h-4" /> Indietro</Button>
               <Button onClick={handleGenerateTexts} disabled={loading} className="gap-2" data-testid="workflow-generate-texts">
                 {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generazione in corso...</> : <>Genera testi <Zap className="w-4 h-4" /></>}
               </Button>
@@ -549,16 +697,32 @@ export default function WorkflowPage() {
         </Card>
       )}
 
-      {/* Step 5: Review */}
+      {/* ===== STEP 5: Review ===== */}
       {step === 5 && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-medium ariadne-heading">Revisione post ({generatedPosts.length})</h2>
-            <Button onClick={handleApproveAll} className="gap-2 bg-[#10B981] hover:bg-[#059669]" data-testid="workflow-approve-all">
-              <CheckCircle2 className="w-4 h-4" /> Approva tutti
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => { setNotesContent(sourceNotes); setNotesTitle(`Note - ${createdCampaign?.title || 'Campagna'}`); setShowSaveNotes(true); }}
+                className="gap-2"
+                data-testid="workflow-save-notes-btn"
+              >
+                <Save className="w-4 h-4" /> Salva note nel repository
+              </Button>
+              <Button onClick={handleApproveAll} className="gap-2 bg-[#10B981] hover:bg-[#059669]" data-testid="workflow-approve-all">
+                <CheckCircle2 className="w-4 h-4" /> Approva tutti
+              </Button>
+              {createdCampaign && (
+                <Button variant="outline" onClick={() => navigate('/export')} className="gap-2" data-testid="workflow-go-export">
+                  Vai all'export <ArrowRight className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
           </div>
 
+          {/* Auto-assign images card */}
           <Card className="border-gray-100" data-testid="workflow-auto-assign-card">
             <CardContent className="p-6 space-y-4">
               <div>
@@ -580,7 +744,7 @@ export default function WorkflowPage() {
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">LinkedIn aziendale</Label>
                   <Select value={imageOptions.platformPreferences.linkedin_company} onValueChange={(value) => setImageOptions(prev => ({ ...prev, platformPreferences: { ...prev.platformPreferences, linkedin_company: value } }))}>
-                    <SelectTrigger data-testid="workflow-image-format-linkedin-company"><SelectValue /></SelectTrigger>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="landscape">Orizzontale</SelectItem>
                       <SelectItem value="square">Quadrata</SelectItem>
@@ -592,7 +756,7 @@ export default function WorkflowPage() {
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">LinkedIn personale</Label>
                   <Select value={imageOptions.platformPreferences.linkedin_personal} onValueChange={(value) => setImageOptions(prev => ({ ...prev, platformPreferences: { ...prev.platformPreferences, linkedin_personal: value } }))}>
-                    <SelectTrigger data-testid="workflow-image-format-linkedin-personal"><SelectValue /></SelectTrigger>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="landscape">Orizzontale</SelectItem>
                       <SelectItem value="square">Quadrata</SelectItem>
@@ -604,7 +768,7 @@ export default function WorkflowPage() {
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Instagram</Label>
                   <Select value={imageOptions.platformPreferences.instagram} onValueChange={(value) => setImageOptions(prev => ({ ...prev, platformPreferences: { ...prev.platformPreferences, instagram: value } }))}>
-                    <SelectTrigger data-testid="workflow-image-format-instagram"><SelectValue /></SelectTrigger>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="portrait">Verticale</SelectItem>
                       <SelectItem value="square">Quadrata</SelectItem>
@@ -614,14 +778,14 @@ export default function WorkflowPage() {
                   </Select>
                 </div>
                 <div className="flex flex-col justify-end gap-2">
-                  <label className="flex items-center gap-2 text-xs text-gray-500"><input type="checkbox" checked={imageOptions.applyProcess} onChange={(e) => setImageOptions(prev => ({ ...prev, applyProcess: e.target.checked }))} data-testid="workflow-image-process-checkbox" /> Ritaglia</label>
-                  <label className="flex items-center gap-2 text-xs text-gray-500"><input type="checkbox" checked={imageOptions.applyImprove} onChange={(e) => setImageOptions(prev => ({ ...prev, applyImprove: e.target.checked }))} data-testid="workflow-image-improve-checkbox" /> Migliora immagine</label>
+                  <label className="flex items-center gap-2 text-xs text-gray-500"><input type="checkbox" checked={imageOptions.applyProcess} onChange={(e) => setImageOptions(prev => ({ ...prev, applyProcess: e.target.checked }))} /> Ritaglia</label>
+                  <label className="flex items-center gap-2 text-xs text-gray-500"><input type="checkbox" checked={imageOptions.applyImprove} onChange={(e) => setImageOptions(prev => ({ ...prev, applyImprove: e.target.checked }))} /> Migliora immagine</label>
                 </div>
               </div>
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 {assignmentJob && (
-                  <div className="flex-1 min-w-[240px] rounded-xl bg-gray-50 px-4 py-3" data-testid="workflow-image-job-status">
-                    <p className="text-sm font-medium">{assignmentJob.label || 'Abbinamento immagini in corso'}</p>
+                  <div className="flex-1 min-w-[240px] rounded-xl bg-gray-50 px-4 py-3">
+                    <p className="text-sm font-medium">{assignmentJob.label || 'Abbinamento in corso'}</p>
                     <p className="text-xs text-gray-400">{assignmentJob.current || 0}/{assignmentJob.total || 0}</p>
                   </div>
                 )}
@@ -630,6 +794,7 @@ export default function WorkflowPage() {
             </CardContent>
           </Card>
 
+          {/* Posts */}
           {generatedPosts.map(p => (
             <Card key={p.post_id} className="border-gray-100" data-testid={`workflow-post-${p.post_id}`}>
               <CardContent className="p-6">
@@ -653,13 +818,13 @@ export default function WorkflowPage() {
                   </div>
                 )}
                 {getAssignmentPreview(p) && (
-                  <div className="mt-4 rounded-xl overflow-hidden border border-gray-100" data-testid={`workflow-post-image-preview-${p.post_id}`}>
+                  <div className="mt-4 rounded-xl overflow-hidden border border-gray-100">
                     <img src={getAssignmentPreview(p)} alt="Immagine associata" className="w-full max-h-64 object-cover" />
                   </div>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_220px_auto] gap-3 mt-4">
                   <Select value={assignmentsMap[p.post_id]?.media_asset_id || 'none'} onValueChange={(value) => value === 'none' ? handleRemoveAssignment(p.post_id) : handleManualAssign(p.post_id, value, assignmentsMap[p.post_id]?.variant || PLATFORM_VARIANTS[p.platform] || 'square')}>
-                    <SelectTrigger data-testid={`workflow-post-asset-select-${p.post_id}`}><SelectValue placeholder="Scegli immagine dalla libreria" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Scegli immagine dalla libreria" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Post solo testo</SelectItem>
                       {mediaAssets.map(asset => <SelectItem key={asset.asset_id} value={asset.asset_id}>{asset.title}</SelectItem>)}
@@ -669,7 +834,7 @@ export default function WorkflowPage() {
                     const currentAssetId = assignmentsMap[p.post_id]?.media_asset_id;
                     if (currentAssetId) handleManualAssign(p.post_id, currentAssetId, value);
                   }}>
-                    <SelectTrigger data-testid={`workflow-post-variant-select-${p.post_id}`}><SelectValue /></SelectTrigger>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="square">Quadrata</SelectItem>
                       <SelectItem value="portrait">Verticale</SelectItem>
@@ -677,9 +842,8 @@ export default function WorkflowPage() {
                       <SelectItem value="original">Originale</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button variant="outline" onClick={() => handleRemoveAssignment(p.post_id)} data-testid={`workflow-post-remove-assignment-${p.post_id}`}>Rimuovi immagine</Button>
+                  <Button variant="outline" onClick={() => handleRemoveAssignment(p.post_id)}>Rimuovi immagine</Button>
                 </div>
-                {/* Post image upload */}
                 <PostImageUploader postId={p.post_id} currentImage={p.image_url} onImageSet={(url) => {
                   setGeneratedPosts(prev => prev.map(gp => gp.post_id === p.post_id ? {...gp, image_url: url} : gp));
                   if (createdCampaign?.campaign_id) loadAssignments(createdCampaign.campaign_id);
@@ -689,6 +853,29 @@ export default function WorkflowPage() {
           ))}
         </div>
       )}
+
+      {/* Save notes dialog */}
+      <Dialog open={showSaveNotes} onOpenChange={setShowSaveNotes}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle className="ariadne-heading">Salva note nel repository</DialogTitle></DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Titolo</Label>
+              <Input value={notesTitle} onChange={e => setNotesTitle(e.target.value)} placeholder="es. Note lancio CCP 2026" data-testid="save-notes-title" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Contenuto</Label>
+              <Textarea value={notesContent} onChange={e => setNotesContent(e.target.value)} rows={8} placeholder="Le tue note..." data-testid="save-notes-content" />
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowSaveNotes(false)}>Annulla</Button>
+              <Button onClick={handleSaveNotes} className="gap-2" data-testid="save-notes-submit">
+                <Save className="w-4 h-4" /> Salva
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
