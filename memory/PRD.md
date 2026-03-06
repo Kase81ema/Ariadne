@@ -107,6 +107,17 @@ Studio comunicazione, Community core, School Operations, Community avanzata - tu
 - Report `iteration_10.json`: backend 100%, frontend 100%
 - Verificati: blocco role-based su `/courses` e `/repository`, catalogo Training Courses per regular user, hub operativo completo per Editor/Admin
 
+### Fase 11 - Sidebar refinement finale Studio + School (06/03/2026) - COMPLETATO E TESTATO
+**FOCUS SOLO SIDEBAR:**
+- Sidebar allargata a 304px per dare respiro ai label lunghi
+- Bottoni di navigazione riprogettati con migliore gerarchia, padding, min-height, icon slot dedicato e label stabilizzati su una linea
+- Aggiornati i soli label sidebar richiesti con naming più leggibile e coerente in inglese
+- Verificata la resa sia in Studio sia in School: niente wrap brutto, niente icona sopra testo, pulsanti più puliti e professionali
+
+**TEST:**
+- Smoke test visivo eseguito con screenshot Studio + School
+- Verifica frontend dedicata completata: tutti i label sidebar leggibili e allineati correttamente, nessun difetto residuo segnalato
+
 ## Prioritized Backlog
 
 ### P0 - COMPLETATO
