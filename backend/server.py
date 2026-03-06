@@ -185,6 +185,13 @@ async def get_current_user(request: Request) -> dict:
                     return user
     raise HTTPException(status_code=401, detail="Non autenticato")
 
+
+async def require_admin_editor(request: Request) -> dict:
+    user = await get_current_user(request)
+    if user.get("role") not in ("admin", "editor"):
+        raise HTTPException(status_code=403, detail="Non autorizzato")
+    return user
+
 async def determine_role(email: str) -> str:
     email_lower = email.lower()
     if ADMIN_EMAILS and email_lower in ADMIN_EMAILS:
@@ -353,12 +360,12 @@ async def delete_profile(profile_id: str, request: Request):
 # ===== COURSES & EVENTS =====
 @api_router.get("/courses-events")
 async def list_courses(request: Request):
-    await get_current_user(request)
+    await require_admin_editor(request)
     return await db.courses_events.find({}, {"_id": 0}).to_list(200)
 
 @api_router.post("/courses-events")
 async def create_course(data: CourseEventCreate, request: Request):
-    user = await get_current_user(request)
+    user = await require_admin_editor(request)
     course = {"course_id": f"course_{uuid.uuid4().hex[:12]}", **data.model_dump(), "created_at": datetime.now(timezone.utc).isoformat(), "created_by": user["user_id"]}
     await db.courses_events.insert_one(course)
     await log_audit(user["user_id"], "create_course", {"course_id": course["course_id"]})
@@ -366,21 +373,21 @@ async def create_course(data: CourseEventCreate, request: Request):
 
 @api_router.put("/courses-events/{course_id}")
 async def update_course(course_id: str, data: CourseEventCreate, request: Request):
-    user = await get_current_user(request)
+    user = await require_admin_editor(request)
     await db.courses_events.update_one({"course_id": course_id}, {"$set": data.model_dump()})
     await log_audit(user["user_id"], "update_course", {"course_id": course_id})
     return await db.courses_events.find_one({"course_id": course_id}, {"_id": 0})
 
 @api_router.delete("/courses-events/{course_id}")
 async def delete_course(course_id: str, request: Request):
-    user = await get_current_user(request)
+    user = await require_admin_editor(request)
     await db.courses_events.delete_one({"course_id": course_id})
     await log_audit(user["user_id"], "delete_course", {"course_id": course_id})
     return {"ok": True}
 
 @api_router.post("/courses-events/{course_id}/clone")
 async def clone_course(course_id: str, request: Request):
-    user = await get_current_user(request)
+    user = await require_admin_editor(request)
     original = await db.courses_events.find_one({"course_id": course_id}, {"_id": 0})
     if not original:
         raise HTTPException(404, "Corso non trovato")
@@ -618,7 +625,7 @@ async def delete_template(template_id: str, request: Request):
 # ===== REPOSITORY =====
 @api_router.get("/repository/files")
 async def list_repo_files(request: Request, category: str = ""):
-    await get_current_user(request)
+    await require_admin_editor(request)
     query = {}
     if category:
         query["category"] = category
@@ -626,7 +633,7 @@ async def list_repo_files(request: Request, category: str = ""):
 
 @api_router.post("/repository/upload")
 async def upload_repo_file(request: Request, file: UploadFile = File(...), category: str = Form("generale")):
-    user = await get_current_user(request)
+    user = await require_admin_editor(request)
     cat_dir = UPLOAD_DIR / category
     cat_dir.mkdir(exist_ok=True)
     file_id = f"file_{uuid.uuid4().hex[:12]}"
@@ -653,7 +660,7 @@ async def upload_repo_file(request: Request, file: UploadFile = File(...), categ
 
 @api_router.delete("/repository/files/{file_id}")
 async def delete_repo_file(file_id: str, request: Request):
-    await get_current_user(request)
+    await require_admin_editor(request)
     f = await db.repository_files.find_one({"file_id": file_id}, {"_id": 0})
     if f and os.path.exists(f.get("path", "")):
         os.remove(f["path"])
@@ -662,7 +669,7 @@ async def delete_repo_file(file_id: str, request: Request):
 
 @api_router.get("/repository/categories")
 async def list_categories(request: Request):
-    await get_current_user(request)
+    await require_admin_editor(request)
     categories = [
         {"id": "tone_of_voice", "name": "Tone of Voice", "description": "Linee guida sul tono di comunicazione"},
         {"id": "regole_calendario", "name": "Regole Calendario", "description": "Vincoli e regole per la pianificazione"},
@@ -679,7 +686,7 @@ async def list_categories(request: Request):
 @api_router.get("/repository/context")
 async def get_repo_context(request: Request):
     """Get consolidated repository context for AI agents."""
-    await get_current_user(request)
+    await require_admin_editor(request)
     files = await db.repository_files.find({}, {"_id": 0}).to_list(100)
     context_parts = []
     for f in files:

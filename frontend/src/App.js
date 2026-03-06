@@ -31,6 +31,7 @@ import MyJourneyPage from "./pages/MyJourneyPage";
 import AssistantPage from "./pages/AssistantPage";
 import WelcomePage from "./pages/WelcomePage";
 import CourseDetailPage from "./pages/CourseDetailPage";
+import TrainingCoursesPage from "./pages/TrainingCoursesPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 
 function ProtectedRoute({ children, requiredRole }) {
@@ -80,14 +81,14 @@ function AppRouter() {
       {/* Studio comunicazione (admin/editor) */}
       <Route path="/dashboard" element={<AdminEditorRoute><DashboardPage /></AdminEditorRoute>} />
       <Route path="/profiles" element={<AdminEditorRoute><ProfilesPage /></AdminEditorRoute>} />
-      <Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
+      <Route path="/courses" element={<AdminEditorRoute><CoursesPage /></AdminEditorRoute>} />
       <Route path="/editorial" element={<AdminEditorRoute><EditorialPage /></AdminEditorRoute>} />
       <Route path="/rules" element={<AdminEditorRoute><RulesPage /></AdminEditorRoute>} />
       <Route path="/workflow" element={<AdminEditorRoute><WorkflowPage /></AdminEditorRoute>} />
       <Route path="/images" element={<AdminEditorRoute><ImagesPage /></AdminEditorRoute>} />
       <Route path="/approvals" element={<AdminEditorRoute><ApprovalsPage /></AdminEditorRoute>} />
       <Route path="/export" element={<AdminEditorRoute><ExportPage /></AdminEditorRoute>} />
-      <Route path="/repository" element={<ProtectedRoute><RepositoryPage /></ProtectedRoute>} />
+      <Route path="/repository" element={<AdminEditorRoute><RepositoryPage /></AdminEditorRoute>} />
       <Route path="/agents" element={<AdminEditorRoute><AgentsPage /></AdminEditorRoute>} />
       <Route path="/start" element={<AdminEditorRoute><StartCampaignPage /></AdminEditorRoute>} />
 
@@ -95,6 +96,7 @@ function AppRouter() {
       <Route path="/community" element={<ProtectedRoute><CommunityDashboardPage /></ProtectedRoute>} />
       <Route path="/welcome" element={<ProtectedRoute><WelcomePage /></ProtectedRoute>} />
       <Route path="/course/:courseId" element={<ProtectedRoute><CourseDetailPage /></ProtectedRoute>} />
+      <Route path="/training-courses" element={<ProtectedRoute><TrainingCoursesPage /></ProtectedRoute>} />
       <Route path="/feed" element={<ProtectedRoute><FeedPage /></ProtectedRoute>} />
       <Route path="/community/events" element={<ProtectedRoute><CommunityEventsPage /></ProtectedRoute>} />
       <Route path="/my-journey" element={<ProtectedRoute><MyJourneyPage /></ProtectedRoute>} />

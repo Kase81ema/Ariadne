@@ -64,7 +64,6 @@ const schoolNavGroups = [
       { to: '/my-journey', icon: Map, label: 'Il mio percorso' },
       { to: '/feed', icon: MessageSquare, label: 'Bacheca della Community' },
       { to: '/materials', icon: BookOpen, label: 'Materiali' },
-      { to: '/community/events', icon: CalendarDays, label: 'Eventi e annunci' },
       { to: '/assistant', icon: HelpCircle, label: 'Ariadne AI' },
     ],
   },
@@ -72,8 +71,9 @@ const schoolNavGroups = [
     id: 'risorse',
     title: 'Risorse',
     items: [
-      { to: '/courses', icon: GraduationCap, label: 'Corsi ed eventi' },
-      { to: '/repository', icon: FolderOpen, label: 'Repository' },
+      { to: '/training-courses', icon: GraduationCap, label: 'Training Courses' },
+      { to: '/courses', icon: CalendarDays, label: 'Corsi ed eventi', roles: ['admin', 'editor'] },
+      { to: '/repository', icon: FolderOpen, label: 'Repository', roles: ['admin', 'editor'] },
     ],
   },
   {
@@ -129,7 +129,7 @@ function AriadneLogo({ className }) {
   );
 }
 
-const schoolPaths = ['/community', '/feed', '/my-journey', '/materials', '/community/events', '/assistant', '/inbox', '/routing-rules', '/email-templates', '/users-admin', '/cohorts-admin', '/banners-admin', '/welcome'];
+const schoolPaths = ['/community', '/feed', '/my-journey', '/materials', '/community/events', '/assistant', '/inbox', '/routing-rules', '/email-templates', '/users-admin', '/cohorts-admin', '/banners-admin', '/welcome', '/training-courses'];
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
@@ -162,13 +162,19 @@ export default function Layout({ children }) {
   /* Collapsible state */
   const currentNavGroups = area === 'school' ? schoolNavGroups : studioNavGroups;
   const isAdminOrEditor = user?.role === 'admin' || user?.role === 'editor';
+  const visibleGroups = currentNavGroups
+    .filter(group => !group.adminOnly || isAdminOrEditor)
+    .map(group => ({
+      ...group,
+      items: group.items.filter(item => !item.roles || item.roles.includes(user?.role)),
+    }))
+    .filter(group => group.items.length > 0);
 
   const getActiveGroupId = () => {
-    for (const g of currentNavGroups) {
-      if (g.adminOnly && !isAdminOrEditor) continue;
+    for (const g of visibleGroups) {
       if (g.items.some(item => location.pathname === item.to || location.pathname.startsWith(item.to + '/'))) return g.id;
     }
-    return currentNavGroups[0]?.id;
+    return visibleGroups[0]?.id;
   };
 
   const storageKey = `ariadne_groups_${area}`;
@@ -182,14 +188,14 @@ export default function Layout({ children }) {
   useEffect(() => {
     const activeGroup = getActiveGroupId();
     setOpenGroups(prev => {
-      const first = currentNavGroups.filter(g => !g.adminOnly || isAdminOrEditor)[0]?.id;
+      const first = visibleGroups[0]?.id;
       const next = { ...prev };
       if (first && !(first in next)) next[first] = true;
       if (activeGroup && !(activeGroup in next)) next[activeGroup] = true;
       return next;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [area]);
+  }, [area, location.pathname, user?.role]);
 
   const toggleGroup = (id) => {
     setOpenGroups(prev => {
@@ -216,15 +222,23 @@ export default function Layout({ children }) {
     navigate('/login');
   };
 
+  const isStudioSidebar = area === 'studio';
+  const sidebarSurface = isStudioSidebar ? 'linear-gradient(180deg, hsl(220 30% 97%) 0%, hsl(225 36% 94%) 100%)' : 'hsl(var(--card))';
+  const sidebarBorder = isStudioSidebar ? 'hsl(220 22% 86%)' : 'hsl(var(--border))';
+  const sidebarText = isStudioSidebar ? 'hsl(228 28% 18%)' : 'hsl(var(--foreground))';
+  const sidebarMuted = isStudioSidebar ? 'hsl(223 15% 42%)' : 'hsl(var(--muted-foreground))';
+  const sidebarSoft = isStudioSidebar ? 'hsl(220 24% 90%)' : 'hsl(var(--muted))';
+  const sidebarButtonBg = isStudioSidebar ? 'hsla(0, 0%, 100%, 0.8)' : 'hsl(var(--card))';
+
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-[hsl(var(--card))]">
+    <div className="flex flex-col h-full" style={{ background: sidebarSurface }}>
       {/* Header with logo */}
       <div className="p-5 pb-3">
         <div className="flex items-center gap-2.5">
           <AriadneLogo className="ariadne-logo" />
           <div className="flex-1 min-w-0">
-            <h1 className="text-base font-semibold ariadne-heading" data-testid="app-title">Ariadne</h1>
-            <p className="text-[10px] uppercase tracking-widest font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>
+            <h1 className="text-base font-semibold ariadne-heading" style={{ color: sidebarText }} data-testid="app-title">Ariadne</h1>
+            <p className="text-[10px] uppercase tracking-widest font-medium" style={{ color: sidebarMuted }}>
               {area === 'school' ? 'Scuola & Community' : 'Editorial Studio'}
             </p>
           </div>
@@ -248,15 +262,15 @@ export default function Layout({ children }) {
       {/* Area selector */}
       {canSeeStudio && (
         <div className="px-4 pb-3">
-          <div className="flex gap-1 p-1 rounded-lg" style={{ background: 'hsl(var(--muted))' }} data-testid="area-selector">
+          <div className="flex gap-1 p-1 rounded-lg" style={{ background: sidebarSoft }} data-testid="area-selector">
             <button
               onClick={() => switchArea('studio')}
               className={`flex-1 text-[11px] font-medium py-1.5 rounded-md transition-all ${
                 area === 'studio' ? 'shadow-sm' : ''
               }`}
               style={{
-                background: area === 'studio' ? 'hsl(var(--card))' : 'transparent',
-                color: area === 'studio' ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
+                background: area === 'studio' ? sidebarButtonBg : 'transparent',
+                color: area === 'studio' ? sidebarText : sidebarMuted,
               }}
               data-testid="area-studio-btn"
             >
@@ -269,7 +283,7 @@ export default function Layout({ children }) {
               }`}
               style={{
                 background: area === 'school' ? 'hsl(var(--card))' : 'transparent',
-                color: area === 'school' ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
+                color: area === 'school' ? 'hsl(var(--foreground))' : sidebarMuted,
               }}
               data-testid="area-school-btn"
             >
@@ -279,12 +293,10 @@ export default function Layout({ children }) {
         </div>
       )}
 
-      <Separator />
+      <Separator style={{ backgroundColor: sidebarBorder }} />
       <ScrollArea className="flex-1 py-2">
         <nav className="px-3">
-          {currentNavGroups
-            .filter(group => !group.adminOnly || isAdminOrEditor)
-            .map((group) => {
+          {visibleGroups.map((group) => {
               const isOpen = openGroups[group.id] !== false;
               return (
                 <Collapsible key={group.id} open={isOpen} onOpenChange={() => toggleGroup(group.id)}>
@@ -324,16 +336,16 @@ export default function Layout({ children }) {
             })}
         </nav>
       </ScrollArea>
-      <Separator />
+      <Separator style={{ backgroundColor: sidebarBorder }} />
       <div className="p-4">
         {user && (
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }}>
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: sidebarSoft, color: sidebarMuted }}>
               {user.name?.charAt(0)?.toUpperCase() || 'U'}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium truncate" style={{ color: 'hsl(var(--foreground))' }}>{user.name}</p>
-              <p className="text-[11px] truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>{user.email}</p>
+              <p className="text-sm font-medium truncate" style={{ color: sidebarText }}>{user.name}</p>
+              <p className="text-[11px] truncate" style={{ color: sidebarMuted }}>{user.email}</p>
             </div>
           </div>
         )}
@@ -341,7 +353,7 @@ export default function Layout({ children }) {
           variant="ghost"
           size="sm"
           className="w-full justify-start gap-2"
-          style={{ color: 'hsl(var(--muted-foreground))' }}
+          style={{ color: sidebarMuted }}
           onClick={handleLogout}
           data-testid="logout-btn"
         >
@@ -357,7 +369,7 @@ export default function Layout({ children }) {
       {/* Mobile menu button */}
       <button
         className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg shadow-sm border"
-        style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}
+        style={{ background: sidebarButtonBg, borderColor: sidebarBorder, color: sidebarText }}
         onClick={() => setMobileOpen(!mobileOpen)}
         data-testid="mobile-menu-btn"
       >
@@ -372,7 +384,7 @@ export default function Layout({ children }) {
         fixed lg:static z-40 w-[260px] h-full border-r
         transition-transform duration-200
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `} style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
+      `} style={{ background: sidebarSurface, borderColor: sidebarBorder }}>
         <SidebarContent />
       </aside>
 

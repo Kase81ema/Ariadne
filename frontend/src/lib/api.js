@@ -207,7 +207,8 @@ export const schoolAPI = {
   updateCohort: (id, data) => api.put(`/school/cohorts/${id}`, data),
   deleteCohort: (id) => api.delete(`/school/cohorts/${id}`),
   listMembers: (cohortId) => api.get(`/school/cohorts/${cohortId}/members`),
-  addMember: (cohortId, userId, role = 'student') => api.post(`/school/cohorts/${cohortId}/members`, { user_id: userId, role_in_cohort: role }),
+  addMember: (cohortId, userId, role = 'student', participationStatus = 'enrolled') => api.post(`/school/cohorts/${cohortId}/members`, { user_id: userId, role_in_cohort: role, participation_status: participationStatus }),
+  updateMember: (cohortId, userId, data) => api.put(`/school/cohorts/${cohortId}/members/${userId}`, data),
   removeMember: (cohortId, userId) => api.delete(`/school/cohorts/${cohortId}/members/${userId}`),
   listMaterials: () => api.get('/school/materials'),
   uploadMaterial: (file, cohortId, title, description) => {
@@ -225,6 +226,7 @@ export const schoolAPI = {
   assistantQuery: (question) => api.post('/school/assistant/query', { question }),
   // Course catalog
   getCatalog: () => api.get('/school/catalog'),
+  listTrainingCourses: () => api.get('/school/training-courses'),
   updateCourseProgress: (courseId, status) => api.post('/school/catalog/progress', { course_id: courseId, status }),
   // User details
   getUserDetails: () => api.get('/school/user-details'),
@@ -233,7 +235,9 @@ export const schoolAPI = {
   adminGetUserDetails: (userId) => api.get(`/school/admin/user-details/${userId}`),
   adminSaveUserDetails: (userId, data) => api.post(`/school/admin/user-details/${userId}`, data),
   adminListInstallments: () => api.get('/school/admin/installments'),
+  adminPaymentOverview: () => api.get('/school/admin/payment-overview'),
   adminCreateInstallment: (data) => api.post('/school/admin/installments', data),
+  adminBulkCreateInstallments: (data) => api.post('/school/admin/installments/bulk', data),
   adminUpdateInstallment: (id, data) => api.put(`/school/admin/installments/${id}`, data),
   adminDeleteInstallment: (id) => api.delete(`/school/admin/installments/${id}`),
   // My payments

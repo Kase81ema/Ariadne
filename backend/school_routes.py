@@ -1,6 +1,9 @@
+import os
+import uuid
+
+import aiofiles
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
-import uuid, os, aiofiles
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from dotenv import load_dotenv
@@ -19,6 +22,45 @@ def create_school_router(db, get_current_user, log_audit):
             raise HTTPException(403, "Non autorizzato")
         return user
 
+    def _category_label(raw_category: str, accreditation: str = "", tags=None):
+        raw = (raw_category or "").strip().lower()
+        tags = [str(tag).strip().lower() for tag in (tags or [])]
+        text = " ".join([raw, accreditation.lower(), " ".join(tags)])
+        if "external" in text or "trainer esterno" in text:
+            return "External Trainers"
+        if "icf" in text:
+            return "ICF"
+        if raw in ("ariadne", "formazione coach", "coach"):
+            return "Ariadne"
+        if raw == "tecnica":
+            return "Coach Technique"
+        if raw == "business":
+            return "Business"
+        return raw_category.title() if raw_category else "Ariadne"
+
+    def _timing_status(dates):
+        today = datetime.now(timezone.utc).date()
+        parsed_dates = []
+        for item in dates or []:
+            if not item.get("date"):
+                continue
+            try:
+                start_date = datetime.fromisoformat(item["date"]).date()
+                end_raw = item.get("end_date") or item.get("date")
+                end_date = datetime.fromisoformat(end_raw).date()
+                parsed_dates.append((start_date, end_date))
+            except Exception:
+                continue
+        if not parsed_dates:
+            return "always_available"
+        earliest = min(item[0] for item in parsed_dates)
+        latest = max(item[1] for item in parsed_dates)
+        if latest < today:
+            return "completed"
+        if earliest > today:
+            return "upcoming"
+        return "ongoing"
+
     # ===== PROGRAMS =====
     @router.get("/programs")
     async def list_programs(request: Request):
@@ -27,7 +69,7 @@ def create_school_router(db, get_current_user, log_audit):
 
     @router.post("/programs")
     async def create_program(request: Request):
-        user = await require_admin_editor(request)
+        await require_admin_editor(request)
         body = await request.json()
         prog = {
             "program_id": f"prg_{uuid.uuid4().hex[:12]}",
@@ -62,17 +104,20 @@ def create_school_router(db, get_current_user, log_audit):
         for c in cohorts:
             prog = await db.programs.find_one({"program_id": c.get("program_id")}, {"_id": 0})
             c["program_name"] = prog["name"] if prog else ""
+            linked_course = await db.courses_events.find_one({"course_id": c.get("course_id", "")}, {"_id": 0})
+            c["course_title"] = linked_course.get("title", "") if linked_course else ""
             c["member_count"] = await db.cohort_memberships.count_documents({"cohort_id": c["cohort_id"]})
             c["material_count"] = await db.materials.count_documents({"cohort_id": c["cohort_id"]})
         return cohorts
 
     @router.post("/cohorts")
     async def create_cohort(request: Request):
-        user = await require_admin_editor(request)
+        await require_admin_editor(request)
         body = await request.json()
         cohort = {
             "cohort_id": f"coh_{uuid.uuid4().hex[:12]}",
             "program_id": body.get("program_id", ""),
+            "course_id": body.get("course_id", ""),
             "name": body.get("name", ""),
             "start_date": body.get("start_date", ""),
             "end_date": body.get("end_date", ""),
@@ -86,7 +131,7 @@ def create_school_router(db, get_current_user, log_audit):
     async def update_cohort(request: Request, cohort_id: str):
         await require_admin_editor(request)
         body = await request.json()
-        allowed = ("name", "program_id", "start_date", "end_date", "active")
+        allowed = ("name", "program_id", "course_id", "start_date", "end_date", "active")
         updates = {k: v for k, v in body.items() if k in allowed}
         await db.cohorts.update_one({"cohort_id": cohort_id}, {"$set": updates})
         return await db.cohorts.find_one({"cohort_id": cohort_id}, {"_id": 0})
@@ -107,6 +152,9 @@ def create_school_router(db, get_current_user, log_audit):
             user_doc = await db.users.find_one({"user_id": m["user_id"]}, {"_id": 0, "password_hash": 0})
             m["user_name"] = user_doc.get("name", "") if user_doc else ""
             m["user_email"] = user_doc.get("email", "") if user_doc else ""
+            m["participation_status"] = m.get("participation_status", "enrolled")
+            installments = await db.payment_installments.find({"user_id": m["user_id"], "cohort_id": cohort_id}, {"_id": 0}).sort("due_date", 1).to_list(20)
+            m["installments"] = installments
         return memberships
 
     @router.post("/cohorts/{cohort_id}/members")
@@ -115,16 +163,38 @@ def create_school_router(db, get_current_user, log_audit):
         body = await request.json()
         user_id = body.get("user_id")
         role_in_cohort = body.get("role_in_cohort", "student")
+        participation_status = body.get("participation_status", "enrolled")
         existing = await db.cohort_memberships.find_one({"cohort_id": cohort_id, "user_id": user_id})
         if existing:
             raise HTTPException(400, "Utente gia membro")
         await db.cohort_memberships.insert_one({
             "cohort_id": cohort_id, "user_id": user_id,
             "role_in_cohort": role_in_cohort,
+            "participation_status": participation_status,
             "assigned_at": datetime.now(timezone.utc).isoformat(),
         })
         await log_audit(user["user_id"], "add_cohort_member", {"cohort_id": cohort_id, "member": user_id})
         return {"ok": True}
+
+    @router.put("/cohorts/{cohort_id}/members/{user_id}")
+    async def update_member(request: Request, cohort_id: str, user_id: str):
+        admin_user = await require_admin_editor(request)
+        body = await request.json()
+        updates = {
+            k: v for k, v in body.items()
+            if k in ("role_in_cohort", "participation_status")
+        }
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        result = await db.cohort_memberships.update_one({"cohort_id": cohort_id, "user_id": user_id}, {"$set": updates})
+        if result.matched_count == 0:
+            raise HTTPException(404, "Partecipante non trovato")
+        await log_audit(admin_user["user_id"], "update_cohort_member", {"cohort_id": cohort_id, "member": user_id})
+        membership = await db.cohort_memberships.find_one({"cohort_id": cohort_id, "user_id": user_id}, {"_id": 0})
+        user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+        membership["user_name"] = user_doc.get("name", "") if user_doc else ""
+        membership["user_email"] = user_doc.get("email", "") if user_doc else ""
+        membership["installments"] = await db.payment_installments.find({"user_id": user_id, "cohort_id": cohort_id}, {"_id": 0}).sort("due_date", 1).to_list(20)
+        return membership
 
     @router.delete("/cohorts/{cohort_id}/members/{user_id}")
     async def remove_member(request: Request, cohort_id: str, user_id: str):
@@ -157,7 +227,7 @@ def create_school_router(db, get_current_user, log_audit):
 
     @router.post("/materials/upload")
     async def upload_material(request: Request, file: UploadFile = File(...), cohort_id: str = Form(""), title: str = Form(""), description: str = Form("")):
-        user = await require_admin_editor(request)
+        await require_admin_editor(request)
         content = await file.read()
         if len(content) > 50 * 1024 * 1024:
             raise HTTPException(400, "File troppo grande (max 50MB)")
@@ -193,7 +263,7 @@ def create_school_router(db, get_current_user, log_audit):
 
     @router.post("/journey/templates")
     async def create_journey_template(request: Request):
-        user = await require_admin_editor(request)
+        await require_admin_editor(request)
         body = await request.json()
         tmpl = {
             "template_id": f"jtpl_{uuid.uuid4().hex[:12]}",
@@ -397,6 +467,82 @@ REPOSITORY ARIADNE:
             })
         return {"ok": True}
 
+    @router.get("/training-courses")
+    async def list_training_courses(request: Request):
+        await get_current_user(request)
+        catalog_courses = await db.course_catalog.find({}, {"_id": 0}).sort("order", 1).to_list(100)
+        if not catalog_courses:
+            seed = [
+                {"course_id": "cat_cc2026", "category": "ariadne", "title": "Core Coaching Program 2026", "description": "Percorso base di coaching creativo-esperienziale riconosciuto ICF. 200 ore di formazione pratica.", "key_points": ["Fondamenti del coaching ICF", "Approccio creativo-esperienziale", "Supervisione e pratica", "Certificazione ICF ACC"], "order": 1},
+                {"course_id": "cat_adv", "category": "ariadne", "title": "Advanced Coaching Lab", "description": "Laboratorio avanzato per coach certificati. Tecniche avanzate e specializzazioni per il livello PCC.", "key_points": ["Specializzazioni tematiche", "Supervisione avanzata", "Progettazione sessioni complesse", "Preparazione PCC"], "order": 2},
+                {"course_id": "cat_mentor", "category": "ariadne", "title": "Mentoring per Coach", "description": "Percorso di mentoring individuale e di gruppo per lo sviluppo della pratica professionale.", "key_points": ["Sessioni individuali", "Gruppo di pari", "Feedback strutturato", "Ore ICF riconosciute"], "order": 3},
+                {"course_id": "cat_team", "category": "ariadne", "title": "Team Coaching ICF", "description": "Modulo specialistico sul coaching di team e gruppi secondo le competenze ICF.", "key_points": ["Dinamiche di gruppo", "Facilitazione", "Co-creazione obiettivi team", "Competenze ICF team"], "order": 4},
+                {"course_id": "cat_tec1", "category": "tecnica", "title": "Coaching con tecniche creative", "description": "Utilizzo di arte, movimento e metafore nel processo di coaching.", "key_points": ["Art-based coaching", "Movimento corporeo", "Metafore e storytelling", "Visualizzazione guidata"], "order": 20},
+                {"course_id": "cat_tec2", "category": "tecnica", "title": "Coaching e Mindfulness", "description": "Integrazione di pratiche di mindfulness e presenza nel coaching.", "key_points": ["Meditazione per coach", "Ascolto consapevole", "Gestione dello stress", "Presenza nel processo"], "order": 21},
+                {"course_id": "cat_tec3", "category": "tecnica", "title": "Assessment e strumenti diagnostici", "description": "Utilizzo di strumenti di assessment e diagnostica nel percorso di coaching.", "key_points": ["Test di personalita", "360 feedback", "Strumenti di autovalutazione", "Interpretazione risultati"], "order": 22},
+                {"course_id": "cat_biz1", "category": "business", "title": "Business del Coach", "description": "Come avviare e gestire una pratica di coaching indipendente.", "key_points": ["Posizionamento", "Pricing", "Marketing etico", "Aspetti legali e fiscali"], "order": 30},
+                {"course_id": "cat_biz2", "category": "business", "title": "Marketing per Coach", "description": "Strategie di comunicazione e acquisizione clienti per coach.", "key_points": ["Personal branding", "Social media", "Content strategy", "Networking"], "order": 31},
+                {"course_id": "cat_biz3", "category": "business", "title": "Digital Presence", "description": "Costruire e gestire la propria presenza digitale professionale.", "key_points": ["Sito web", "LinkedIn strategy", "Newsletter", "SEO per coach"], "order": 32},
+            ]
+            for course in seed:
+                await db.course_catalog.insert_one(course)
+            catalog_courses = await db.course_catalog.find({}, {"_id": 0}).sort("order", 1).to_list(100)
+        event_courses = await db.courses_events.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+
+        items = []
+        for course in catalog_courses:
+            category_label = _category_label(course.get("category", ""), tags=course.get("tags", []))
+            items.append({
+                "course_id": course["course_id"],
+                "source": "catalog",
+                "title": course.get("title", ""),
+                "description": course.get("description", ""),
+                "category": category_label,
+                "category_key": course.get("category", ""),
+                "course_type": "training_program",
+                "timing_status": "always_available",
+                "dates": [],
+                "trainers": course.get("trainers", []),
+                "price": course.get("price", ""),
+                "location": course.get("location", ""),
+                "accreditation": course.get("accreditation", ""),
+                "tags": course.get("tags", []),
+                "key_points": course.get("key_points", []),
+                "link": course.get("link", ""),
+                "planned_label": "Offerta continuativa",
+            })
+
+        for course in event_courses:
+            category_label = _category_label(course.get("tags", [""])[0] if course.get("tags") else "", course.get("accreditation", ""), course.get("tags", []))
+            timing_status = _timing_status(course.get("dates", []))
+            items.append({
+                "course_id": course["course_id"],
+                "source": "studio_course",
+                "title": course.get("title", ""),
+                "description": course.get("description", ""),
+                "category": category_label,
+                "category_key": category_label.lower().replace(" ", "_"),
+                "course_type": course.get("type", "course_multi"),
+                "timing_status": timing_status,
+                "dates": course.get("dates", []),
+                "trainers": course.get("trainers", []),
+                "price": course.get("price", ""),
+                "location": course.get("location", ""),
+                "accreditation": course.get("accreditation", ""),
+                "tags": course.get("tags", []),
+                "key_points": [],
+                "link": course.get("link", ""),
+                "planned_label": {
+                    "upcoming": "In programma",
+                    "ongoing": "In corso",
+                    "completed": "Concluso",
+                    "always_available": "Sempre disponibile",
+                }.get(timing_status, "In programma"),
+            })
+
+        items.sort(key=lambda item: (item["timing_status"] == "completed", item.get("title", "")))
+        return items
+
     # ===== USER DETAILS (Billing/Profile) =====
     @router.get("/user-details")
     async def get_user_details(request: Request):
@@ -459,7 +605,64 @@ REPOSITORY ARIADNE:
             u = await db.users.find_one({"user_id": inst.get("user_id", "")}, {"_id": 0, "password_hash": 0})
             inst["user_name"] = u.get("name", "") if u else ""
             inst["user_email"] = u.get("email", "") if u else ""
+            course = await db.courses_events.find_one({"course_id": inst.get("course_id", "")}, {"_id": 0})
+            cohort = await db.cohorts.find_one({"cohort_id": inst.get("cohort_id", "")}, {"_id": 0})
+            inst["course_title"] = course.get("title", "") if course else ""
+            inst["edition_name"] = cohort.get("name", "") if cohort else ""
+            try:
+                due_date = datetime.fromisoformat(inst.get("due_date", "")).date()
+                inst["overdue"] = inst.get("status") != "paid" and due_date < datetime.now(timezone.utc).date()
+            except Exception:
+                inst["overdue"] = False
         return installments
+
+    @router.get("/admin/payment-overview")
+    async def admin_payment_overview(request: Request):
+        await require_admin_editor(request)
+        installments = await db.payment_installments.find({}, {"_id": 0}).sort("due_date", 1).to_list(500)
+        pending_rows = []
+        total_pending_amount = 0
+        upcoming_amount = 0
+        overdue_amount = 0
+        people_with_due = set()
+        today = datetime.now(timezone.utc).date()
+        upcoming_limit = today + timedelta(days=30)
+
+        for inst in installments:
+            user_doc = await db.users.find_one({"user_id": inst.get("user_id", "")}, {"_id": 0, "password_hash": 0})
+            course = await db.courses_events.find_one({"course_id": inst.get("course_id", "")}, {"_id": 0})
+            cohort = await db.cohorts.find_one({"cohort_id": inst.get("cohort_id", "")}, {"_id": 0})
+            row = {
+                **inst,
+                "user_name": user_doc.get("name", "") if user_doc else "",
+                "user_email": user_doc.get("email", "") if user_doc else "",
+                "course_title": course.get("title", "") if course else "",
+                "edition_name": cohort.get("name", "") if cohort else "",
+            }
+            if inst.get("status") != "paid":
+                people_with_due.add(inst.get("user_id", ""))
+                total_pending_amount += float(inst.get("amount", 0) or 0)
+                try:
+                    due_date = datetime.fromisoformat(inst.get("due_date", "")).date()
+                    row["overdue"] = due_date < today
+                    if row["overdue"]:
+                        overdue_amount += float(inst.get("amount", 0) or 0)
+                    if today <= due_date <= upcoming_limit:
+                        upcoming_amount += float(inst.get("amount", 0) or 0)
+                except Exception:
+                    row["overdue"] = False
+                pending_rows.append(row)
+
+        return {
+            "summary": {
+                "pending_count": len(pending_rows),
+                "people_with_due": len([person for person in people_with_due if person]),
+                "total_pending_amount": round(total_pending_amount, 2),
+                "upcoming_amount_30d": round(upcoming_amount, 2),
+                "overdue_amount": round(overdue_amount, 2),
+            },
+            "rows": pending_rows,
+        }
 
     @router.post("/admin/installments")
     async def admin_create_installment(request: Request):
@@ -468,21 +671,66 @@ REPOSITORY ARIADNE:
         inst = {
             "installment_id": f"inst_{uuid.uuid4().hex[:12]}",
             "user_id": body.get("user_id"),
+            "course_id": body.get("course_id", ""),
+            "cohort_id": body.get("cohort_id", ""),
             "description": body.get("description", ""),
             "amount": body.get("amount", 0),
             "due_date": body.get("due_date", ""),
-            "status": "pending",
+            "status": body.get("status", "pending"),
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
         await db.payment_installments.insert_one(inst)
         inst.pop("_id", None)
         return inst
 
+    @router.post("/admin/installments/bulk")
+    async def admin_create_installments_bulk(request: Request):
+        admin_user = await require_admin_editor(request)
+        body = await request.json()
+        course_id = body.get("course_id", "")
+        cohort_id = body.get("cohort_id", "")
+        plans = body.get("plans", [])
+        replace_existing = bool(body.get("replace_existing", True))
+        created_count = 0
+
+        for plan in plans:
+            user_id = plan.get("user_id", "")
+            installments = plan.get("installments", [])
+            if not user_id or not installments:
+                continue
+            if replace_existing:
+                await db.payment_installments.delete_many({
+                    "user_id": user_id,
+                    "course_id": course_id,
+                    "cohort_id": cohort_id,
+                    "status": {"$ne": "paid"},
+                })
+            for item in installments:
+                if not item.get("due_date"):
+                    continue
+                inst = {
+                    "installment_id": f"inst_{uuid.uuid4().hex[:12]}",
+                    "user_id": user_id,
+                    "course_id": course_id,
+                    "cohort_id": cohort_id,
+                    "description": item.get("description", "Rata formazione"),
+                    "amount": float(item.get("amount", 0) or 0),
+                    "due_date": item.get("due_date", ""),
+                    "status": item.get("status", "pending"),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "created_by": admin_user["user_id"],
+                }
+                await db.payment_installments.insert_one(inst)
+                created_count += 1
+
+        await log_audit(admin_user["user_id"], "bulk_create_installments", {"course_id": course_id, "cohort_id": cohort_id, "created_count": created_count})
+        return {"ok": True, "created_count": created_count}
+
     @router.put("/admin/installments/{installment_id}")
     async def admin_update_installment(request: Request, installment_id: str):
         await require_admin_editor(request)
         body = await request.json()
-        update = {k: v for k, v in body.items() if k in ("status", "amount", "due_date", "description", "notes")}
+        update = {k: v for k, v in body.items() if k in ("status", "amount", "due_date", "description", "notes", "course_id", "cohort_id")}
         update["updated_at"] = datetime.now(timezone.utc).isoformat()
         result = await db.payment_installments.update_one({"installment_id": installment_id}, {"$set": update})
         if result.matched_count == 0:
