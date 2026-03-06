@@ -152,6 +152,36 @@ Studio comunicazione, Community core, School Operations, Community avanzata - tu
 - Smoke test visivo Studio + School con verifica `ACTIVE COUNT = 1` in entrambe le aree
 - Verifica frontend dedicata completata: layout orizzontale compatto, active state chiaro, nessun difetto residuo rilevato
 
+### Fase 14 - Dashboard Scuola ridefinita + copy in italiano + interesse corsi (06/03/2026) - COMPLETATO E TESTATO
+**TRADUZIONE / MICRO-COPY:**
+- Riallineati in italiano corrente i label e i micro-copy principali delle aree toccate: dashboard Scuola, Training Courses, scheda corso, CTA e messaggi di stato
+- Tono reso più caldo, coach-like e più coerente con la voce Ariadne
+
+**DASHBOARD SCUOLA:**
+- Rimossa la sezione `Volti della community`
+- Nuova gerarchia implementata:
+  - top: `Il mio percorso` + banner `Iscrizioni aperte ora`
+  - sotto: card di benvenuto/orientamento a sinistra + `Dalla bacheca` a destra in posizione più alta e prominente
+  - sotto: `Prossime occasioni` arricchita con logica `percorso in evidenza`
+- Card di benvenuto trasformata in blocco di orientamento firmato `Emanuele, Arianna e Emanuele` con 3 CTA strategiche
+- Banner in alto a destra mantenuto come CTA principale sulle iscrizioni realmente aperte
+- `Prossime occasioni` arricchita con percorso evidenziato che porta alla scheda corso per raccolta interesse
+
+**INTERESSE CORSI / DETTAGLIO CORSO:**
+- Nuovi endpoint backend per:
+  - dettaglio corso training con `current_user_status`
+  - salvataggio reale dell’interesse utente su un percorso
+  - aggiornamento admin dello stato interesse da scheda corso
+  - riepilogo admin corso con `interested / confirmed / enrolled` + prospects senza edizione
+- La scheda del corso è di nuovo raggiungibile da `Training Courses`
+- L’utente vede in modo evidente il cambio di stato dopo il click su `Mi interessa questo percorso`
+- Admin/Editor vedono e modificano lo stato dei partecipanti direttamente nella scheda corso
+
+**TEST:**
+- Smoke test frontend su dashboard Scuola + apertura scheda corso
+- Report `iteration_12.json`: backend 100%, frontend 100%
+- Verificati: nuova gerarchia dashboard, CTA benvenuto, banner iscrizioni, featured program, salvataggio interesse, persistenza stato, riepilogo admin e update inline
+
 ## Prioritized Backlog
 
 ### P0 - COMPLETATO
@@ -182,6 +212,7 @@ Studio comunicazione, Community core, School Operations, Community avanzata - tu
 - iteration_9: Modulo immagini Studio + Buffer GraphQL (100%, backend + frontend)
 - iteration_10: Sidebar role-based + Training Courses hub + payment overview (100%, backend + frontend)
 - iteration_11: Sidebar pattern definitivo + corso detail admin + quick templates rate (100%, backend + frontend)
+- iteration_12: Dashboard Scuola ridefinita + interesse corsi + micro-copy italiani (100%, backend + frontend)
 
 ## Test Credentials
 - Admin: admin@ariadne.training / admin123
