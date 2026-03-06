@@ -553,6 +553,22 @@ backend:
         agent: "testing"
         comment: "✅ Tutti i test role-based access passati (8/8): 1) Regular user 403 su /api/courses-events ✅ 2) Regular user 403 su /api/repository/files ✅ 3) Regular user 200 su /api/school/training-courses (14 corsi) ✅ 4) Editor 200 su /api/courses-events (4 corsi) ✅ 5) Editor accesso cohorts (6 cohorts con course_id) ✅ 6) Editor accesso membri cohort ✅ 7) Editor accesso payment overview (6 pagamenti pending) ✅ 8) Editor accesso bulk installments (7 installments) ✅. Control accessi funzionante correttamente per entrambi i ruoli."
 
+frontend:
+  - task: "Sidebar menu visual verification Studio e School"
+    implemented: true
+    working: true
+    file: "frontend/src/components/Layout.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Verifica visuale sidebar menu Ariadne: 1) Studio sidebar larghezza e layout 2) Studio labels leggibili senza wrapping 3) School labels leggibili senza wrapping 4) Aspetto professionale e bilanciato"
+      - working: true
+        agent: "testing"
+        comment: "✅ PASS COMPLETO - Sidebar menu verification completata con successo. Studio sidebar: width 304px ✓, gradient background ✓, tutti i 12 label presenti e leggibili (Dashboard, Start Content Production, Guided Production, Approvals, Export for Publishing, Courses and Events, Editorial, Images, Repository, Rules, Social Profiles, Agents) ✓. School sidebar: tutti i 14 label presenti e leggibili (Dashboard, My Journey, Community Board, Materials, Ariadne AI, Training Courses, Courses and Events, Repository, Inbox, Routing Rules, Email Templates, Users, Editions and Materials, Recommended Banners) ✓. Layout orizzontale icona+label confermato per tutti i pulsanti, nessun text wrapping, aspetto pulito e professionale. Nessun difetto riscontrato."
+
 agent_communication:
   - agent: "testing"
     message: "Inizializzato smoke test frontend Ariadne. URL: https://content-academy-12.preview.emergentagent.com. Credenziali editor: arianna.perrone@ariadne.test / password123. Verifica flusso: login -> dashboard Studio -> switch Scuola -> navigazione percorso/community/corso"
@@ -570,3 +586,5 @@ agent_communication:
     message: "✅ FINAL FRONTEND VERIFICATION COMPLETATA. Tutti i 5 controlli richiesti PASSATI: 1) Studio sidebar ha gradient background più chiaro del contenuto principale ✅ 2) Eventi/Annunci NON presenti in sidebar (solo 'Corsi ed eventi' ammesso) ✅ 3) Utente regular NON vede 'Corsi ed eventi' o 'Repository' in sidebar ✅ 4) Utente regular vede Training Courses in modalità catalog-only (14 corsi, no admin tabs) ✅ 5) Editor vede Training Courses con admin tabs (Catalog, Course Operations, Payment Schedule) ✅. Sidebar styling corretto, permissions corrette, Training Courses differenziato per ruolo. App completamente funzionante per entrambi i ruoli testati."
   - agent: "testing"
     message: "🎯 BACKEND VERIFICATION ROLE ACCESS CONTROL COMPLETATA CON SUCCESSO. Tutti gli 8 test passati (8/8): 1) Regular user correttamente riceve 403 su /api/courses-events ✅ 2) Regular user correttamente riceve 403 su /api/repository/files ✅ 3) Regular user correttamente riceve 200 su /api/school/training-courses (14 corsi accessibili) ✅ 4) Editor correttamente riceve 200 su /api/courses-events (4 corsi) ✅ 5) Editor può accedere cohorts operations (6 cohorts con course_id) ✅ 6) Editor può gestire member participation (accesso membri cohort) ✅ 7) Editor può accedere payment overview (6 pagamenti pending, 6 righe) ✅ 8) Editor può gestire bulk installments (7 installments) ✅. Sistema role-based access control COMPLETAMENTE FUNZIONANTE per sidebar permissions e training operations endpoints."
+  - agent: "testing"
+    message: "🎨 SIDEBAR MENU VISUAL VERIFICATION COMPLETATA. Controlli richiesti: 1) Studio sidebar 304px width, layout più largo e consistente ✅ 2) Studio labels (12 totali) tutti leggibili senza wrapping: Dashboard, Start Content Production, Guided Production, Approvals, Export for Publishing, Courses and Events, Editorial, Images, Repository, Rules, Social Profiles, Agents ✅ 3) School labels (14 totali) tutti leggibili senza wrapping: Dashboard, My Journey, Community Board, Materials, Ariadne AI, Training Courses, Courses and Events, Repository, Inbox, Routing Rules, Email Templates, Users, Editions and Materials, Recommended Banners ✅ 4) Aspetto finale pulito, professionale, bilanciato e facile da scansionare in entrambe le aree ✅. Tutti i pulsanti hanno layout orizzontale flex con icona+label allineati. Nessun difetto visivo riscontrato. PASS completo."
