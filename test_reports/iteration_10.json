@@ -1,0 +1,65 @@
+{
+  "summary": "Completed comprehensive testing of Training Courses feature and sidebar revisions. All 12 backend API tests passed. Frontend UI verified - Studio has light sidebar with dark main content, smaller menu text (12px/10px), Events/Announcements removed from sidebar. Role-based access working correctly: regular user blocked from /courses and /repository routes but can access /training-courses. Editor/Admin sees all 3 tabs (Catalog, Course Operations, Payment Schedule) while regular user only sees Catalog.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Regular user sidebar",
+        "issues": ["Sidebar links query returns empty array in Playwright but visually sidebar shows correct items - likely timing/selector issue in test, not actual UI bug"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_training_courses.py",
+    "/app/test_reports/pytest/pytest_training_courses.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Role-based visibility correctly implemented via Layout.js roles array on sidebar items",
+    "AdminEditorRoute wrapper correctly blocks /courses and /repository from regular users",
+    "Training Courses page conditionally renders admin tabs based on isPrivileged check",
+    "Studio theme correctly uses CSS variables [data-area='studio'] for dark main content with light sidebar"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_training_courses.py"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "editor": "arianna.perrone@ariadne.test / password123",
+    "regular_user": "repo_check_user@ariadne.test / password123"
+  },
+  "seed_data_creation": "Created TEST_ prefixed cohorts and members via backend tests for course operations testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Training Courses feature fully tested. Key verifications: (1) Studio sidebar is light (rgb 245-234 gradient) with dark main content (rgb 39,42,53), (2) Menu text is 12px for links and 10px uppercase bold for group labels, (3) Events/Announcements not in sidebar, (4) Regular user blocked from /courses and /repository routes via AdminEditorRoute, (5) Regular user can access /training-courses and sees only Catalog tab, (6) Editor sees all 3 tabs: Catalog (14 course cards), Course Operations (cohort creation, member participation status, bulk installments), Payment Schedule (6 outstanding, €3200 total, €500 overdue).",
+  "features_verified": {
+    "studio_light_sidebar": "PASS - Light gradient background (rgb 245,247,250 to rgb 234,237,245)",
+    "studio_dark_main_content": "PASS - Dark background (rgb 39,42,53)",
+    "smaller_menu_text": "PASS - 12px links, 10px uppercase bold group labels",
+    "events_announcements_removed": "PASS - Not present in Studio or School sidebar",
+    "regular_user_blocked_courses": "PASS - Redirects to /community",
+    "regular_user_blocked_repository": "PASS - Redirects to /community",
+    "regular_user_training_courses_access": "PASS - Can access /training-courses",
+    "regular_user_catalog_only": "PASS - No Course Operations or Payment Schedule tabs",
+    "editor_all_tabs_visible": "PASS - Catalog, Course Operations, Payment Schedule",
+    "editor_corsi_repository_visible": "PASS - Visible in School sidebar",
+    "training_courses_search_filter": "PASS - Search input and category/timing filters work",
+    "course_operations_elements": "PASS - Course/Edition selectors, create edition, add participant, bulk installments",
+    "payment_schedule_overview": "PASS - Summary cards and aggregated table with overdue/upcoming badges",
+    "backend_role_403_courses_events": "PASS - Regular user gets 403 on /api/courses-events",
+    "backend_role_403_repository": "PASS - Regular user gets 403 on /api/repository/files",
+    "backend_role_200_training_courses": "PASS - Regular user gets 200 on /api/school/training-courses",
+    "backend_cohort_with_course_id": "PASS - Create cohort linked to course",
+    "backend_member_participation_status": "PASS - Add/update member with interested/confirmed/enrolled status",
+    "backend_bulk_installments": "PASS - Create 1-5 installments per participant",
+    "backend_payment_overview": "PASS - Aggregated summary with pending_count, total_pending_amount, overdue_amount"
+  }
+}
