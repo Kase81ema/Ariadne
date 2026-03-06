@@ -318,8 +318,10 @@ export default function Layout({ children }) {
                             <TooltipTrigger asChild>
                               <NavLink
                                 to={to}
+                                exact
                                 onClick={() => setMobileOpen(false)}
-                                className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+                                className="sidebar-link"
+                                activeClassName="active"
                                 data-testid={`nav-${to.replace(/\//g, '-').replace(/^-/, '')}`}
                               >
                                 <span className="sidebar-link-icon" aria-hidden="true">
