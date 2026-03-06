@@ -40,6 +40,7 @@ const studioNavGroups = [
     items: [
       { to: '/courses', icon: GraduationCap, label: 'Corsi ed eventi' },
       { to: '/editorial', icon: FileText, label: 'Editoriale' },
+      { to: '/images', icon: BookOpen, label: 'Immagini' },
     ],
   },
   {

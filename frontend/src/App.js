@@ -11,6 +11,7 @@ import CoursesPage from "./pages/CoursesPage";
 import EditorialPage from "./pages/EditorialPage";
 import RulesPage from "./pages/RulesPage";
 import WorkflowPage from "./pages/WorkflowPage";
+import ImagesPage from "./pages/ImagesPage";
 import ApprovalsPage from "./pages/ApprovalsPage";
 import ExportPage from "./pages/ExportPage";
 import RepositoryPage from "./pages/RepositoryPage";
@@ -83,6 +84,7 @@ function AppRouter() {
       <Route path="/editorial" element={<AdminEditorRoute><EditorialPage /></AdminEditorRoute>} />
       <Route path="/rules" element={<AdminEditorRoute><RulesPage /></AdminEditorRoute>} />
       <Route path="/workflow" element={<AdminEditorRoute><WorkflowPage /></AdminEditorRoute>} />
+      <Route path="/images" element={<AdminEditorRoute><ImagesPage /></AdminEditorRoute>} />
       <Route path="/approvals" element={<AdminEditorRoute><ApprovalsPage /></AdminEditorRoute>} />
       <Route path="/export" element={<AdminEditorRoute><ExportPage /></AdminEditorRoute>} />
       <Route path="/repository" element={<ProtectedRoute><RepositoryPage /></ProtectedRoute>} />

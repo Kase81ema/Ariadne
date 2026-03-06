@@ -10,7 +10,7 @@ import { Switch } from '../components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Progress } from '../components/ui/progress';
-import { campaignsAPI, coursesAPI, profilesAPI, rulesAPI, agentsAPI, generateAPI, postsAPI } from '../lib/api';
+import { campaignsAPI, coursesAPI, profilesAPI, rulesAPI, agentsAPI, generateAPI, mediaAPI, postsAPI } from '../lib/api';
 import { ArrowRight, ArrowLeft, CheckCircle2, Loader2, Zap, FileText, ImagePlus, X } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -23,6 +23,11 @@ const INTENTIONS = [
 ];
 
 const STEPS = ['Campagna', 'Profili', 'Agenti', 'Pianifica', 'Genera', 'Revisione'];
+const PLATFORM_VARIANTS = {
+  linkedin_company: 'landscape',
+  linkedin_personal: 'landscape',
+  instagram: 'portrait',
+};
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
@@ -99,6 +104,21 @@ export default function WorkflowPage() {
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [generatedPosts, setGeneratedPosts] = useState([]);
+  const [mediaAssets, setMediaAssets] = useState([]);
+  const [assignmentsMap, setAssignmentsMap] = useState({});
+  const [assignmentJobId, setAssignmentJobId] = useState(null);
+  const [assignmentJob, setAssignmentJob] = useState(null);
+  const [imageOptions, setImageOptions] = useState({
+    sourceScope: 'course_only',
+    applyProcess: false,
+    applyImprove: false,
+    platformPreferences: {
+      linkedin_company: 'landscape',
+      linkedin_personal: 'landscape',
+      instagram: 'portrait',
+      default: 'square',
+    },
+  });
 
   // Campaign form
   const [campaignType, setCampaignType] = useState('course_based');
@@ -117,8 +137,26 @@ export default function WorkflowPage() {
     coursesAPI.list().then(r => setCourses(r.data)).catch(() => {});
     profilesAPI.list().then(r => setProfiles(r.data)).catch(() => {});
     rulesAPI.list().then(r => setRules(r.data)).catch(() => {});
-    agentsAPI.list().then(r => setAgents(r.data)).catch(() => {});
+    agentsAPI.list().then(r => {
+      setAgents(r.data);
+      setImageOptions(prev => ({
+        ...prev,
+        applyProcess: r.data.some(agent => agent.agent_id === 'image_cropper' && agent.active),
+        applyImprove: r.data.some(agent => agent.agent_id === 'image_enhancer' && agent.active),
+      }));
+    }).catch(() => {});
+    mediaAPI.listAssets({ status: 'ready' }).then(r => setMediaAssets(r.data)).catch(() => {});
   }, []);
+
+  const loadAssignments = async (campaignId) => {
+    if (!campaignId) return;
+    try {
+      const response = await mediaAPI.listAssignments(campaignId);
+      setAssignmentsMap(Object.fromEntries(response.data.map(item => [item.post_id, item])));
+    } catch {
+      setAssignmentsMap({});
+    }
+  };
 
   const toggleProfile = (pid) => {
     setSelectedProfiles(prev => prev.includes(pid) ? prev.filter(p => p !== pid) : [...prev, pid]);
@@ -192,6 +230,7 @@ export default function WorkflowPage() {
           setLoading(false);
           const postsRes = await postsAPI.list({ campaign_id: createdCampaign.campaign_id });
           setGeneratedPosts(postsRes.data);
+          await loadAssignments(createdCampaign.campaign_id);
           toast.success('Testi generati con successo!');
           setStep(5);
         } else if (job.status === 'error') {
@@ -210,6 +249,33 @@ export default function WorkflowPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId]);
 
+  useEffect(() => {
+    if (!assignmentJobId || !createdCampaign) return;
+    const poll = setInterval(async () => {
+      try {
+        const response = await mediaAPI.getJob(assignmentJobId);
+        setAssignmentJob(response.data);
+        if (response.data.status === 'completed') {
+          clearInterval(poll);
+          setAssignmentJobId(null);
+          await loadAssignments(createdCampaign.campaign_id);
+          const assetsRes = await mediaAPI.listAssets({ status: 'ready' });
+          setMediaAssets(assetsRes.data);
+          toast.success('Abbinamento immagini completato');
+        }
+        if (response.data.status === 'failed') {
+          clearInterval(poll);
+          setAssignmentJobId(null);
+          toast.error(response.data.error || 'Errore abbinamento immagini');
+        }
+      } catch {
+        clearInterval(poll);
+        setAssignmentJobId(null);
+      }
+    }, 1500);
+    return () => clearInterval(poll);
+  }, [assignmentJobId, createdCampaign]);
+
   // Step 5: Approve posts
   const handleApproveAll = async () => {
     if (!createdCampaign) return;
@@ -220,6 +286,60 @@ export default function WorkflowPage() {
   };
 
   const profMap = Object.fromEntries(profiles.map(p => [p.profile_id, p.name]));
+
+  const getAssignmentPreview = (post) => {
+    const assignment = assignmentsMap[post.post_id];
+    if (!assignment?.asset) return post.image_url || '';
+    const variant = assignment.variant || 'original';
+    return {
+      square: assignment.asset.variants?.square_url,
+      portrait: assignment.asset.variants?.portrait_url,
+      landscape: assignment.asset.variants?.landscape_url,
+      original: assignment.asset.public_url,
+    }[variant] || assignment.asset.public_url || post.image_url || '';
+  };
+
+  const handleAutoAssignImages = async () => {
+    if (!createdCampaign) return;
+    try {
+      const response = await mediaAPI.autoMatchAssignments({
+        campaign_id: createdCampaign.campaign_id,
+        source_scope: imageOptions.sourceScope,
+        apply_process: imageOptions.applyProcess,
+        apply_improve: imageOptions.applyImprove,
+        platform_preferences: imageOptions.platformPreferences,
+      });
+      setAssignmentJobId(response.data.job_id);
+      setAssignmentJob(null);
+      toast.success('Abbinamento immagini avviato');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Errore durante l’abbinamento immagini');
+    }
+  };
+
+  const handleManualAssign = async (postId, mediaAssetId, variant) => {
+    try {
+      const response = await mediaAPI.upsertAssignment(postId, { media_asset_id: mediaAssetId, variant, auto_assigned: false });
+      setAssignmentsMap(prev => ({ ...prev, [postId]: response.data }));
+      toast.success('Immagine del post aggiornata');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Errore aggiornamento immagine');
+    }
+  };
+
+  const handleRemoveAssignment = async (postId) => {
+    try {
+      await mediaAPI.removeAssignment(postId);
+      setAssignmentsMap(prev => {
+        const next = { ...prev };
+        delete next[postId];
+        return next;
+      });
+      toast.success('Immagine rimossa dal post');
+    } catch {
+      toast.error('Errore nella rimozione immagine');
+    }
+  };
 
   return (
     <div data-testid="workflow-page">
@@ -438,6 +558,78 @@ export default function WorkflowPage() {
               <CheckCircle2 className="w-4 h-4" /> Approva tutti
             </Button>
           </div>
+
+          <Card className="border-gray-100" data-testid="workflow-auto-assign-card">
+            <CardContent className="p-6 space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold">Abbina immagini automaticamente</h3>
+                <p className="text-xs text-gray-400">Scegli la sorgente immagini, applica ritaglio o miglioramento e rivedi il risultato post per post.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Fonte immagini</Label>
+                  <Select value={imageOptions.sourceScope} onValueChange={(value) => setImageOptions(prev => ({ ...prev, sourceScope: value }))}>
+                    <SelectTrigger data-testid="workflow-image-source-select"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="course_only">Solo questo corso</SelectItem>
+                      <SelectItem value="all_courses">Tutti i corsi</SelectItem>
+                      <SelectItem value="library">Libreria immagini</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">LinkedIn aziendale</Label>
+                  <Select value={imageOptions.platformPreferences.linkedin_company} onValueChange={(value) => setImageOptions(prev => ({ ...prev, platformPreferences: { ...prev.platformPreferences, linkedin_company: value } }))}>
+                    <SelectTrigger data-testid="workflow-image-format-linkedin-company"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="landscape">Orizzontale</SelectItem>
+                      <SelectItem value="square">Quadrata</SelectItem>
+                      <SelectItem value="portrait">Verticale</SelectItem>
+                      <SelectItem value="original">Originale</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">LinkedIn personale</Label>
+                  <Select value={imageOptions.platformPreferences.linkedin_personal} onValueChange={(value) => setImageOptions(prev => ({ ...prev, platformPreferences: { ...prev.platformPreferences, linkedin_personal: value } }))}>
+                    <SelectTrigger data-testid="workflow-image-format-linkedin-personal"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="landscape">Orizzontale</SelectItem>
+                      <SelectItem value="square">Quadrata</SelectItem>
+                      <SelectItem value="portrait">Verticale</SelectItem>
+                      <SelectItem value="original">Originale</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Instagram</Label>
+                  <Select value={imageOptions.platformPreferences.instagram} onValueChange={(value) => setImageOptions(prev => ({ ...prev, platformPreferences: { ...prev.platformPreferences, instagram: value } }))}>
+                    <SelectTrigger data-testid="workflow-image-format-instagram"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="portrait">Verticale</SelectItem>
+                      <SelectItem value="square">Quadrata</SelectItem>
+                      <SelectItem value="landscape">Orizzontale</SelectItem>
+                      <SelectItem value="original">Originale</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col justify-end gap-2">
+                  <label className="flex items-center gap-2 text-xs text-gray-500"><input type="checkbox" checked={imageOptions.applyProcess} onChange={(e) => setImageOptions(prev => ({ ...prev, applyProcess: e.target.checked }))} data-testid="workflow-image-process-checkbox" /> Ritaglia</label>
+                  <label className="flex items-center gap-2 text-xs text-gray-500"><input type="checkbox" checked={imageOptions.applyImprove} onChange={(e) => setImageOptions(prev => ({ ...prev, applyImprove: e.target.checked }))} data-testid="workflow-image-improve-checkbox" /> Migliora immagine</label>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                {assignmentJob && (
+                  <div className="flex-1 min-w-[240px] rounded-xl bg-gray-50 px-4 py-3" data-testid="workflow-image-job-status">
+                    <p className="text-sm font-medium">{assignmentJob.label || 'Abbinamento immagini in corso'}</p>
+                    <p className="text-xs text-gray-400">{assignmentJob.current || 0}/{assignmentJob.total || 0}</p>
+                  </div>
+                )}
+                <Button onClick={handleAutoAssignImages} className="gap-2" data-testid="workflow-auto-assign-button">Abbina immagini automaticamente</Button>
+              </div>
+            </CardContent>
+          </Card>
+
           {generatedPosts.map(p => (
             <Card key={p.post_id} className="border-gray-100" data-testid={`workflow-post-${p.post_id}`}>
               <CardContent className="p-6">
@@ -460,8 +652,38 @@ export default function WorkflowPage() {
                     {p.hashtags.map((h, i) => <Badge key={i} variant="outline" className="text-[10px] badge-blue">#{h}</Badge>)}
                   </div>
                 )}
+                {getAssignmentPreview(p) && (
+                  <div className="mt-4 rounded-xl overflow-hidden border border-gray-100" data-testid={`workflow-post-image-preview-${p.post_id}`}>
+                    <img src={getAssignmentPreview(p)} alt="Immagine associata" className="w-full max-h-64 object-cover" />
+                  </div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_220px_auto] gap-3 mt-4">
+                  <Select value={assignmentsMap[p.post_id]?.media_asset_id || 'none'} onValueChange={(value) => value === 'none' ? handleRemoveAssignment(p.post_id) : handleManualAssign(p.post_id, value, assignmentsMap[p.post_id]?.variant || PLATFORM_VARIANTS[p.platform] || 'square')}>
+                    <SelectTrigger data-testid={`workflow-post-asset-select-${p.post_id}`}><SelectValue placeholder="Scegli immagine dalla libreria" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Post solo testo</SelectItem>
+                      {mediaAssets.map(asset => <SelectItem key={asset.asset_id} value={asset.asset_id}>{asset.title}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Select value={assignmentsMap[p.post_id]?.variant || PLATFORM_VARIANTS[p.platform] || 'square'} onValueChange={(value) => {
+                    const currentAssetId = assignmentsMap[p.post_id]?.media_asset_id;
+                    if (currentAssetId) handleManualAssign(p.post_id, currentAssetId, value);
+                  }}>
+                    <SelectTrigger data-testid={`workflow-post-variant-select-${p.post_id}`}><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="square">Quadrata</SelectItem>
+                      <SelectItem value="portrait">Verticale</SelectItem>
+                      <SelectItem value="landscape">Orizzontale</SelectItem>
+                      <SelectItem value="original">Originale</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" onClick={() => handleRemoveAssignment(p.post_id)} data-testid={`workflow-post-remove-assignment-${p.post_id}`}>Rimuovi immagine</Button>
+                </div>
                 {/* Post image upload */}
-                <PostImageUploader postId={p.post_id} currentImage={p.image_url} onImageSet={(url) => setGeneratedPosts(prev => prev.map(gp => gp.post_id === p.post_id ? {...gp, image_url: url} : gp))} />
+                <PostImageUploader postId={p.post_id} currentImage={p.image_url} onImageSet={(url) => {
+                  setGeneratedPosts(prev => prev.map(gp => gp.post_id === p.post_id ? {...gp, image_url: url} : gp));
+                  if (createdCampaign?.campaign_id) loadAssignments(createdCampaign.campaign_id);
+                }} />
               </CardContent>
             </Card>
           ))}

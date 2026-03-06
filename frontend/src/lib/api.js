@@ -92,6 +92,14 @@ export const repoAPI = {
   deleteFile: (id) => api.delete(`/repository/files/${id}`),
   categories: () => api.get('/repository/categories'),
   context: () => api.get('/repository/context'),
+  uploadRepositoryImage: (file, courseId, tags, title) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('course_id', courseId || '');
+    formData.append('tags', tags || '');
+    formData.append('title', title || '');
+    return api.post('/media/repository-images/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
 };
 
 // Agents
@@ -230,6 +238,38 @@ export const schoolAPI = {
   adminDeleteInstallment: (id) => api.delete(`/school/admin/installments/${id}`),
   // My payments
   getMyPayments: () => api.get('/school/my-payments'),
+};
+
+export const mediaAPI = {
+  listAssets: (params = {}) => api.get('/media/assets', { params }),
+  uploadAsset: ({ file, title, description, tags, courseId, autoProcess, autoImprove, overlayBrand }) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('title', title || '');
+    formData.append('description', description || '');
+    formData.append('tags', tags || '');
+    formData.append('course_id', courseId || '');
+    formData.append('auto_process', autoProcess ? 'true' : 'false');
+    formData.append('auto_improve', autoImprove ? 'true' : 'false');
+    formData.append('overlay_brand', overlayBrand ? 'true' : 'false');
+    return api.post('/media/assets/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+  generateAsset: (data) => api.post('/media/assets/generate', data),
+  processAssets: (assetIds, applyImprove, overlayBrand = false) => api.post('/media/assets/process', { asset_ids: assetIds, apply_improve: applyImprove, overlay_brand: overlayBrand }),
+  getJob: (jobId) => api.get(`/media/jobs/${jobId}`),
+  listRepositoryImages: (courseId = '') => api.get('/media/repository-images', { params: { course_id: courseId } }),
+  indexRepositoryImages: () => api.post('/media/repository-images/index'),
+  importRepositoryImage: (indexId) => api.post(`/media/repository-images/${indexId}/import`),
+  listAssignments: (campaignId = '') => api.get('/media/assignments', { params: { campaign_id: campaignId } }),
+  autoMatchAssignments: (data) => api.post('/media/assignments/auto-match', data),
+  upsertAssignment: (postId, data) => api.put(`/media/assignments/${postId}`, data),
+  removeAssignment: (postId) => api.delete(`/media/assignments/${postId}`),
+};
+
+export const bufferAPI = {
+  listProfiles: () => api.get('/buffer/profiles'),
+  publishPost: (postId) => api.post(`/buffer/publish-post/${postId}`),
+  publishCampaign: (campaignId) => api.post(`/buffer/publish-campaign/${campaignId}`),
 };
 
 export default api;

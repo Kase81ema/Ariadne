@@ -4,8 +4,8 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { campaignsAPI, postsAPI, profilesAPI, exportAPI } from '../lib/api';
-import { Download, FileText, Copy, CheckCircle2 } from 'lucide-react';
+import { campaignsAPI, postsAPI, profilesAPI, exportAPI, bufferAPI, mediaAPI } from '../lib/api';
+import { Download, FileText, Copy, CheckCircle2, Send, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ExportPage() {
@@ -14,6 +14,9 @@ export default function ExportPage() {
   const [posts, setPosts] = useState([]);
   const [profiles, setProfiles] = useState([]);
   const [copyText, setCopyText] = useState('');
+  const [assignments, setAssignments] = useState({});
+  const [publishJobId, setPublishJobId] = useState(null);
+  const [publishJob, setPublishJob] = useState(null);
 
   useEffect(() => {
     campaignsAPI.list().then(r => setCampaigns(r.data)).catch(() => {});
@@ -23,7 +26,33 @@ export default function ExportPage() {
   useEffect(() => {
     if (!selected) { setPosts([]); return; }
     postsAPI.list({ campaign_id: selected }).then(r => setPosts(r.data)).catch(() => {});
+    mediaAPI.listAssignments(selected).then(r => setAssignments(Object.fromEntries(r.data.map(item => [item.post_id, item])))).catch(() => setAssignments({}));
   }, [selected]);
+
+  useEffect(() => {
+    if (!publishJobId || !selected) return undefined;
+    const interval = setInterval(async () => {
+      try {
+        const response = await mediaAPI.getJob(publishJobId);
+        setPublishJob(response.data);
+        if (response.data.status === 'completed') {
+          clearInterval(interval);
+          setPublishJobId(null);
+          postsAPI.list({ campaign_id: selected }).then(r => setPosts(r.data)).catch(() => {});
+          toast.success('Pubblicazione Buffer completata');
+        }
+        if (response.data.status === 'failed') {
+          clearInterval(interval);
+          setPublishJobId(null);
+          toast.error(response.data.error || 'Errore pubblicazione Buffer');
+        }
+      } catch {
+        clearInterval(interval);
+        setPublishJobId(null);
+      }
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [publishJobId, selected]);
 
   const profMap = Object.fromEntries(profiles.map(p => [p.profile_id, p.name]));
 
@@ -70,6 +99,31 @@ export default function ExportPage() {
   };
 
   const approvedCount = posts.filter(p => p.status === 'approved').length;
+  const mappedProfilesCount = profiles.filter(p => p.buffer_profile_id).length;
+
+  const handlePublishToBuffer = async () => {
+    if (!selected) return;
+    try {
+      const response = await bufferAPI.publishCampaign(selected);
+      setPublishJobId(response.data.job_id);
+      setPublishJob(null);
+      toast.success('Pubblicazione su Buffer avviata');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Errore avvio pubblicazione Buffer');
+    }
+  };
+
+  const getAssignedImageUrl = (postId, fallback = '') => {
+    const assignment = assignments[postId];
+    if (!assignment?.asset) return fallback;
+    const variant = assignment.variant || 'original';
+    return {
+      square: assignment.asset.variants?.square_url,
+      portrait: assignment.asset.variants?.portrait_url,
+      landscape: assignment.asset.variants?.landscape_url,
+      original: assignment.asset.public_url,
+    }[variant] || assignment.asset.public_url || fallback;
+  };
 
   return (
     <div data-testid="export-page">
@@ -120,7 +174,7 @@ export default function ExportPage() {
               <Card className="border-gray-100">
                 <CardContent className="p-8 space-y-4">
                   <h2 className="text-lg font-medium ariadne-heading">Export per Buffer</h2>
-                  <p className="text-sm text-gray-500">Scarica i post in formato CSV o JSON compatibili con Buffer per lo scheduling.</p>
+                  <p className="text-sm text-gray-500">Scarica i post in formato CSV o JSON oppure pubblica i post approvati su Buffer con gli asset interni.</p>
                   <div className="flex gap-3">
                     <Button onClick={handleExportCSV} className="gap-2" data-testid="export-csv-btn">
                       <Download className="w-4 h-4" /> Scarica CSV
@@ -128,10 +182,38 @@ export default function ExportPage() {
                     <Button variant="outline" onClick={handleExportJSON} className="gap-2" data-testid="export-json-btn">
                       <Download className="w-4 h-4" /> Scarica JSON
                     </Button>
+                    <Button onClick={handlePublishToBuffer} className="gap-2" disabled={approvedCount === 0} data-testid="publish-buffer-btn">
+                      <Send className="w-4 h-4" /> Pubblica approvati su Buffer
+                    </Button>
                   </div>
-                  <p className="text-xs text-gray-400">
-                    Nota: l'integrazione diretta con Buffer API e predisposta ma non ancora attiva. Usa i file esportati per importazione manuale.
-                  </p>
+                  <div className="rounded-xl bg-gray-50 p-4 space-y-1">
+                    <p className="text-xs text-gray-500" data-testid="buffer-mapped-profiles-info">Profili interni con canale Buffer associato: {mappedProfilesCount}/{profiles.length}</p>
+                    <p className="text-xs text-gray-400">Se un post fallisce, nella lista qui sotto vedrai l’errore Buffer in chiaro.</p>
+                  </div>
+                  {publishJob && (
+                    <div className="rounded-xl border border-gray-100 p-4" data-testid="buffer-publish-job-status">
+                      <p className="text-sm font-medium">{publishJob.label || 'Pubblicazione in corso'}</p>
+                      <p className="text-xs text-gray-400">{publishJob.current || 0}/{publishJob.total || 0}</p>
+                    </div>
+                  )}
+                  <div className="space-y-3 pt-2">
+                    {posts.map(post => (
+                      <div key={post.post_id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100" data-testid={`buffer-post-row-${post.post_id}`}>
+                        <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
+                          {getAssignedImageUrl(post.post_id, post.image_url) ? <img src={getAssignedImageUrl(post.post_id, post.image_url)} alt="Anteprima" className="w-full h-full object-cover" data-testid={`buffer-post-image-${post.post_id}`} /> : <ImageIcon className="w-5 h-5 text-gray-300" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <Badge variant="outline" className="text-[10px] badge-purple">{profMap[post.profile_id] || post.profile_id}</Badge>
+                            <Badge variant="outline" className="text-[10px]">{post.platform}</Badge>
+                            <Badge variant="outline" className={`text-[10px] ${post.buffer_status === 'published' ? 'badge-green' : post.buffer_status === 'failed' ? 'badge-red' : 'badge-blue'}`} data-testid={`buffer-post-status-${post.post_id}`}>{post.buffer_status || 'non inviato'}</Badge>
+                          </div>
+                          <p className="text-xs text-gray-600 truncate">{post.content?.slice(0, 120)}</p>
+                          {post.buffer_error && <p className="text-[11px] text-red-500 mt-1" data-testid={`buffer-post-error-${post.post_id}`}>{post.buffer_error}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

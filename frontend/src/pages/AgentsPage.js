@@ -5,12 +5,12 @@ import { Button } from '../components/ui/button';
 import { Switch } from '../components/ui/switch';
 import { Separator } from '../components/ui/separator';
 import { agentsAPI } from '../lib/api';
-import { Bot, Zap, Shield, BookOpen, PenTool, Hash, FileOutput, Search, CheckCircle2, Sparkles } from 'lucide-react';
+import { Bot, Zap, Shield, BookOpen, PenTool, Hash, FileOutput, Search, CheckCircle2, Sparkles, Crop, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const AGENT_ICONS = {
   planner: Zap, writer_linkedin_company: PenTool, writer_linkedin_personal: PenTool,
-  writer_instagram: PenTool, deep_research: Search, compliance_icf: Shield,
+  writer_instagram: PenTool, image_cropper: Crop, image_enhancer: Wand2, deep_research: Search, compliance_icf: Shield,
   quality_reviewer: CheckCircle2, grammar_editor: BookOpen, hashtag_curator: Hash,
   formatter_export: FileOutput,
 };

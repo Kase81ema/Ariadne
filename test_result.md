@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Smoke test frontend Ariadne Editorial Studio per verificare funzionalità principali: login, dashboard Studio, switch a Scuola, navigazione Il mio percorso, Bacheca Community, e dettaglio corso"
+user_problem_statement: "Regression test frontend Ariadne Editorial Studio per nuovo modulo Immagini: login, dashboard Studio caricamento, sidebar mostra 'Immagini', pagina /images con 3 tab, pagina /workflow con card abbinamento immagini, pagina /export con CTA Buffer, pagina /repository con tab Repository immagini"
 
 frontend:
   - task: "Login editor con credenziali"
@@ -195,10 +195,85 @@ frontend:
         agent: "testing"
         comment: "✓ Pagina dettaglio corso 'Core Coaching Program 2026' caricata completamente. Tutte le sezioni presenti: info corso, calendario, investimento, credenziale ACC, foto edizioni precedenti, testimonianze. Back button e CTA funzionanti. UI ricca e completa"
 
+  - task: "Sidebar Studio mostra voce Immagini"
+    implemented: true
+    working: true
+    file: "frontend/src/components/Layout.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Nuovo test - verifica presenza voce 'Immagini' nella sidebar Studio con icona e navigazione a /images"
+      - working: true
+        agent: "testing"
+        comment: "✓ Sidebar Studio mostra correttamente la voce 'Immagini' nella sezione Contenuti. Link cliccabile, icona presente, navigazione a /images funzionante. UI pulita e ben integrata nel menu Studio"
+
+  - task: "Pagina /images con 3 tab funzionanti"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/ImagesPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Nuovo test - verifica pagina Immagini si apre con 3 tab: Carica da PC, Repository immagini, Genera con AI. Tutti i tab devono essere cliccabili e mostrare contenuti"
+      - working: true
+        agent: "testing"
+        comment: "✓ Pagina Immagini caricata perfettamente. Tutti i 3 tab presenti e funzionanti: 1) 'Carica da PC' con upload form 2) 'Repository immagini' con indicizzazione e import 3) 'Genera con AI' con prompt e stili. Tab switching fluido, form completi, statistiche visibili (5 asset, 5 pronti, 2 da repository). Libreria immagini mostra asset con preview. UI completa e professionale"
+
+  - task: "Pagina /workflow card abbinamento immagini"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/WorkflowPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Nuovo test - verifica pagina Workflow si apre e mostra card 'Abbina immagini automaticamente' (visibile nello step 5 revisione post)"
+      - working: true
+        agent: "testing"
+        comment: "✓ Pagina Workflow caricata correttamente. Workflow stepper visibile con 6 step (Campagna->Profili->Agenti->Pianifica->Genera->Revisione). Card 'Abbina immagini automaticamente' presente nello step 5 Revisione con opzioni: fonte immagini, formato per piattaforma (LinkedIn/Instagram), ritaglio e miglioramento. Feature completa per matching automatico immagini ai post. Step 0 campaign type selection funzionante"
+
+  - task: "Pagina /export CTA pubblicazione Buffer"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/ExportPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Nuovo test - verifica pagina Export si apre e mostra pulsante 'Pubblica approvati su Buffer'"
+      - working: true
+        agent: "testing"
+        comment: "✓ Pagina Export caricata correttamente. Pulsante 'Pubblica approvati su Buffer' PRESENTE e visibile dopo selezione campagna dal dropdown. Tab 'Export Buffer' e 'Copy Pack' funzionanti. UI mostra: selector campagne, statistiche post (totali/approvati), bottoni CSV/JSON download, e CTA Buffer con conteggio profili mappati (0/6). Comportamento corretto: button appare solo dopo selezione campagna, disabled se nessun post approvato"
+
+  - task: "Pagina /repository tab Repository immagini"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/RepositoryPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Nuovo test - verifica pagina Repository si apre e mostra tab 'Repository immagini' oltre al tab Documenti"
+      - working: true
+        agent: "testing"
+        comment: "✓ Pagina Repository caricata con successo. Entrambi i tab presenti: 'Documenti' e 'Repository immagini'. Tab Repository immagini cliccabile e mostra contenuto completo: form upload immagine con file/titolo/tag/corso, filtro visualizzazione per corso, button 'Indicizza repository immagini', grid con 2 immagini indicizzate (Repo Smoke 2, Repo Smoke) con preview, tags e button import. UI funzionale e ben organizzata"
+
 metadata:
   created_by: "testing_agent"
   version: "1.0"
-  test_sequence: 2
+  test_sequence: 4
   run_ui: true
 
 test_plan:
@@ -305,3 +380,7 @@ agent_communication:
     message: "✅ SMOKE TEST COMPLETATO CON SUCCESSO. Tutti i 6 test passati senza errori critici. Login funzionante, dashboard Studio con sidebar leggibile e card cliccabili, switch Studio<->Scuola fluido, pagina Il mio percorso con tutti i tab, Bacheca Community con 11 post (1+ con immagini), dettaglio corso completo con tutte le sezioni. App in stato ottimale per utente editor."
   - agent: "testing"
     message: "🚀 BACKEND SMOKE TEST COMPLETATO. Tutti i 6 endpoint API testati e funzionanti: 1) Login editor ✅ 2) Dashboard stats ✅ 3) School catalog ✅ 4) Catalog progress update ✅ 5) Community feed ✅ 6) Community dashboard ✅. Autenticazione JWT, dati persistiti correttamente, API rispondono con payloads completi. Backend in stato ottimale."
+  - agent: "testing"
+    message: "🔍 NUOVO REGRESSION TEST: modulo Immagini. Verifico: 1) Login OK + Studio carica 2) Sidebar mostra 'Immagini' 3) /images con 3 tab (Carica da PC, Repository, AI) 4) /workflow con card abbinamento immagini 5) /export con CTA Buffer 6) /repository con tab Repository immagini. Inizio test UI con Playwright."
+  - agent: "testing"
+    message: "✅ REGRESSION TEST MODULO IMMAGINI COMPLETATO CON SUCCESSO. Tutti i 6 controlli richiesti PASSATI: 1) Login e Studio dashboard OK 2) Sidebar mostra 'Immagini' nella sezione Contenuti 3) /images con 3 tab funzionanti (Carica da PC, Repository immagini, Genera con AI) 4) /workflow carica con workflow stepper, card abbinamento immagini in step 5 5) /export mostra CTA 'Pubblica approvati su Buffer' dopo selezione campagna 6) /repository con tab 'Repository immagini' cliccabile e contenuto visibile. Modulo immagini completamente integrato e funzionante. Nessun errore console. UI professionale con 5 asset in libreria, 2 immagini repository indicizzate."
