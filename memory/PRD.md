@@ -118,6 +118,29 @@ Studio comunicazione, Community core, School Operations, Community avanzata - tu
 - Smoke test visivo eseguito con screenshot Studio + School
 - Verifica frontend dedicata completata: tutti i label sidebar leggibili e allineati correttamente, nessun difetto residuo segnalato
 
+### Fase 12 - Sidebar pattern definitivo + Training hub esteso (06/03/2026) - COMPLETATO E TESTATO
+**SIDEBAR / LINGUA:**
+- Sidebar Studio + School ridisegnate come vero sistema di navigazione soft-card / pill button
+- Header gruppi rafforzati con card container, separatori e stati attivo/hover più chiari
+- Label principali riportati in italiano corrente, più chiaro e coerente con il resto dell’app
+
+**TRAINING COURSES / DETTAGLI CORSO:**
+- Training Courses ora usa copy completamente in italiano sul catalogo e sulla parte operativa
+- Scheda corso nuovamente raggiungibile da ogni card del catalogo tramite `Apri scheda corso`
+- Nuovi endpoint backend per dettaglio corso training e riepilogo admin partecipanti
+- Nella scheda del singolo corso, Admin/Editor vedono interessati / confermati / iscritti e possono modificare lo stato inline
+- Deep-link diretto da Training Courses e da scheda corso alla pagina `Utenti admin` con selezione automatica dell’utente
+
+**RATE / OPERATIVITÀ:**
+- Vista `Piani rate cumulativi` raffinata con template rapidi 2/3/5 rate
+- Aggiunta duplicazione schema tra partecipanti (`Usa come modello`, `Applica modello`, `Duplica modello su tutti`)
+- Operatività mantenuta nel flusso: corso -> edizione -> partecipanti -> rate
+
+**TEST:**
+- Smoke test frontend: sidebar + apertura dettaglio corso
+- Report `iteration_11.json`: backend 100%, frontend 100%
+- Confermati funzionanti: pattern sidebar, scheda corso raggiungibile, riepilogo admin corso, aggiornamento stato inline, deep-link a utenti admin
+
 ## Prioritized Backlog
 
 ### P0 - COMPLETATO
@@ -139,6 +162,7 @@ Studio comunicazione, Community core, School Operations, Community avanzata - tu
 - [ ] Dashboard analytics
 - [ ] Ricerca avanzata inbox
 - [ ] Hardening completo dei permessi backend secondari sul repository immagini/media interni se si vorrà estendere la segregazione dati oltre le route principali
+- [ ] Rifinitura estesa della traduzione in italiano su tutte le pagine storiche non ancora riallineate
 
 ## Test Reports
 - iteration_6: Batch 1-3 (100%)
@@ -146,6 +170,7 @@ Studio comunicazione, Community core, School Operations, Community avanzata - tu
 - iteration_8: Verifica finale Studio + Scuola (100%, 6 endpoint backend + 15 scenari frontend)
 - iteration_9: Modulo immagini Studio + Buffer GraphQL (100%, backend + frontend)
 - iteration_10: Sidebar role-based + Training Courses hub + payment overview (100%, backend + frontend)
+- iteration_11: Sidebar pattern definitivo + corso detail admin + quick templates rate (100%, backend + frontend)
 
 ## Test Credentials
 - Admin: admin@ariadne.training / admin123

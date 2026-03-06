@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { adminAPI, coursesAPI, schoolAPI } from '../lib/api';
+import { adminAPI, schoolAPI } from '../lib/api';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -190,7 +190,7 @@ export default function TrainingCoursesPage() {
   const loadAdminData = async () => {
     if (!isPrivileged) return;
     const [coursesResponse, cohortsResponse, usersResponse, paymentResponse] = await Promise.all([
-      coursesAPI.list(),
+      schoolAPI.listTrainingCourses(),
       schoolAPI.listCohorts(),
       adminAPI.listUsers(),
       schoolAPI.adminPaymentOverview(),
