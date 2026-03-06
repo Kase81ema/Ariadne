@@ -282,6 +282,21 @@ test_plan:
   test_all: false
   test_priority: "sequential"
 
+  - task: "School Dashboard Layout Verification"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/CommunityDashboardPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "New verification test - check School dashboard layout hierarchy: 1) Top: Benvenuto (left) + Iscrizioni aperte (right) 2) Below: Il mio percorso (full width) 3) Below: Le prossime occasioni (left) + Dalla bacheca (right) 4) Inside Le prossime occasioni: events list first, then Percorso in evidenza card"
+      - working: true
+        agent: "testing"
+        comment: "✅ PASS COMPLETE - All 5 layout requirements verified successfully. TOP ROW: Benvenuto card (x=520, badge present) correctly positioned LEFT of Iscrizioni aperte card (x=1136, badge present), both on same row (y-diff: 0px). SECOND ROW: Il mio percorso card (full width, heading present) correctly positioned below top row (y=697 after y=566). THIRD ROW: Le prossime occasioni section (x=520, heading present) correctly positioned LEFT of Dalla bacheca card (x=1020, heading present), both on same row (y-diff: 0px), positioned below Il mio percorso (y=929 after y=905). INSIDE Le prossime occasioni: Events list card (y=929) correctly positioned ABOVE Percorso in evidenza card (y=1381, badge present). Layout hierarchy correct, visual coherence maintained, no console errors. Screenshot saved for visual confirmation."
+
 backend:
   - task: "POST /api/auth/login - Login editor autenticazione"
     implemented: true
@@ -608,3 +623,6 @@ agent_communication:
     message: "🎨 SIDEBAR MENU VISUAL VERIFICATION COMPLETATA. Controlli richiesti: 1) Studio sidebar 304px width, layout più largo e consistente ✅ 2) Studio labels (12 totali) tutti leggibili senza wrapping: Dashboard, Start Content Production, Guided Production, Approvals, Export for Publishing, Courses and Events, Editorial, Images, Repository, Rules, Social Profiles, Agents ✅ 3) School labels (14 totali) tutti leggibili senza wrapping: Dashboard, My Journey, Community Board, Materials, Ariadne AI, Training Courses, Courses and Events, Repository, Inbox, Routing Rules, Email Templates, Users, Editions and Materials, Recommended Banners ✅ 4) Aspetto finale pulito, professionale, bilanciato e facile da scansionare in entrambe le aree ✅. Tutti i pulsanti hanno layout orizzontale flex con icona+label allineati. Nessun difetto visivo riscontato. PASS completo."
   - agent: "testing"
     message: "✅ SIDEBAR AGGIORNATA - VERIFICA DETTAGLIATA COMPLETATA. Tutti i 4 controlli richiesti PASSATI: 1) Studio: ogni item è riga compatta unica con CSS grid (icon 24px | label flex | badge auto), NO icona sopra testo, stato attivo chiarissimo (gradiente blu-viola + inset shadow 3px) ✅ 2) School: stessa struttura compatta orizzontale, stato attivo distintivo (gradiente verde + inset shadow) ✅ 3) Grouped card structure INVARIATA (4 gruppi Studio, 3 gruppi School) ✅ 4) Navigation items leggibili, compatti, eleganti, professionali (min-height 48px, border-radius 18px) ✅. Screenshots salvati: studio-sidebar-detailed.png, school-sidebar-detailed.png. NESSUN DIFETTO RESIDUO."
+
+  - agent: "testing"
+    message: "✅ SCHOOL DASHBOARD LAYOUT VERIFICATION COMPLETATA. Verifica richiesta su https://content-academy-12.preview.emergentagent.com con credenziali editor arianna.perrone@ariadne.test. Tutti i 5 controlli layout/gerarchia PASSATI: 1) TOP ROW: Benvenuto (sinistra) + Iscrizioni aperte (destra) con badge corretti, ordine orizzontale corretto ✅ 2) SECOND ROW: Il mio percorso a tutta larghezza sotto la prima riga ✅ 3) THIRD ROW: Le prossime occasioni (colonna sinistra) + Dalla bacheca (colonna destra), entrambi con heading corretti, ordine orizzontale corretto ✅ 4) DENTRO Le prossime occasioni: prima lista eventi, poi card Percorso in evidenza sotto, ordine verticale corretto ✅ 5) Coerenza visiva: layout pulito, gerarchia chiara, nessun errore console ✅. Screenshot salvato: school-dashboard-layout-verification.png. ESITO FINALE: PASS completo, nessun difetto residuo riscontrato."
