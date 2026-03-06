@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { communityAPI, schoolAPI } from '../lib/api';
 import {
   ArrowRight, Heart, MessageCircle, Calendar, Sparkles,
-  UserCircle, Target, GraduationCap, Briefcase, Loader2,
-  BookOpen, Map
+  Target, GraduationCap, Briefcase, Loader2,
+  BookOpen, Map, Bell, Users
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
@@ -104,19 +104,35 @@ export default function CommunityDashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [data, setData] = useState(null);
-  const [courses, setCourses] = useState([]);
+  const [catalogCourses, setCatalogCourses] = useState([]);
+  const [trainingCourses, setTrainingCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [userName, setUserName] = useState('');
 
+  const normalizeText = (value) => String(value || '').toLowerCase();
+
+  const resolveCourseFromText = (text) => {
+    const normalized = normalizeText(text);
+    return trainingCourses.find((course) => {
+      const title = normalizeText(course.title);
+      if (normalized.includes('core coaching') && title.includes('core coaching')) return true;
+      if ((normalized.includes('digital presence') || normalized.includes('presenza digitale')) && (title.includes('digital presence') || title.includes('presenza digitale'))) return true;
+      if (normalized.includes('business del coach') && title.includes('business del coach')) return true;
+      return false;
+    }) || null;
+  };
+
   const load = async () => {
     try {
-      const [dashRes, catRes] = await Promise.all([
+      const [dashRes, catRes, trainingRes] = await Promise.all([
         communityAPI.dashboard(),
         schoolAPI.getCatalog().catch(() => ({ data: [] })),
+        schoolAPI.listTrainingCourses().catch(() => ({ data: [] })),
       ]);
       setData(dashRes.data);
-      setCourses(catRes.data || []);
+      setCatalogCourses(catRes.data || []);
+      setTrainingCourses(trainingRes.data || []);
       if (!dashRes.data.onboarded) {
         setUserName(dashRes.data.profile?.display_name || '');
         setShowOnboarding(true);
@@ -130,167 +146,237 @@ export default function CommunityDashboardPage() {
 
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>;
 
-  const completedCourses = courses.filter(c => c.user_status === 'completed').length;
-  const inProgressCourses = courses.filter(c => c.user_status === 'in_progress').length;
-  const totalCourses = courses.length;
+  const completedCourses = catalogCourses.filter(c => c.user_status === 'completed').length;
+  const inProgressCourses = catalogCourses.filter(c => c.user_status === 'in_progress').length;
+  const totalCourses = catalogCourses.length;
   const progressPct = totalCourses > 0 ? Math.round((completedCourses / totalCourses) * 100) : 0;
+  const openEnrollmentBanner = (data?.banners || []).find((banner) => normalizeText(banner.title).includes('iscrizioni aperte')) || data?.banners?.[0] || null;
+  const featuredProgramBanner = (data?.banners || []).find((banner) => normalizeText(banner.title).includes('digital presence') || normalizeText(banner.title).includes('presenza digitale')) || data?.banners?.[1] || null;
+  const openEnrollmentCourse = resolveCourseFromText(openEnrollmentBanner?.title || openEnrollmentBanner?.body || '');
+  const featuredProgramCourse = resolveCourseFromText(featuredProgramBanner?.title || featuredProgramBanner?.body || '') || trainingCourses.find((course) => normalizeText(course.title).includes('digital presence') || normalizeText(course.title).includes('presenza digitale')) || null;
+  const firstName = data?.profile?.display_name || user?.name || 'benvenuta';
+  const boardPosts = data?.recent_posts?.slice(0, 4) || [];
 
   return (
     <div data-testid="community-dashboard-page">
       <OnboardingDialog open={showOnboarding} onComplete={() => { setShowOnboarding(false); load(); }} userName={userName} />
 
-      {/* Welcome header */}
       <div className="mb-8">
         <h1 className="text-4xl font-semibold ariadne-heading mb-2">
           Ciao{data?.profile?.display_name ? `, ${data.profile.display_name}` : ''}!
         </h1>
-        <p className="text-base text-gray-500">La tua area personale Ariadne</p>
+        <p className="text-base text-gray-500">Uno spazio pensato per orientarti, nutrire la tua crescita e sentirti parte della community Ariadne.</p>
       </div>
 
-      {/* Il mio percorso - FIRST after welcome */}
-      <Card className="border-gray-100 mb-6" data-testid="journey-summary-card">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[hsl(82,60%,42%)]/8 flex items-center justify-center">
-                <Map className="w-5 h-5 text-[hsl(82,60%,42%)]" />
-              </div>
-              <div>
-                <h2 className="text-base font-semibold">Il mio percorso</h2>
-                <p className="text-xs text-gray-400">
-                  {completedCourses}/{totalCourses} corsi completati
-                  {inProgressCourses > 0 && ` | ${inProgressCourses} in corso`}
-                </p>
-              </div>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => navigate('/my-journey')} className="gap-1" data-testid="goto-journey">
-              Vai al percorso <ArrowRight className="w-3 h-3" />
-            </Button>
-          </div>
-          <Progress value={progressPct} className="h-2" />
-        </CardContent>
-      </Card>
-
-      {/* Banners with images */}
-      {data?.banners?.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {data.banners.map(b => (
-            <Card key={b.banner_id} className="border-gray-100 hover:border-gray-200 transition-all group cursor-pointer overflow-hidden" data-testid={`banner-${b.banner_id}`} onClick={() => b.link && b.link !== '#' && navigate(b.link)}>
-              {b.image_url && (
-                <div className="h-32 overflow-hidden">
-                  <img src={b.image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                </div>
-              )}
-              <CardContent className="p-4">
-                <h3 className="text-sm font-semibold mb-1">{b.title}</h3>
-                <p className="text-xs text-gray-500 leading-relaxed mb-2 line-clamp-2">{b.body}</p>
-                {b.cta_text && (
-                  <span className="text-xs font-medium text-[hsl(82,60%,42%)] group-hover:underline inline-flex items-center gap-1">
-                    {b.cta_text} <ArrowRight className="w-3 h-3" />
-                  </span>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Upcoming events */}
-        <Card className="border-gray-100">
+      <div className="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-6 mb-6">
+        <Card className="border-gray-100" data-testid="journey-summary-card">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Prossimi eventi</h2>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/community/events')} className="text-xs gap-1" data-testid="goto-events">
-                Tutti <ArrowRight className="w-3 h-3" />
+            <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[hsl(82,60%,42%)]/8 flex items-center justify-center">
+                  <Map className="w-5 h-5 text-[hsl(82,60%,42%)]" />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold">Il mio percorso</h2>
+                  <p className="text-xs text-gray-400">
+                    {completedCourses}/{totalCourses} corsi completati
+                    {inProgressCourses > 0 && ` · ${inProgressCourses} in corso`}
+                  </p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => navigate('/my-journey')} className="gap-1" data-testid="goto-journey">
+                Vai al percorso <ArrowRight className="w-3 h-3" />
               </Button>
             </div>
-            {data?.upcoming_events?.length > 0 ? (
-              <div className="space-y-3">
-                {data.upcoming_events.map((e, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50/50">
-                    <div className="w-10 h-10 rounded-lg bg-[hsl(82,60%,42%)]/8 flex items-center justify-center flex-shrink-0">
-                      <Calendar className="w-4 h-4 text-[hsl(82,60%,42%)]" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{e.title}</p>
-                      <p className="text-xs text-gray-400">{e.label && `${e.label} - `}{new Date(e.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                    </div>
-                  </div>
-                ))}
+            <Progress value={progressPct} className="h-2 mb-4" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-gray-500">
+              <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
+                <p className="font-semibold text-gray-700 mb-1">Dove sei ora</p>
+                <p>{completedCourses > 0 ? `Hai già consolidato ${completedCourses} passaggi del tuo cammino.` : 'Stai iniziando a dare forma al tuo percorso con Ariadne.'}</p>
               </div>
-            ) : (
-              <p className="text-sm text-gray-400 text-center py-8">Nessun evento in programma</p>
-            )}
+              <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
+                <p className="font-semibold text-gray-700 mb-1">Cosa puoi far crescere</p>
+                <p>{inProgressCourses > 0 ? `Hai ${inProgressCourses} esperienza/e da far maturare nelle prossime settimane.` : 'Puoi scegliere il prossimo passo formativo più adatto al momento che stai vivendo.'}</p>
+              </div>
+              <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
+                <p className="font-semibold text-gray-700 mb-1">Come orientarti</p>
+                <p>Usa dashboard, bacheca e prossime occasioni per restare presente e dare continuità alla tua crescita.</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Recent from Bacheca */}
-        <Card className="border-gray-100">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Dalla bacheca</h2>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/feed')} className="text-xs gap-1" data-testid="goto-feed">
-                Bacheca <ArrowRight className="w-3 h-3" />
+        {openEnrollmentBanner && (
+          <Card className="border-gray-100 overflow-hidden" data-testid="open-enrolment-banner-card">
+            {openEnrollmentBanner.image_url && (
+              <div className="aspect-[16/9] overflow-hidden">
+                <img src={openEnrollmentBanner.image_url} alt="Iscrizioni aperte" className="w-full h-full object-cover" />
+              </div>
+            )}
+            <CardContent className="p-5 space-y-3">
+              <Badge variant="outline" className="text-[10px] badge-green">Iscrizioni aperte ora</Badge>
+              <div>
+                <h2 className="text-lg font-semibold leading-tight">{openEnrollmentBanner.title}</h2>
+                <p className="text-sm text-gray-500 mt-2 leading-relaxed">{openEnrollmentBanner.body}</p>
+              </div>
+              <Button className="w-full gap-2" onClick={() => navigate(openEnrollmentCourse ? `/course/${openEnrollmentCourse.course_id}` : '/training-courses')} data-testid="open-enrolment-banner-cta">
+                Scopri il programma <ArrowRight className="w-4 h-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[0.84fr_1.16fr] gap-6 mb-6 items-start">
+        <Card className="border-gray-100" data-testid="school-welcome-card">
+          <CardContent className="p-6 space-y-5">
+            <div>
+              <Badge variant="outline" className="text-[10px] badge-yellow mb-3">Benvenuto nella community Ariadne</Badge>
+              <h2 className="text-xl font-semibold ariadne-heading mb-3">{firstName}, questo è uno spazio che può accompagnarti davvero.</h2>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Qui non trovi solo contenuti: trovi occasioni per metterti in gioco, chiarire la direzione, riconoscere il tuo valore e coltivare una presenza professionale più consapevole.
+              </p>
+              <p className="text-sm text-gray-600 leading-relaxed mt-3">
+                Ti invitiamo a usare questa area come una casa viva: entra nella relazione con la community, fai spazio alla tua crescita e resta vicino alle opportunità che possono aprirti un passo nuovo.
+              </p>
+            </div>
+            <div className="rounded-2xl bg-[hsl(82,60%,42%)]/6 border border-[hsl(82,60%,42%)]/12 p-4">
+              <p className="text-sm font-medium text-gray-700">Un saluto da Emanuele, Arianna e Emanuele</p>
+              <p className="text-xs text-gray-500 mt-1">Con la cura di chi accompagna processi di crescita, presenza e trasformazione.</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Button variant="outline" className="justify-between h-auto py-3" onClick={() => navigate('/feed')} data-testid="welcome-connect-community">
+                <span className="text-left">
+                  <span className="block text-sm font-semibold">Entra nella community</span>
+                  <span className="block text-[11px] text-gray-500 mt-1">Partecipa alle conversazioni della bacheca</span>
+                </span>
+                <Users className="w-4 h-4" />
+              </Button>
+              <Button variant="outline" className="justify-between h-auto py-3" onClick={() => navigate('/my-journey')} data-testid="welcome-grow-professionally">
+                <span className="text-left">
+                  <span className="block text-sm font-semibold">Coltiva il tuo percorso</span>
+                  <span className="block text-[11px] text-gray-500 mt-1">Dai continuità alla tua crescita professionale</span>
+                </span>
+                <BookOpen className="w-4 h-4" />
+              </Button>
+              <Button variant="outline" className="justify-between h-auto py-3" onClick={() => navigate('/community/events')} data-testid="welcome-stay-updated">
+                <span className="text-left">
+                  <span className="block text-sm font-semibold">Resta aggiornato/a</span>
+                  <span className="block text-[11px] text-gray-500 mt-1">Scopri webinar, workshop e nuove occasioni</span>
+                </span>
+                <Bell className="w-4 h-4" />
               </Button>
             </div>
-            {data?.recent_posts?.length > 0 ? (
+          </CardContent>
+        </Card>
+
+        <Card className="border-gray-100" data-testid="dashboard-board-card">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-base font-semibold">Dalla bacheca</h2>
+                <p className="text-xs text-gray-400 mt-1">La vita della community, i pensieri dei trainer e le conversazioni da seguire adesso.</p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/feed')} className="text-xs gap-1" data-testid="goto-feed">
+                Apri la bacheca <ArrowRight className="w-3 h-3" />
+              </Button>
+            </div>
+            {boardPosts.length > 0 ? (
               <div className="space-y-3">
-                {data.recent_posts.slice(0, 3).map(p => {
+                {boardPosts.map(p => {
                   const color = getColor(p.author?.name);
                   return (
-                    <div key={p.post_id} className="p-3 rounded-lg bg-gray-50/50">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 overflow-hidden" style={{ background: color.bg, color: color.fg }}>
+                    <div key={p.post_id} className="p-4 rounded-2xl bg-gray-50/80 border border-gray-100">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 overflow-hidden" style={{ background: color.bg, color: color.fg }}>
                           {p.author?.picture ? <img src={p.author.picture} alt="" className="w-full h-full object-cover" /> : p.author?.name?.charAt(0)?.toUpperCase() || '?'}
                         </div>
-                        <span className="text-xs font-medium">{p.author?.name}</span>
-                        <span className="text-[10px] text-gray-400 ml-auto">{new Date(p.created_at).toLocaleDateString('it-IT')}</span>
+                        <div>
+                          <span className="text-xs font-medium block">{p.author?.name}</span>
+                          <span className="text-[10px] text-gray-400">{new Date(p.created_at).toLocaleDateString('it-IT')}</span>
+                        </div>
                       </div>
-                      <p className="text-xs text-gray-600 line-clamp-2">{p.content}</p>
+                      <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">{p.content}</p>
                       {p.image_url && (
                         <img
                           src={p.image_url.startsWith('http') ? p.image_url : `${process.env.REACT_APP_BACKEND_URL}${p.image_url}`}
                           alt=""
-                          className="rounded-md mt-2 max-h-24 w-full object-cover"
+                          className="rounded-xl mt-3 max-h-40 w-full object-cover"
                         />
                       )}
-                      <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-400">
-                        <span className="flex items-center gap-0.5"><Heart className="w-3 h-3" /> {p.like_count}</span>
-                        <span className="flex items-center gap-0.5"><MessageCircle className="w-3 h-3" /> {p.comment_count}</span>
+                      <div className="flex items-center gap-4 mt-3 text-[11px] text-gray-400">
+                        <span className="flex items-center gap-1"><Heart className="w-3.5 h-3.5" /> {p.like_count}</span>
+                        <span className="flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" /> {p.comment_count}</span>
                       </div>
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <p className="text-sm text-gray-400 text-center py-8">Nessun post ancora. Inizia la conversazione!</p>
+              <p className="text-sm text-gray-400 text-center py-8">La bacheca sta aspettando nuove voci. Puoi essere tu ad aprire la conversazione.</p>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Volti della community */}
-      {data?.community_members?.length > 0 && (
-        <Card className="border-gray-100 mt-6">
-          <CardContent className="p-6">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-4">Volti della community</h2>
-            <div className="flex flex-wrap gap-3">
-              {data.community_members.slice(0, 15).map((m, i) => {
-                const color = getColor(m.name);
-                return (
-                  <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-full bg-gray-50 border border-gray-100" data-testid={`member-chip-${i}`}>
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold overflow-hidden" style={{ background: color.bg, color: color.fg }}>
-                      {m.picture ? <img src={m.picture} alt="" className="w-full h-full object-cover" /> : m.name?.charAt(0)?.toUpperCase() || '?'}
-                    </div>
-                    <span className="text-xs font-medium text-gray-600">{m.name}</span>
-                  </div>
-                );
-              })}
+      <Card className="border-gray-100" data-testid="upcoming-events-card">
+        <CardContent className="p-6 space-y-5">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h2 className="text-base font-semibold">Prossime occasioni</h2>
+              <p className="text-xs text-gray-400 mt-1">Eventi in calendario e percorsi in evidenza su cui puoi esprimere interesse e approfondire.</p>
             </div>
-          </CardContent>
-        </Card>
-      )}
+            <Button variant="ghost" size="sm" onClick={() => navigate('/community/events')} className="text-xs gap-1" data-testid="goto-events">
+              Tutte le occasioni <ArrowRight className="w-3 h-3" />
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-5">
+            <div className="space-y-3">
+              {data?.upcoming_events?.length > 0 ? (
+                data.upcoming_events.map((e, i) => (
+                  <div key={i} className="flex items-center gap-3 p-4 rounded-2xl bg-gray-50/70 border border-gray-100">
+                    <div className="w-11 h-11 rounded-xl bg-[hsl(82,60%,42%)]/8 flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-4 h-4 text-[hsl(82,60%,42%)]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{e.title}</p>
+                      <p className="text-xs text-gray-400">{e.label && `${e.label} · `}{new Date(e.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-gray-400 text-center py-8">Al momento non ci sono eventi in calendario, ma presto troverai nuove occasioni da seguire.</p>
+              )}
+            </div>
+
+            {(featuredProgramCourse || featuredProgramBanner) && (
+              <Card className="border-gray-100 overflow-hidden bg-gradient-to-br from-[hsl(82,60%,42%)]/6 to-white" data-testid="featured-program-card">
+                {featuredProgramBanner?.image_url && (
+                  <div className="aspect-[16/9] overflow-hidden">
+                    <img src={featuredProgramBanner.image_url} alt="Percorso in evidenza" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <CardContent className="p-5 space-y-3">
+                  <Badge variant="outline" className="text-[10px] badge-yellow">Percorso in evidenza</Badge>
+                  <div>
+                    <h3 className="text-lg font-semibold">{featuredProgramBanner?.title || featuredProgramCourse?.title}</h3>
+                    <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+                      {featuredProgramBanner?.body || featuredProgramCourse?.description}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-white/90 border border-white p-3">
+                    <p className="text-xs text-gray-500">Aprendo la scheda corso puoi segnalarci con un clic che vuoi saperne di più: il tuo interesse verrà registrato e sarà visibile anche al team Ariadne.</p>
+                  </div>
+                  <Button className="w-full gap-2" onClick={() => navigate(featuredProgramCourse ? `/course/${featuredProgramCourse.course_id}` : '/training-courses')} data-testid="featured-program-cta">
+                    Voglio saperne di più <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
