@@ -357,16 +357,20 @@ async def _create_buffer_post(post: dict, buffer_profile_id: str, image_url: str
         if scheduled_at:
             form_payload['scheduled_at'] = str(scheduled_at)
         if image_url:
-            form_payload['media[picture]'] = image_url
+            form_payload['assets[images][0][url]'] = image_url
         response = await client.post(
             api_url,
             data=form_payload,
             headers={'Accept': 'application/json', 'Authorization': f'Bearer {BUFFER_ACCESS_TOKEN}'},
         )
         if response.status_code >= 400:
+            legacy_payload = dict(form_payload)
+            if image_url:
+                legacy_payload.pop('assets[images][0][url]', None)
+                legacy_payload['media[picture]'] = image_url
             response = await client.post(
                 api_url,
-                data=form_payload,
+                data=legacy_payload,
                 params={'access_token': BUFFER_ACCESS_TOKEN},
                 headers={'Accept': 'application/json'},
             )
