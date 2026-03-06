@@ -182,6 +182,20 @@ Studio comunicazione, Community core, School Operations, Community avanzata - tu
 - Report `iteration_12.json`: backend 100%, frontend 100%
 - Verificati: nuova gerarchia dashboard, CTA benvenuto, banner iscrizioni, featured program, salvataggio interesse, persistenza stato, riepilogo admin e update inline
 
+### Fase 15 - Gerarchia dashboard Scuola finalizzata (06/03/2026) - COMPLETATO E TESTATO
+**FOCUS SU HIERARCHY / PLACEMENT:**
+- Riordinata la dashboard Scuola secondo la gerarchia finale richiesta:
+  - riga 1: `Benvenuto` a sinistra + `Iscrizioni aperte` a destra
+  - riga 2: `Il mio percorso` a tutta larghezza
+  - blocco inferiore: `Le prossime occasioni` a sinistra + `Dalla bacheca` a destra
+  - dentro `Le prossime occasioni`: lista eventi prima, `Percorso in evidenza` subito sotto
+- Mantenuto il visual language esistente, intervenendo solo su ordine e priorità dei blocchi
+- Proseguita la rifinitura dell’italiano corrente nei testi delle sezioni toccate
+
+**TEST:**
+- Screenshot smoke test della dashboard Scuola aggiornato
+- Verifica frontend dedicata completata: gerarchia, placement e coerenza visiva tutti PASS, nessun difetto residuo segnalato
+
 ## Prioritized Backlog
 
 ### P0 - COMPLETATO
