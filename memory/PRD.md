@@ -59,6 +59,30 @@ Studio comunicazione, Community core, School Operations, Community avanzata - tu
 - Studio e Scuola validati end-to-end senza regressioni bloccanti
 - Confermati come MOCKED: tracking credenziali ICF persistito in localStorage e parte dei contenuti estesi delle schede corso gestiti staticamente nel frontend
 
+### Fase 9 - Studio Immagini interne + Buffer GraphQL (06/03/2026) - COMPLETATO E TESTATO
+**STUDIO COMUNICAZIONE:**
+- Nuovo data model MongoDB: `media_assets`, `post_media_assignment`, `repository_images_index`, `studio_jobs`
+- Storage immagini persistente su filesystem con route pubbliche `/api/media/public/{asset_id}` e varianti `square`, `portrait`, `landscape`
+- Nuova voce sidebar Studio `Immagini` con pagina dedicata e 3 tab: `Carica da PC`, `Repository immagini`, `Genera con AI`
+- Upload da PC con preview metadati, tag, associazione opzionale a corso, processamento automatico e firma Ariadne opzionale
+- Repository immagini integrato anche nella pagina Repository: upload, indicizzazione, filtro per corso, import in libreria
+- Generazione immagini AI attiva con Gemini image generation latest (via Emergent Universal Key) salvata come asset interno
+- Due agenti Studio aggiunti: `Ritaglia immagini` e `Migliora immagine`
+- Workflow aggiornato con `Abbina immagini automaticamente`, preferenze formato per canale, sorgente immagini, override manuale asset/variante e rimozione immagine
+- Export CSV/JSON arricchito con `media_asset_id`, `image_public_url`, `variant`
+- Export Buffer aggiornato con anteprima asset interno, stato publishing e gestione errori chiari in UI
+
+**BUFFER:**
+- Integrazione migrata al Buffer GraphQL API moderno (`https://api.buffer.com`) con Bearer token
+- Query account/organizations implementata e endpoint `/api/buffer/profiles` reso compatibile con il flusso GraphQL corrente
+- Publishing backend aggiornato a `createPost` GraphQL con supporto immagine tramite public URL interni e fallback tra shape asset diverse
+- Stato attuale account test: token valido, 1 organization rilevata, 0 canali collegati disponibili per pubblicazione live
+
+**TEST:**
+- Smoke test frontend + backend eseguiti
+- Report `iteration_9.json`: backend 100%, frontend 100%
+- Buffer live publish NON completamente verificabile finché l’account non ha almeno un canale collegato
+
 ## Prioritized Backlog
 
 ### P0 - COMPLETATO
@@ -75,7 +99,7 @@ Studio comunicazione, Community core, School Operations, Community avanzata - tu
 - [ ] Catalogo corsi gestibile da admin (CRUD)
 
 ### P2 (Enhancement)
-- [ ] Buffer API per export
+- [ ] Verifica live publishing Buffer con un canale realmente collegato all’account
 - [ ] Drag & drop calendario
 - [ ] Dashboard analytics
 - [ ] Ricerca avanzata inbox
@@ -84,6 +108,7 @@ Studio comunicazione, Community core, School Operations, Community avanzata - tu
 - iteration_6: Batch 1-3 (100%)
 - iteration_7: Fase 7 grande overhaul (100%, 13 backend + 20 frontend)
 - iteration_8: Verifica finale Studio + Scuola (100%, 6 endpoint backend + 15 scenari frontend)
+- iteration_9: Modulo immagini Studio + Buffer GraphQL (100%, backend + frontend)
 
 ## Test Credentials
 - Admin: admin@ariadne.training / admin123
