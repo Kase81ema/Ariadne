@@ -18,6 +18,8 @@ AGENT_DEFINITIONS = [
     {"agent_id": "writer_linkedin_company", "name": "Writer LinkedIn (azienda)", "description": "Scrive testi per la pagina aziendale LinkedIn.", "active": True, "always_on": False},
     {"agent_id": "writer_linkedin_personal", "name": "Writer LinkedIn (soci)", "description": "Adatta il contenuto per il tono personale del singolo socio.", "active": True, "always_on": False},
     {"agent_id": "writer_instagram", "name": "Writer Instagram", "description": "Scrive caption testo, sintetico, con CTA e hashtag coerenti.", "active": True, "always_on": False},
+    {"agent_id": "image_cropper", "name": "Ritaglia immagini", "description": "Crea formati quadrato, verticale e orizzontale pronti per i canali social.", "active": False, "always_on": False},
+    {"agent_id": "image_enhancer", "name": "Migliora immagine", "description": "Applica ottimizzazioni leggere a contrasto, nitidezza e compressione.", "active": False, "always_on": False},
     {"agent_id": "deep_research", "name": "Deep Research", "description": "Integra riferimenti generali e confronti soft senza citare dati non verificati.", "active": False, "always_on": False},
     {"agent_id": "compliance_icf", "name": "Compliance ICF", "description": "Controlla linguaggio, claim, promesse e segnala rischi con proposte alternative.", "active": True, "always_on": False},
     {"agent_id": "quality_reviewer", "name": "Revisore qualita", "description": "Rimuove banalita, riduce ripetizioni, migliora ritmo e chiarezza.", "active": False, "always_on": False},

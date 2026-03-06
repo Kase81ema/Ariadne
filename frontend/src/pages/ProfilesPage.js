@@ -8,7 +8,7 @@ import { Switch } from '../components/ui/switch';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
-import { profilesAPI } from '../lib/api';
+import { bufferAPI, profilesAPI } from '../lib/api';
 import { Plus, Pencil, Trash2, Linkedin, Instagram } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -28,16 +28,18 @@ const PLATFORM_ICONS = {
   instagram: Instagram,
 };
 
-const emptyForm = { name: '', platform: 'linkedin_company', owner: '', active: true, notes: '', priority: 1, style_guide: '' };
+const emptyForm = { name: '', platform: 'linkedin_company', owner: '', active: true, notes: '', priority: 1, style_guide: '', buffer_profile_id: '' };
 
 export default function ProfilesPage() {
   const [profiles, setProfiles] = useState([]);
+  const [bufferProfiles, setBufferProfiles] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editing, setEditing] = useState(null);
   const [open, setOpen] = useState(false);
 
   const load = () => profilesAPI.list().then(r => setProfiles(r.data)).catch(() => {});
-  useEffect(() => { load(); }, []);
+  const loadBufferProfiles = () => bufferAPI.listProfiles().then(r => setBufferProfiles(r.data)).catch(() => setBufferProfiles([]));
+  useEffect(() => { load(); loadBufferProfiles(); }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -59,7 +61,7 @@ export default function ProfilesPage() {
   };
 
   const handleEdit = (p) => {
-    setForm({ name: p.name, platform: p.platform, owner: p.owner || '', active: p.active, notes: p.notes || '', priority: p.priority || 1, style_guide: p.style_guide || '' });
+    setForm({ name: p.name, platform: p.platform, owner: p.owner || '', active: p.active, notes: p.notes || '', priority: p.priority || 1, style_guide: p.style_guide || '', buffer_profile_id: p.buffer_profile_id || '' });
     setEditing(p.profile_id);
     setOpen(true);
   };
@@ -83,7 +85,9 @@ export default function ProfilesPage() {
           <h1 className="text-4xl font-semibold ariadne-heading mb-2">Profili Social</h1>
           <p className="text-base text-gray-500">Gestisci i canali di pubblicazione</p>
         </div>
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setForm(emptyForm); setEditing(null); } }}>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={loadBufferProfiles} data-testid="refresh-buffer-profiles-btn">Aggiorna canali Buffer</Button>
+          <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setForm(emptyForm); setEditing(null); } }}>
           <DialogTrigger asChild>
             <Button className="gap-2" data-testid="add-profile-btn"><Plus className="w-4 h-4" />Nuovo profilo</Button>
           </DialogTrigger>
@@ -119,6 +123,18 @@ export default function ProfilesPage() {
                 <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Guida di stile</Label>
                 <Textarea value={form.style_guide} onChange={e => setForm(f => ({ ...f, style_guide: e.target.value }))} placeholder="Tono, stile, personalita..." rows={3} data-testid="profile-style-input" />
               </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Canale Buffer associato</Label>
+                <Select value={form.buffer_profile_id || 'none'} onValueChange={v => setForm(f => ({ ...f, buffer_profile_id: v === 'none' ? '' : v }))}>
+                  <SelectTrigger data-testid="profile-buffer-select"><SelectValue placeholder="Seleziona canale Buffer" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nessun canale associato</SelectItem>
+                    {bufferProfiles.map(bp => (
+                      <SelectItem key={bp.id} value={bp.id}>{bp.service} · {bp.formatted_username || bp.service_username || bp.id}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="flex items-center gap-3">
                 <Label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Priorita</Label>
                 <Input type="number" min={1} max={10} value={form.priority} onChange={e => setForm(f => ({ ...f, priority: parseInt(e.target.value) || 1 }))} className="w-20" data-testid="profile-priority-input" />
@@ -129,7 +145,8 @@ export default function ProfilesPage() {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-4">
@@ -146,6 +163,7 @@ export default function ProfilesPage() {
                     <h3 className="text-sm font-semibold text-gray-900">{p.name}</h3>
                     <Badge variant="outline" className={`text-[10px] ${PLATFORM_COLORS[p.platform]}`}>{PLATFORM_LABELS[p.platform]}</Badge>
                     {!p.active && <Badge variant="outline" className="text-[10px] text-gray-400">Disattivato</Badge>}
+                    {p.buffer_profile_id && <Badge variant="outline" className="text-[10px] badge-green" data-testid={`profile-buffer-mapped-${p.profile_id}`}>Buffer collegato</Badge>}
                   </div>
                   {p.notes && <p className="text-xs text-gray-400 truncate">{p.notes}</p>}
                 </div>

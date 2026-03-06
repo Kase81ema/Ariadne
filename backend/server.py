@@ -3,12 +3,23 @@ from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
-import os, uuid, logging, json, csv, io, hashlib, aiofiles, asyncio
+import asyncio
+import csv
+import hashlib
+import io
+import json
+import logging
+import os
+import uuid
+
+import aiofiles
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
-import bcrypt, jwt, requests
+import bcrypt
+import jwt
+import requests
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -20,6 +31,7 @@ JWT_SECRET = os.environ.get('JWT_SECRET', 'ariadne-secret')
 UPLOAD_DIR = ROOT_DIR / 'uploads'
 UPLOAD_DIR.mkdir(exist_ok=True)
 ADMIN_EMAILS = [e.strip().lower() for e in os.environ.get('ADMIN_EMAILS', '').split(',') if e.strip()]
+PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL')
 
 app = FastAPI(title="Ariadne Editorial Studio API")
 api_router = APIRouter(prefix="/api")
@@ -44,6 +56,7 @@ class SocialProfileCreate(BaseModel):
     notes: str = ""
     priority: int = 1
     style_guide: str = ""
+    buffer_profile_id: str = ""
 
 class CourseEventCreate(BaseModel):
     title: str
@@ -515,14 +528,45 @@ async def upload_post_image(post_id: str, request: Request, file: UploadFile = F
     async with aiofiles.open(fpath, "wb") as f:
         content = await file.read()
         await f.write(content)
-    image_url = f"/api/uploads/post_images/{fname}"
+    asset_id = f"media_{uuid.uuid4().hex[:12]}"
+    image_url = f"{PUBLIC_BASE_URL}/api/media/public/{asset_id}" if PUBLIC_BASE_URL else f"/api/uploads/post_images/{fname}"
+    await db.media_assets.insert_one({
+        "asset_id": asset_id,
+        "id": asset_id,
+        "source_type": "manual_upload",
+        "course_id": None,
+        "title": file.filename,
+        "description": "Immagine caricata dal workflow",
+        "tags": [],
+        "original_file_path": fpath,
+        "public_url": image_url,
+        "created_by": user["user_id"],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "status": "ready",
+        "variants": {},
+        "variant_paths": {},
+        "metadata": {"filename": file.filename, "mime_type": file.content_type or "image/jpeg", "size": len(content)},
+    })
+    await db.post_media_assignment.update_one(
+        {"post_id": post_id},
+        {"$set": {
+            "post_id": post_id,
+            "media_asset_id": asset_id,
+            "variant": "original",
+            "auto_assigned": False,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }},
+        upsert=True,
+    )
     await db.posts.update_one({"post_id": post_id}, {"$set": {"image_url": image_url}})
     return {"image_url": image_url}
 
 @api_router.delete("/posts/{post_id}/upload-image")
 async def delete_post_image(post_id: str, request: Request):
-    user = await get_current_user(request)
+    await get_current_user(request)
     await db.posts.update_one({"post_id": post_id}, {"$set": {"image_url": ""}})
+    await db.post_media_assignment.delete_one({"post_id": post_id})
     return {"ok": True}
 
 # ===== PLANNING RULES =====
@@ -548,7 +592,7 @@ async def update_rule(rule_id: str, data: PlanningRuleCreate, request: Request):
 
 @api_router.delete("/planning-rules/{rule_id}")
 async def delete_rule(rule_id: str, request: Request):
-    user = await get_current_user(request)
+    await get_current_user(request)
     await db.planning_rules.delete_one({"rule_id": rule_id})
     return {"ok": True}
 
@@ -560,7 +604,7 @@ async def list_templates(request: Request):
 
 @api_router.post("/templates")
 async def create_template(data: TemplateCreate, request: Request):
-    user = await get_current_user(request)
+    await get_current_user(request)
     tmpl = {"template_id": f"tmpl_{uuid.uuid4().hex[:12]}", **data.model_dump(), "created_at": datetime.now(timezone.utc).isoformat()}
     await db.templates.insert_one(tmpl)
     return await db.templates.find_one({"template_id": tmpl["template_id"]}, {"_id": 0})
@@ -609,7 +653,7 @@ async def upload_repo_file(request: Request, file: UploadFile = File(...), categ
 
 @api_router.delete("/repository/files/{file_id}")
 async def delete_repo_file(file_id: str, request: Request):
-    user = await get_current_user(request)
+    await get_current_user(request)
     f = await db.repository_files.find_one({"file_id": file_id}, {"_id": 0})
     if f and os.path.exists(f.get("path", "")):
         os.remove(f["path"])
@@ -647,9 +691,13 @@ async def get_repo_context(request: Request):
 @api_router.get("/agents")
 async def list_agents(request: Request):
     await get_current_user(request)
+    from agents import AGENT_DEFINITIONS
+    existing_ids = set(await db.agent_configs.distinct("agent_id"))
+    for definition in AGENT_DEFINITIONS:
+        if definition["agent_id"] not in existing_ids:
+            await db.agent_configs.insert_one({**definition})
     agents = await db.agent_configs.find({}, {"_id": 0}).to_list(20)
     if not agents:
-        from agents import AGENT_DEFINITIONS
         for a in AGENT_DEFINITIONS:
             await db.agent_configs.insert_one({**a})
         agents = await db.agent_configs.find({}, {"_id": 0}).to_list(20)
@@ -974,6 +1022,35 @@ async def get_repo_context_str() -> str:
             parts.append(f"[{f['category'].upper()}] {f['name']}:\n{f['content_extract'][:1500]}")
     return "\n---\n".join(parts) if parts else ""
 
+
+async def get_post_media_export_fields(post: dict) -> dict:
+    assignment = await db.post_media_assignment.find_one({"post_id": post.get("post_id", "")}, {"_id": 0})
+    if not assignment or not assignment.get("media_asset_id"):
+        return {
+            "media_asset_id": "",
+            "image_public_url": post.get("image_url", ""),
+            "variant": "original",
+        }
+    asset = await db.media_assets.find_one({"asset_id": assignment["media_asset_id"]}, {"_id": 0})
+    if not asset:
+        return {
+            "media_asset_id": "",
+            "image_public_url": post.get("image_url", ""),
+            "variant": assignment.get("variant", "original"),
+        }
+    variants = asset.get("variants", {})
+    image_public_url = {
+        "square": variants.get("square_url", ""),
+        "portrait": variants.get("portrait_url", ""),
+        "landscape": variants.get("landscape_url", ""),
+        "original": asset.get("public_url", ""),
+    }.get(assignment.get("variant", "original")) or asset.get("public_url", "") or post.get("image_url", "")
+    return {
+        "media_asset_id": assignment.get("media_asset_id", ""),
+        "image_public_url": image_public_url,
+        "variant": assignment.get("variant", "original"),
+    }
+
 # ===== EXPORT =====
 @api_router.get("/export/csv/{campaign_id}")
 async def export_csv(campaign_id: str, request: Request):
@@ -983,15 +1060,17 @@ async def export_csv(campaign_id: str, request: Request):
     profiles_map = {p["profile_id"]: p for p in profiles_list}
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["Date", "Time", "Profile", "Platform", "Content", "Content Short", "CTA", "Link", "Hashtags", "Status", "Intention"])
+    writer.writerow(["Date", "Time", "Profile", "Platform", "Content", "Content Short", "CTA", "Link", "Hashtags", "Status", "Intention", "Media Asset ID", "Image Public URL", "Variant"])
     for p in posts:
         prof = profiles_map.get(p.get("profile_id", ""), {})
+        media_fields = await get_post_media_export_fields(p)
         writer.writerow([
             p.get("scheduled_date", ""), p.get("scheduled_time", ""),
             prof.get("name", ""), p.get("platform", ""),
             p.get("content", ""), p.get("content_short", ""),
             p.get("cta", ""), p.get("link", ""),
-            " ".join(p.get("hashtags", [])), p.get("status", ""), p.get("intention", "")
+            " ".join(p.get("hashtags", [])), p.get("status", ""), p.get("intention", ""),
+            media_fields["media_asset_id"], media_fields["image_public_url"], media_fields["variant"]
         ])
     await db.campaigns.update_one({"campaign_id": campaign_id}, {"$set": {"status": "exported"}})
     await log_audit(user["user_id"], "export_csv", {"campaign_id": campaign_id})
@@ -1007,12 +1086,16 @@ async def export_json(campaign_id: str, request: Request):
     export_data = []
     for p in posts:
         prof = profiles_map.get(p.get("profile_id", ""), {})
+        media_fields = await get_post_media_export_fields(p)
         export_data.append({
             "date": p.get("scheduled_date", ""), "time": p.get("scheduled_time", ""),
             "profile": prof.get("name", ""), "platform": p.get("platform", ""),
             "content": p.get("content", ""), "content_short": p.get("content_short", ""),
             "cta": p.get("cta", ""), "link": p.get("link", ""),
-            "hashtags": p.get("hashtags", []), "intention": p.get("intention", "")
+            "hashtags": p.get("hashtags", []), "intention": p.get("intention", ""),
+            "media_asset_id": media_fields["media_asset_id"],
+            "image_public_url": media_fields["image_public_url"],
+            "variant": media_fields["variant"],
         })
     await db.campaigns.update_one({"campaign_id": campaign_id}, {"$set": {"status": "exported"}})
     await log_audit(user["user_id"], "export_json", {"campaign_id": campaign_id})
@@ -1092,7 +1175,7 @@ async def dashboard_calendar(request: Request, month: str = "", profile_id: str 
 # ===== AUDIT =====
 @api_router.get("/audit-logs")
 async def list_audit_logs(request: Request, limit: int = 50):
-    user = await get_current_user(request)
+    await get_current_user(request)
     return await db.audit_logs.find({}, {"_id": 0}).sort("timestamp", -1).to_list(limit)
 
 # ===== SEED DATA =====
@@ -1226,12 +1309,14 @@ from fastapi.responses import FileResponse
 from community_routes import create_community_router
 from admin_routes import create_admin_router
 from inbox_routes import create_inbox_router
+from media_routes import create_media_router
 from school_routes import create_school_router
 
 community_router = create_community_router(db, get_current_user, log_audit)
 admin_router = create_admin_router(db, get_current_user, log_audit)
 inbox_router = create_inbox_router(db, get_current_user, log_audit)
 school_router = create_school_router(db, get_current_user, log_audit)
+media_router = create_media_router(db, get_current_user, log_audit)
 
 @api_router.get("/uploads/{filename}")
 async def serve_upload(filename: str):
@@ -1252,6 +1337,7 @@ app.include_router(community_router)
 app.include_router(admin_router)
 app.include_router(inbox_router)
 app.include_router(school_router)
+app.include_router(media_router)
 app.add_middleware(CORSMiddleware, allow_credentials=True, allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','), allow_methods=["*"], allow_headers=["*"])
 
 @app.on_event("startup")
