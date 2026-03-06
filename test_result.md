@@ -568,6 +568,24 @@ frontend:
       - working: true
         agent: "testing"
         comment: "✅ PASS COMPLETO - Sidebar menu verification completata con successo. Studio sidebar: width 304px ✓, gradient background ✓, tutti i 12 label presenti e leggibili (Dashboard, Start Content Production, Guided Production, Approvals, Export for Publishing, Courses and Events, Editorial, Images, Repository, Rules, Social Profiles, Agents) ✓. School sidebar: tutti i 14 label presenti e leggibili (Dashboard, My Journey, Community Board, Materials, Ariadne AI, Training Courses, Courses and Events, Repository, Inbox, Routing Rules, Email Templates, Users, Editions and Materials, Recommended Banners) ✓. Layout orizzontale icona+label confermato per tutti i pulsanti, nessun text wrapping, aspetto pulito e professionale. Nessun difetto riscontrato."
+      - working: true
+        agent: "testing"
+        comment: "✅ PASS - Sidebar aggiornata verificata in dettaglio. Studio: ogni item è una riga compatta unica con CSS grid (24px icon | label | badge), nessun effetto icona sopra testo, stato attivo chiaramente visibile con gradiente blu-viola e inset shadow 3px. School: stessa struttura compatta orizzontale su 14 items, stato attivo ben visibile con gradiente verde e inset shadow. Grouped card structure invariata (4 gruppi Studio, 3 gruppi School). Items leggibili, compatti, eleganti e professionali. Min-height 48px per area cliccabile adeguata. Tutti i 4 controlli richiesti PASSATI senza difetti residui."
+
+  - task: "Sidebar items layout compact horizontal (icon left + label right)"
+    implemented: true
+    working: true
+    file: "frontend/src/components/Layout.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Nuovo test richiesto - verifica layout sidebar items: ogni item deve essere riga compatta unica con icona sinistra e label destra, no icona sopra testo"
+      - working: true
+        agent: "testing"
+        comment: "✅ PASS PERFETTO - Layout CSS verificato: ogni sidebar item usa display:grid con grid-template-columns: 24px (icon) | minmax(0,1fr) (label) | auto (badge). Studio: 12 items tutti con layout orizzontale compatto. School: 14 items tutti con layout orizzontale compatto. Nessun item ha icona sopra label. Tutto su singola riga come richiesto. CSS App.css linea 15-62 implementa correttamente .sidebar-link con grid layout a 3 colonne."
 
 agent_communication:
   - agent: "testing"
@@ -587,4 +605,6 @@ agent_communication:
   - agent: "testing"
     message: "🎯 BACKEND VERIFICATION ROLE ACCESS CONTROL COMPLETATA CON SUCCESSO. Tutti gli 8 test passati (8/8): 1) Regular user correttamente riceve 403 su /api/courses-events ✅ 2) Regular user correttamente riceve 403 su /api/repository/files ✅ 3) Regular user correttamente riceve 200 su /api/school/training-courses (14 corsi accessibili) ✅ 4) Editor correttamente riceve 200 su /api/courses-events (4 corsi) ✅ 5) Editor può accedere cohorts operations (6 cohorts con course_id) ✅ 6) Editor può gestire member participation (accesso membri cohort) ✅ 7) Editor può accedere payment overview (6 pagamenti pending, 6 righe) ✅ 8) Editor può gestire bulk installments (7 installments) ✅. Sistema role-based access control COMPLETAMENTE FUNZIONANTE per sidebar permissions e training operations endpoints."
   - agent: "testing"
-    message: "🎨 SIDEBAR MENU VISUAL VERIFICATION COMPLETATA. Controlli richiesti: 1) Studio sidebar 304px width, layout più largo e consistente ✅ 2) Studio labels (12 totali) tutti leggibili senza wrapping: Dashboard, Start Content Production, Guided Production, Approvals, Export for Publishing, Courses and Events, Editorial, Images, Repository, Rules, Social Profiles, Agents ✅ 3) School labels (14 totali) tutti leggibili senza wrapping: Dashboard, My Journey, Community Board, Materials, Ariadne AI, Training Courses, Courses and Events, Repository, Inbox, Routing Rules, Email Templates, Users, Editions and Materials, Recommended Banners ✅ 4) Aspetto finale pulito, professionale, bilanciato e facile da scansionare in entrambe le aree ✅. Tutti i pulsanti hanno layout orizzontale flex con icona+label allineati. Nessun difetto visivo riscontrato. PASS completo."
+    message: "🎨 SIDEBAR MENU VISUAL VERIFICATION COMPLETATA. Controlli richiesti: 1) Studio sidebar 304px width, layout più largo e consistente ✅ 2) Studio labels (12 totali) tutti leggibili senza wrapping: Dashboard, Start Content Production, Guided Production, Approvals, Export for Publishing, Courses and Events, Editorial, Images, Repository, Rules, Social Profiles, Agents ✅ 3) School labels (14 totali) tutti leggibili senza wrapping: Dashboard, My Journey, Community Board, Materials, Ariadne AI, Training Courses, Courses and Events, Repository, Inbox, Routing Rules, Email Templates, Users, Editions and Materials, Recommended Banners ✅ 4) Aspetto finale pulito, professionale, bilanciato e facile da scansionare in entrambe le aree ✅. Tutti i pulsanti hanno layout orizzontale flex con icona+label allineati. Nessun difetto visivo riscontato. PASS completo."
+  - agent: "testing"
+    message: "✅ SIDEBAR AGGIORNATA - VERIFICA DETTAGLIATA COMPLETATA. Tutti i 4 controlli richiesti PASSATI: 1) Studio: ogni item è riga compatta unica con CSS grid (icon 24px | label flex | badge auto), NO icona sopra testo, stato attivo chiarissimo (gradiente blu-viola + inset shadow 3px) ✅ 2) School: stessa struttura compatta orizzontale, stato attivo distintivo (gradiente verde + inset shadow) ✅ 3) Grouped card structure INVARIATA (4 gruppi Studio, 3 gruppi School) ✅ 4) Navigation items leggibili, compatti, eleganti, professionali (min-height 48px, border-radius 18px) ✅. Screenshots salvati: studio-sidebar-detailed.png, school-sidebar-detailed.png. NESSUN DIFETTO RESIDUO."
