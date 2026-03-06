@@ -538,6 +538,21 @@ backend:
         agent: "testing"
         comment: "✅ Buffer readiness OK. Connessione Buffer API configurata, endpoint risponde (possibile token scaduto ma infrastruttura operativa). Sistema pronto per pubblicazione quando token valido fornito. NOTA: Non testata pubblicazione reale come richiesto"
 
+  - task: "Role-based access control verification"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Backend verification - Role access control per sidebar e training operations"
+      - working: true
+        agent: "testing"
+        comment: "✅ Tutti i test role-based access passati (8/8): 1) Regular user 403 su /api/courses-events ✅ 2) Regular user 403 su /api/repository/files ✅ 3) Regular user 200 su /api/school/training-courses (14 corsi) ✅ 4) Editor 200 su /api/courses-events (4 corsi) ✅ 5) Editor accesso cohorts (6 cohorts con course_id) ✅ 6) Editor accesso membri cohort ✅ 7) Editor accesso payment overview (6 pagamenti pending) ✅ 8) Editor accesso bulk installments (7 installments) ✅. Control accessi funzionante correttamente per entrambi i ruoli."
+
 agent_communication:
   - agent: "testing"
     message: "Inizializzato smoke test frontend Ariadne. URL: https://content-academy-12.preview.emergentagent.com. Credenziali editor: arianna.perrone@ariadne.test / password123. Verifica flusso: login -> dashboard Studio -> switch Scuola -> navigazione percorso/community/corso"
@@ -553,3 +568,5 @@ agent_communication:
     message: "🎯 SMOKE TEST BACKEND MODULO IMMAGINI COMPLETATO CON SUCCESSO. Tutti i 7 controlli richiesti PASSATI: 1) POST /api/media/assets/upload ✅ con PNG valida, job processing, asset_id ricevuto 2) GET /api/media/assets ✅ restituisce 9 asset (7 ready) 3) URL pubblico ✅ accessibile senza auth, content-type image/png 4) Repository workflow completo ✅ upload/index/list/import operativi 5) POST /api/media/assets/generate ✅ AI generation job completato 6) POST /api/media/assignments/auto-match ✅ abbinamento automatico job avviato 7) GET /api/buffer/profiles ✅ readiness OK (token configurato). BACKEND MODULO IMMAGINI FULLY OPERATIONAL. API media assets, repository images, AI generation, auto-assignments, Buffer integration tutti testati e funzionanti."
   - agent: "testing"
     message: "✅ FINAL FRONTEND VERIFICATION COMPLETATA. Tutti i 5 controlli richiesti PASSATI: 1) Studio sidebar ha gradient background più chiaro del contenuto principale ✅ 2) Eventi/Annunci NON presenti in sidebar (solo 'Corsi ed eventi' ammesso) ✅ 3) Utente regular NON vede 'Corsi ed eventi' o 'Repository' in sidebar ✅ 4) Utente regular vede Training Courses in modalità catalog-only (14 corsi, no admin tabs) ✅ 5) Editor vede Training Courses con admin tabs (Catalog, Course Operations, Payment Schedule) ✅. Sidebar styling corretto, permissions corrette, Training Courses differenziato per ruolo. App completamente funzionante per entrambi i ruoli testati."
+  - agent: "testing"
+    message: "🎯 BACKEND VERIFICATION ROLE ACCESS CONTROL COMPLETATA CON SUCCESSO. Tutti gli 8 test passati (8/8): 1) Regular user correttamente riceve 403 su /api/courses-events ✅ 2) Regular user correttamente riceve 403 su /api/repository/files ✅ 3) Regular user correttamente riceve 200 su /api/school/training-courses (14 corsi accessibili) ✅ 4) Editor correttamente riceve 200 su /api/courses-events (4 corsi) ✅ 5) Editor può accedere cohorts operations (6 cohorts con course_id) ✅ 6) Editor può gestire member participation (accesso membri cohort) ✅ 7) Editor può accedere payment overview (6 pagamenti pending, 6 righe) ✅ 8) Editor può gestire bulk installments (7 installments) ✅. Sistema role-based access control COMPLETAMENTE FUNZIONANTE per sidebar permissions e training operations endpoints."
