@@ -27,13 +27,13 @@ def create_school_router(db, get_current_user, log_audit):
         tags = [str(tag).strip().lower() for tag in (tags or [])]
         text = " ".join([raw, accreditation.lower(), " ".join(tags)])
         if "external" in text or "trainer esterno" in text:
-            return "External Trainers"
+            return "Trainer esterni"
         if "icf" in text:
             return "ICF"
         if raw in ("ariadne", "formazione coach", "coach"):
             return "Ariadne"
         if raw == "tecnica":
-            return "Coach Technique"
+            return "Tecnica"
         if raw == "business":
             return "Business"
         return raw_category.title() if raw_category else "Ariadne"
@@ -62,23 +62,20 @@ def create_school_router(db, get_current_user, log_audit):
         return "ongoing"
 
     async def _ensure_catalog_seed():
-        courses = await db.course_catalog.find({}, {"_id": 0}).sort("order", 1).to_list(100)
-        if courses:
-            return courses
         seed = [
-            {"course_id": "cat_cc2026", "category": "ariadne", "title": "Core Coaching Program 2026", "description": "Percorso base di coaching creativo-esperienziale riconosciuto ICF. 200 ore di formazione pratica.", "key_points": ["Fondamenti del coaching ICF", "Approccio creativo-esperienziale", "Supervisione e pratica", "Certificazione ICF ACC"], "order": 1},
-            {"course_id": "cat_adv", "category": "ariadne", "title": "Advanced Coaching Lab", "description": "Laboratorio avanzato per coach certificati. Tecniche avanzate e specializzazioni per il livello PCC.", "key_points": ["Specializzazioni tematiche", "Supervisione avanzata", "Progettazione sessioni complesse", "Preparazione PCC"], "order": 2},
+            {"course_id": "cat_cc2026", "category": "ariadne", "title": "Programma Core Coaching 2026", "description": "Percorso base di coaching creativo-esperienziale riconosciuto ICF. 200 ore di formazione pratica.", "key_points": ["Fondamenti del coaching ICF", "Approccio creativo-esperienziale", "Supervisione e pratica", "Certificazione ICF ACC"], "order": 1},
+            {"course_id": "cat_adv", "category": "ariadne", "title": "Laboratorio avanzato di coaching", "description": "Laboratorio avanzato per coach certificati. Tecniche avanzate e specializzazioni per il livello PCC.", "key_points": ["Specializzazioni tematiche", "Supervisione avanzata", "Progettazione sessioni complesse", "Preparazione PCC"], "order": 2},
             {"course_id": "cat_mentor", "category": "ariadne", "title": "Mentoring per Coach", "description": "Percorso di mentoring individuale e di gruppo per lo sviluppo della pratica professionale.", "key_points": ["Sessioni individuali", "Gruppo di pari", "Feedback strutturato", "Ore ICF riconosciute"], "order": 3},
-            {"course_id": "cat_team", "category": "ariadne", "title": "Team Coaching ICF", "description": "Modulo specialistico sul coaching di team e gruppi secondo le competenze ICF.", "key_points": ["Dinamiche di gruppo", "Facilitazione", "Co-creazione obiettivi team", "Competenze ICF team"], "order": 4},
+            {"course_id": "cat_team", "category": "ariadne", "title": "Team coaching ICF", "description": "Modulo specialistico sul coaching di team e gruppi secondo le competenze ICF.", "key_points": ["Dinamiche di gruppo", "Facilitazione", "Co-creazione obiettivi team", "Competenze ICF team"], "order": 4},
             {"course_id": "cat_tec1", "category": "tecnica", "title": "Coaching con tecniche creative", "description": "Utilizzo di arte, movimento e metafore nel processo di coaching.", "key_points": ["Art-based coaching", "Movimento corporeo", "Metafore e storytelling", "Visualizzazione guidata"], "order": 20},
             {"course_id": "cat_tec2", "category": "tecnica", "title": "Coaching e Mindfulness", "description": "Integrazione di pratiche di mindfulness e presenza nel coaching.", "key_points": ["Meditazione per coach", "Ascolto consapevole", "Gestione dello stress", "Presenza nel processo"], "order": 21},
             {"course_id": "cat_tec3", "category": "tecnica", "title": "Assessment e strumenti diagnostici", "description": "Utilizzo di strumenti di assessment e diagnostica nel percorso di coaching.", "key_points": ["Test di personalita", "360 feedback", "Strumenti di autovalutazione", "Interpretazione risultati"], "order": 22},
             {"course_id": "cat_biz1", "category": "business", "title": "Business del Coach", "description": "Come avviare e gestire una pratica di coaching indipendente.", "key_points": ["Posizionamento", "Pricing", "Marketing etico", "Aspetti legali e fiscali"], "order": 30},
             {"course_id": "cat_biz2", "category": "business", "title": "Marketing per Coach", "description": "Strategie di comunicazione e acquisizione clienti per coach.", "key_points": ["Personal branding", "Social media", "Content strategy", "Networking"], "order": 31},
-            {"course_id": "cat_biz3", "category": "business", "title": "Digital Presence", "description": "Costruire e gestire la propria presenza digitale professionale.", "key_points": ["Sito web", "LinkedIn strategy", "Newsletter", "SEO per coach"], "order": 32},
+            {"course_id": "cat_biz3", "category": "business", "title": "Presenza digitale per coach", "description": "Costruire e gestire la propria presenza digitale professionale.", "key_points": ["Sito web", "Strategia LinkedIn", "Newsletter", "SEO per coach"], "order": 32},
         ]
         for course in seed:
-            await db.course_catalog.insert_one(course)
+            await db.course_catalog.update_one({"course_id": course["course_id"]}, {"$set": course}, upsert=True)
         return await db.course_catalog.find({}, {"_id": 0}).sort("order", 1).to_list(100)
 
     async def _collect_training_courses():
@@ -141,10 +138,12 @@ def create_school_router(db, get_current_user, log_audit):
         cohorts = await db.cohorts.find({"course_id": course_id}, {"_id": 0}).sort("start_date", 1).to_list(100)
         summary = {"interested": 0, "confirmed": 0, "enrolled": 0}
         editions = []
+        membership_user_ids = set()
         for cohort in cohorts:
             memberships = await db.cohort_memberships.find({"cohort_id": cohort["cohort_id"]}, {"_id": 0}).to_list(300)
             enriched_members = []
             for member in memberships:
+                membership_user_ids.add(member["user_id"])
                 user_doc = await db.users.find_one({"user_id": member["user_id"]}, {"_id": 0, "password_hash": 0})
                 status = member.get("participation_status", "enrolled")
                 summary[status] = summary.get(status, 0) + 1
@@ -159,7 +158,34 @@ def create_school_router(db, get_current_user, log_audit):
                 **cohort,
                 "members": enriched_members,
             })
-        return {"summary": summary, "editions": editions}
+
+        prospects_raw = await db.course_interest_status.find({"course_id": course_id}, {"_id": 0}).sort("updated_at", -1).to_list(300)
+        prospects = []
+        for item in prospects_raw:
+            if item.get("user_id") in membership_user_ids:
+                continue
+            user_doc = await db.users.find_one({"user_id": item["user_id"]}, {"_id": 0, "password_hash": 0})
+            status = item.get("status", "interested")
+            summary[status] = summary.get(status, 0) + 1
+            prospects.append({
+                **item,
+                "user_name": user_doc.get("name", "") if user_doc else "",
+                "user_email": user_doc.get("email", "") if user_doc else "",
+            })
+
+        return {"summary": summary, "editions": editions, "prospects": prospects}
+
+    async def _get_current_user_course_status(course_id: str, user_id: str):
+        cohorts = await db.cohorts.find({"course_id": course_id}, {"_id": 0, "cohort_id": 1}).to_list(100)
+        cohort_ids = [item["cohort_id"] for item in cohorts]
+        if cohort_ids:
+            membership = await db.cohort_memberships.find_one({"user_id": user_id, "cohort_id": {"$in": cohort_ids}}, {"_id": 0})
+            if membership:
+                return membership.get("participation_status", "enrolled")
+        interest = await db.course_interest_status.find_one({"course_id": course_id, "user_id": user_id}, {"_id": 0})
+        if interest:
+            return interest.get("status", "interested")
+        return ""
 
     # ===== PROGRAMS =====
     @router.get("/programs")
@@ -264,6 +290,7 @@ def create_school_router(db, get_current_user, log_audit):
         user_id = body.get("user_id")
         role_in_cohort = body.get("role_in_cohort", "student")
         participation_status = body.get("participation_status", "enrolled")
+        cohort = await db.cohorts.find_one({"cohort_id": cohort_id}, {"_id": 0})
         existing = await db.cohort_memberships.find_one({"cohort_id": cohort_id, "user_id": user_id})
         if existing:
             raise HTTPException(400, "Utente gia membro")
@@ -273,6 +300,8 @@ def create_school_router(db, get_current_user, log_audit):
             "participation_status": participation_status,
             "assigned_at": datetime.now(timezone.utc).isoformat(),
         })
+        if cohort and cohort.get("course_id"):
+            await db.course_interest_status.delete_many({"course_id": cohort["course_id"], "user_id": user_id})
         await log_audit(user["user_id"], "add_cohort_member", {"cohort_id": cohort_id, "member": user_id})
         return {"ok": True}
 
@@ -280,6 +309,7 @@ def create_school_router(db, get_current_user, log_audit):
     async def update_member(request: Request, cohort_id: str, user_id: str):
         admin_user = await require_admin_editor(request)
         body = await request.json()
+        cohort = await db.cohorts.find_one({"cohort_id": cohort_id}, {"_id": 0})
         updates = {
             k: v for k, v in body.items()
             if k in ("role_in_cohort", "participation_status")
@@ -288,6 +318,8 @@ def create_school_router(db, get_current_user, log_audit):
         result = await db.cohort_memberships.update_one({"cohort_id": cohort_id, "user_id": user_id}, {"$set": updates})
         if result.matched_count == 0:
             raise HTTPException(404, "Partecipante non trovato")
+        if cohort and cohort.get("course_id"):
+            await db.course_interest_status.delete_many({"course_id": cohort["course_id"], "user_id": user_id})
         await log_audit(admin_user["user_id"], "update_cohort_member", {"cohort_id": cohort_id, "member": user_id})
         membership = await db.cohort_memberships.find_one({"cohort_id": cohort_id, "user_id": user_id}, {"_id": 0})
         user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
@@ -574,17 +606,68 @@ REPOSITORY ARIADNE:
 
     @router.get("/training-courses/{course_id}")
     async def get_training_course_detail(request: Request, course_id: str):
-        await get_current_user(request)
+        user = await get_current_user(request)
         items = await _collect_training_courses()
         item = next((course for course in items if course["course_id"] == course_id), None)
         if not item:
             raise HTTPException(404, "Corso non trovato")
+        item["current_user_status"] = await _get_current_user_course_status(course_id, user["user_id"])
         return item
 
     @router.get("/training-courses/{course_id}/admin-summary")
     async def get_training_course_admin_summary(request: Request, course_id: str):
         await require_admin_editor(request)
         return await _collect_course_admin_summary(course_id)
+
+    @router.post("/training-courses/{course_id}/interest")
+    async def save_training_course_interest(request: Request, course_id: str):
+        user = await get_current_user(request)
+        current_status = await _get_current_user_course_status(course_id, user["user_id"])
+        if current_status in ("confirmed", "enrolled"):
+            return {"status": current_status, "message": "Il tuo stato su questo percorso era gia aggiornato."}
+
+        body = await request.json() if request.headers.get("content-type", "").startswith("application/json") else {}
+        status = body.get("status", "interested")
+        if status not in ("interested", "confirmed"):
+            status = "interested"
+
+        record = {
+            "course_id": course_id,
+            "user_id": user["user_id"],
+            "status": status,
+            "source": body.get("source", "course_page"),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.course_interest_status.update_one(
+            {"course_id": course_id, "user_id": user["user_id"]},
+            {"$set": record, "$setOnInsert": {"created_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True,
+        )
+        await log_audit(user["user_id"], "save_course_interest", {"course_id": course_id, "status": status})
+        return {"status": status, "message": "Abbiamo registrato il tuo interesse per questo percorso."}
+
+    @router.put("/training-courses/{course_id}/interest/{user_id}")
+    async def update_training_course_interest(request: Request, course_id: str, user_id: str):
+        admin_user = await require_admin_editor(request)
+        body = await request.json()
+        status = body.get("status", "interested")
+        if status not in ("interested", "confirmed", "enrolled"):
+            raise HTTPException(400, "Stato non valido")
+        record = {
+            "course_id": course_id,
+            "user_id": user_id,
+            "status": status,
+            "source": "admin_course_detail",
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.course_interest_status.update_one(
+            {"course_id": course_id, "user_id": user_id},
+            {"$set": record, "$setOnInsert": {"created_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True,
+        )
+        await log_audit(admin_user["user_id"], "update_course_interest", {"course_id": course_id, "user_id": user_id, "status": status})
+        user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+        return {**record, "user_name": user_doc.get("name", "") if user_doc else "", "user_email": user_doc.get("email", "") if user_doc else ""}
 
     # ===== USER DETAILS (Billing/Profile) =====
     @router.get("/user-details")
