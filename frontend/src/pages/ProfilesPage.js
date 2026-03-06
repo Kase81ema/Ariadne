@@ -130,7 +130,7 @@ export default function ProfilesPage() {
                   <SelectContent>
                     <SelectItem value="none">Nessun canale associato</SelectItem>
                     {bufferProfiles.map(bp => (
-                      <SelectItem key={bp.id} value={bp.id}>{bp.service} · {bp.formatted_username || bp.service_username || bp.id}</SelectItem>
+                      <SelectItem key={bp.id} value={bp.id}>{bp.service} · {bp.name || bp.display_name || bp.formatted_username || bp.service_username || bp.id}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
