@@ -13,49 +13,96 @@
 
 /* ===== SIDEBAR ===== */
 .sidebar-link {
-  @apply flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition-all duration-200;
-  font-size: 12px;
-  font-weight: 500;
+  @apply flex w-full items-center gap-3 px-3.5 py-2 rounded-2xl transition-all duration-200;
+  min-height: 46px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-align: left;
+  border: 1px solid transparent;
   color: hsl(var(--muted-foreground));
 }
 .sidebar-link:hover {
   background: hsl(var(--accent));
   color: hsl(var(--foreground));
+  transform: translateX(1px);
 }
 .sidebar-link.active {
   background: hsl(var(--foreground));
   color: hsl(var(--primary-foreground));
 }
 
+.sidebar-link-icon {
+  @apply flex items-center justify-center rounded-xl flex-shrink-0;
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.sidebar-link-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* STUDIO sidebar - light navigation surface */
 [data-area="studio"] .sidebar-link {
   color: hsl(228 28% 20%) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.52) 0%, rgba(255,255,255,0.36) 100%);
 }
 [data-area="studio"] .sidebar-link:hover:not(.active) {
   background: hsl(220 35% 91%);
   color: hsl(228 30% 16%) !important;
+  border-color: hsl(220 22% 84%);
 }
 [data-area="studio"] .sidebar-link.active {
-  background: hsl(195 100% 55% / 0.18) !important;
+  background: linear-gradient(135deg, hsl(195 100% 55% / 0.18), hsl(278 60% 55% / 0.12)) !important;
   color: hsl(214 82% 30%) !important;
   font-weight: 600;
+  border-color: hsl(195 70% 72%);
+  box-shadow: 0 10px 24px rgba(62, 118, 194, 0.12);
+}
+[data-area="studio"] .sidebar-link .sidebar-link-icon {
+  background: rgba(255,255,255,0.58);
+  color: hsl(223 26% 34%);
+}
+[data-area="studio"] .sidebar-link.active .sidebar-link-icon {
+  background: hsl(195 100% 55% / 0.2);
+  color: hsl(212 90% 34%);
 }
 
 /* SCUOLA sidebar active */
 [data-area="school"] .sidebar-link.active {
-  background: hsl(82 60% 42%);
+  background: linear-gradient(135deg, hsl(82 60% 42%), hsl(92 55% 46%));
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(123, 158, 64, 0.16);
+}
+[data-area="school"] .sidebar-link:hover:not(.active) {
+  background: hsl(82 28% 94%);
+  border-color: hsl(82 22% 86%);
+}
+[data-area="school"] .sidebar-link .sidebar-link-icon {
+  background: hsl(82 20% 94%);
+  color: hsl(82 28% 30%);
+}
+[data-area="school"] .sidebar-link.active .sidebar-link-icon {
+  background: rgba(255,255,255,0.18);
   color: #fff;
 }
 
 /* Collapsible group trigger */
 .group-trigger {
-  @apply flex items-center justify-between w-full px-3 pt-5 pb-1.5 cursor-pointer select-none;
+  @apply flex items-center justify-between w-full px-1.5 pt-5 pb-2 cursor-pointer select-none;
 }
 .group-trigger:hover .group-label {
   color: hsl(var(--foreground));
 }
 .group-label {
-  @apply text-[10px] font-bold uppercase tracking-[0.14em] transition-colors;
+  @apply text-[9px] font-bold uppercase tracking-[0.16em] transition-colors;
   color: hsl(var(--muted-foreground));
 }
 /* Studio group labels - bright cyan */

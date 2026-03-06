@@ -22,25 +22,25 @@ const studioNavGroups = [
     title: 'Avvio',
     items: [
       { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-      { to: '/start', icon: PlayCircle, label: 'Avvia produzione contenuti' },
+      { to: '/start', icon: PlayCircle, label: 'Start Content Production' },
     ],
   },
   {
     id: 'produzione',
     title: 'Produzione',
     items: [
-      { to: '/workflow', icon: GitBranch, label: 'Produzione guidata' },
-      { to: '/approvals', icon: CheckCircle2, label: 'Approvazioni' },
-      { to: '/export', icon: Download, label: 'Esporta per pubblicazione' },
+      { to: '/workflow', icon: GitBranch, label: 'Guided Production' },
+      { to: '/approvals', icon: CheckCircle2, label: 'Approvals' },
+      { to: '/export', icon: Download, label: 'Export for Publishing' },
     ],
   },
   {
     id: 'contenuti',
     title: 'Contenuti',
     items: [
-      { to: '/courses', icon: GraduationCap, label: 'Corsi ed eventi' },
-      { to: '/editorial', icon: FileText, label: 'Editoriale' },
-      { to: '/images', icon: BookOpen, label: 'Immagini' },
+      { to: '/courses', icon: GraduationCap, label: 'Courses and Events' },
+      { to: '/editorial', icon: FileText, label: 'Editorial' },
+      { to: '/images', icon: BookOpen, label: 'Images' },
     ],
   },
   {
@@ -48,9 +48,9 @@ const studioNavGroups = [
     title: 'Impostazioni',
     items: [
       { to: '/repository', icon: FolderOpen, label: 'Repository', setupKey: 'repository' },
-      { to: '/rules', icon: Settings2, label: 'Regole', setupKey: 'rules' },
-      { to: '/profiles', icon: Users, label: 'Profili social', setupKey: 'profiles' },
-      { to: '/agents', icon: Bot, label: 'Agenti', setupKey: 'agents' },
+      { to: '/rules', icon: Settings2, label: 'Rules', setupKey: 'rules' },
+      { to: '/profiles', icon: Users, label: 'Social Profiles', setupKey: 'profiles' },
+      { to: '/agents', icon: Bot, label: 'Agents', setupKey: 'agents' },
     ],
   },
 ];
@@ -61,9 +61,9 @@ const schoolNavGroups = [
     title: 'Community',
     items: [
       { to: '/community', icon: LayoutDashboard, label: 'Dashboard' },
-      { to: '/my-journey', icon: Map, label: 'Il mio percorso' },
-      { to: '/feed', icon: MessageSquare, label: 'Bacheca della Community' },
-      { to: '/materials', icon: BookOpen, label: 'Materiali' },
+      { to: '/my-journey', icon: Map, label: 'My Journey' },
+      { to: '/feed', icon: MessageSquare, label: 'Community Board' },
+      { to: '/materials', icon: BookOpen, label: 'Materials' },
       { to: '/assistant', icon: HelpCircle, label: 'Ariadne AI' },
     ],
   },
@@ -72,7 +72,7 @@ const schoolNavGroups = [
     title: 'Risorse',
     items: [
       { to: '/training-courses', icon: GraduationCap, label: 'Training Courses' },
-      { to: '/courses', icon: CalendarDays, label: 'Corsi ed eventi', roles: ['admin', 'editor'] },
+      { to: '/courses', icon: CalendarDays, label: 'Courses and Events', roles: ['admin', 'editor'] },
       { to: '/repository', icon: FolderOpen, label: 'Repository', roles: ['admin', 'editor'] },
     ],
   },
@@ -82,11 +82,11 @@ const schoolNavGroups = [
     adminOnly: true,
     items: [
       { to: '/inbox', icon: Mail, label: 'Inbox' },
-      { to: '/routing-rules', icon: GitBranch, label: 'Regole smistamento' },
-      { to: '/email-templates', icon: FileOutput, label: 'Template email' },
-      { to: '/users-admin', icon: Users, label: 'Utenti' },
-      { to: '/cohorts-admin', icon: GraduationCap, label: 'Edizioni e materiali' },
-      { to: '/banners-admin', icon: Megaphone, label: 'Banner consigli' },
+      { to: '/routing-rules', icon: GitBranch, label: 'Routing Rules' },
+      { to: '/email-templates', icon: FileOutput, label: 'Email Templates' },
+      { to: '/users-admin', icon: Users, label: 'Users' },
+      { to: '/cohorts-admin', icon: GraduationCap, label: 'Editions and Materials' },
+      { to: '/banners-admin', icon: Megaphone, label: 'Recommended Banners' },
     ],
   },
 ];
@@ -295,7 +295,7 @@ export default function Layout({ children }) {
 
       <Separator style={{ backgroundColor: sidebarBorder }} />
       <ScrollArea className="flex-1 py-2">
-        <nav className="px-3">
+        <nav className="px-4">
           {visibleGroups.map((group) => {
               const isOpen = openGroups[group.id] !== false;
               return (
@@ -316,8 +316,10 @@ export default function Layout({ children }) {
                                 className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
                                 data-testid={`nav-${to.replace(/\//g, '-').replace(/^-/, '')}`}
                               >
-                                <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.75} />
-                                <span className="flex-1 truncate">{label}</span>
+                                <span className="sidebar-link-icon" aria-hidden="true">
+                                  <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.85} />
+                                </span>
+                                <span className="sidebar-link-label">{label}</span>
                                 {setupKey && <SetupBadge status={getSetupStatus(setupKey, readiness)} />}
                               </NavLink>
                             </TooltipTrigger>
@@ -381,7 +383,7 @@ export default function Layout({ children }) {
 
       {/* Sidebar */}
       <aside className={`
-        fixed lg:static z-40 w-[260px] h-full border-r
+        fixed lg:static z-40 w-[304px] h-full border-r
         transition-transform duration-200
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `} style={{ background: sidebarSurface, borderColor: sidebarBorder }}>
