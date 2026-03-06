@@ -61,6 +61,106 @@ def create_school_router(db, get_current_user, log_audit):
             return "upcoming"
         return "ongoing"
 
+    async def _ensure_catalog_seed():
+        courses = await db.course_catalog.find({}, {"_id": 0}).sort("order", 1).to_list(100)
+        if courses:
+            return courses
+        seed = [
+            {"course_id": "cat_cc2026", "category": "ariadne", "title": "Core Coaching Program 2026", "description": "Percorso base di coaching creativo-esperienziale riconosciuto ICF. 200 ore di formazione pratica.", "key_points": ["Fondamenti del coaching ICF", "Approccio creativo-esperienziale", "Supervisione e pratica", "Certificazione ICF ACC"], "order": 1},
+            {"course_id": "cat_adv", "category": "ariadne", "title": "Advanced Coaching Lab", "description": "Laboratorio avanzato per coach certificati. Tecniche avanzate e specializzazioni per il livello PCC.", "key_points": ["Specializzazioni tematiche", "Supervisione avanzata", "Progettazione sessioni complesse", "Preparazione PCC"], "order": 2},
+            {"course_id": "cat_mentor", "category": "ariadne", "title": "Mentoring per Coach", "description": "Percorso di mentoring individuale e di gruppo per lo sviluppo della pratica professionale.", "key_points": ["Sessioni individuali", "Gruppo di pari", "Feedback strutturato", "Ore ICF riconosciute"], "order": 3},
+            {"course_id": "cat_team", "category": "ariadne", "title": "Team Coaching ICF", "description": "Modulo specialistico sul coaching di team e gruppi secondo le competenze ICF.", "key_points": ["Dinamiche di gruppo", "Facilitazione", "Co-creazione obiettivi team", "Competenze ICF team"], "order": 4},
+            {"course_id": "cat_tec1", "category": "tecnica", "title": "Coaching con tecniche creative", "description": "Utilizzo di arte, movimento e metafore nel processo di coaching.", "key_points": ["Art-based coaching", "Movimento corporeo", "Metafore e storytelling", "Visualizzazione guidata"], "order": 20},
+            {"course_id": "cat_tec2", "category": "tecnica", "title": "Coaching e Mindfulness", "description": "Integrazione di pratiche di mindfulness e presenza nel coaching.", "key_points": ["Meditazione per coach", "Ascolto consapevole", "Gestione dello stress", "Presenza nel processo"], "order": 21},
+            {"course_id": "cat_tec3", "category": "tecnica", "title": "Assessment e strumenti diagnostici", "description": "Utilizzo di strumenti di assessment e diagnostica nel percorso di coaching.", "key_points": ["Test di personalita", "360 feedback", "Strumenti di autovalutazione", "Interpretazione risultati"], "order": 22},
+            {"course_id": "cat_biz1", "category": "business", "title": "Business del Coach", "description": "Come avviare e gestire una pratica di coaching indipendente.", "key_points": ["Posizionamento", "Pricing", "Marketing etico", "Aspetti legali e fiscali"], "order": 30},
+            {"course_id": "cat_biz2", "category": "business", "title": "Marketing per Coach", "description": "Strategie di comunicazione e acquisizione clienti per coach.", "key_points": ["Personal branding", "Social media", "Content strategy", "Networking"], "order": 31},
+            {"course_id": "cat_biz3", "category": "business", "title": "Digital Presence", "description": "Costruire e gestire la propria presenza digitale professionale.", "key_points": ["Sito web", "LinkedIn strategy", "Newsletter", "SEO per coach"], "order": 32},
+        ]
+        for course in seed:
+            await db.course_catalog.insert_one(course)
+        return await db.course_catalog.find({}, {"_id": 0}).sort("order", 1).to_list(100)
+
+    async def _collect_training_courses():
+        catalog_courses = await _ensure_catalog_seed()
+        event_courses = await db.courses_events.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+        items = []
+        for course in catalog_courses:
+            category_label = _category_label(course.get("category", ""), tags=course.get("tags", []))
+            items.append({
+                "course_id": course["course_id"],
+                "source": "catalog",
+                "title": course.get("title", ""),
+                "description": course.get("description", ""),
+                "category": category_label,
+                "category_key": course.get("category", ""),
+                "course_type": "training_program",
+                "timing_status": "always_available",
+                "dates": [],
+                "trainers": course.get("trainers", []),
+                "price": course.get("price", ""),
+                "location": course.get("location", ""),
+                "accreditation": course.get("accreditation", ""),
+                "tags": course.get("tags", []),
+                "key_points": course.get("key_points", []),
+                "link": course.get("link", ""),
+                "planned_label": "Offerta continuativa",
+            })
+
+        for course in event_courses:
+            category_label = _category_label(course.get("tags", [""])[0] if course.get("tags") else "", course.get("accreditation", ""), course.get("tags", []))
+            timing_status = _timing_status(course.get("dates", []))
+            items.append({
+                "course_id": course["course_id"],
+                "source": "studio_course",
+                "title": course.get("title", ""),
+                "description": course.get("description", ""),
+                "category": category_label,
+                "category_key": category_label.lower().replace(" ", "_"),
+                "course_type": course.get("type", "course_multi"),
+                "timing_status": timing_status,
+                "dates": course.get("dates", []),
+                "trainers": course.get("trainers", []),
+                "price": course.get("price", ""),
+                "location": course.get("location", ""),
+                "accreditation": course.get("accreditation", ""),
+                "tags": course.get("tags", []),
+                "key_points": [],
+                "link": course.get("link", ""),
+                "planned_label": {
+                    "upcoming": "In programma",
+                    "ongoing": "In corso",
+                    "completed": "Concluso",
+                    "always_available": "Sempre disponibile",
+                }.get(timing_status, "In programma"),
+            })
+        items.sort(key=lambda item: (item["timing_status"] == "completed", item.get("title", "")))
+        return items
+
+    async def _collect_course_admin_summary(course_id: str):
+        cohorts = await db.cohorts.find({"course_id": course_id}, {"_id": 0}).sort("start_date", 1).to_list(100)
+        summary = {"interested": 0, "confirmed": 0, "enrolled": 0}
+        editions = []
+        for cohort in cohorts:
+            memberships = await db.cohort_memberships.find({"cohort_id": cohort["cohort_id"]}, {"_id": 0}).to_list(300)
+            enriched_members = []
+            for member in memberships:
+                user_doc = await db.users.find_one({"user_id": member["user_id"]}, {"_id": 0, "password_hash": 0})
+                status = member.get("participation_status", "enrolled")
+                summary[status] = summary.get(status, 0) + 1
+                installments = await db.payment_installments.find({"user_id": member["user_id"], "cohort_id": cohort["cohort_id"]}, {"_id": 0}).sort("due_date", 1).to_list(20)
+                enriched_members.append({
+                    **member,
+                    "user_name": user_doc.get("name", "") if user_doc else "",
+                    "user_email": user_doc.get("email", "") if user_doc else "",
+                    "installments": installments,
+                })
+            editions.append({
+                **cohort,
+                "members": enriched_members,
+            })
+        return {"summary": summary, "editions": editions}
+
     # ===== PROGRAMS =====
     @router.get("/programs")
     async def list_programs(request: Request):
@@ -470,78 +570,21 @@ REPOSITORY ARIADNE:
     @router.get("/training-courses")
     async def list_training_courses(request: Request):
         await get_current_user(request)
-        catalog_courses = await db.course_catalog.find({}, {"_id": 0}).sort("order", 1).to_list(100)
-        if not catalog_courses:
-            seed = [
-                {"course_id": "cat_cc2026", "category": "ariadne", "title": "Core Coaching Program 2026", "description": "Percorso base di coaching creativo-esperienziale riconosciuto ICF. 200 ore di formazione pratica.", "key_points": ["Fondamenti del coaching ICF", "Approccio creativo-esperienziale", "Supervisione e pratica", "Certificazione ICF ACC"], "order": 1},
-                {"course_id": "cat_adv", "category": "ariadne", "title": "Advanced Coaching Lab", "description": "Laboratorio avanzato per coach certificati. Tecniche avanzate e specializzazioni per il livello PCC.", "key_points": ["Specializzazioni tematiche", "Supervisione avanzata", "Progettazione sessioni complesse", "Preparazione PCC"], "order": 2},
-                {"course_id": "cat_mentor", "category": "ariadne", "title": "Mentoring per Coach", "description": "Percorso di mentoring individuale e di gruppo per lo sviluppo della pratica professionale.", "key_points": ["Sessioni individuali", "Gruppo di pari", "Feedback strutturato", "Ore ICF riconosciute"], "order": 3},
-                {"course_id": "cat_team", "category": "ariadne", "title": "Team Coaching ICF", "description": "Modulo specialistico sul coaching di team e gruppi secondo le competenze ICF.", "key_points": ["Dinamiche di gruppo", "Facilitazione", "Co-creazione obiettivi team", "Competenze ICF team"], "order": 4},
-                {"course_id": "cat_tec1", "category": "tecnica", "title": "Coaching con tecniche creative", "description": "Utilizzo di arte, movimento e metafore nel processo di coaching.", "key_points": ["Art-based coaching", "Movimento corporeo", "Metafore e storytelling", "Visualizzazione guidata"], "order": 20},
-                {"course_id": "cat_tec2", "category": "tecnica", "title": "Coaching e Mindfulness", "description": "Integrazione di pratiche di mindfulness e presenza nel coaching.", "key_points": ["Meditazione per coach", "Ascolto consapevole", "Gestione dello stress", "Presenza nel processo"], "order": 21},
-                {"course_id": "cat_tec3", "category": "tecnica", "title": "Assessment e strumenti diagnostici", "description": "Utilizzo di strumenti di assessment e diagnostica nel percorso di coaching.", "key_points": ["Test di personalita", "360 feedback", "Strumenti di autovalutazione", "Interpretazione risultati"], "order": 22},
-                {"course_id": "cat_biz1", "category": "business", "title": "Business del Coach", "description": "Come avviare e gestire una pratica di coaching indipendente.", "key_points": ["Posizionamento", "Pricing", "Marketing etico", "Aspetti legali e fiscali"], "order": 30},
-                {"course_id": "cat_biz2", "category": "business", "title": "Marketing per Coach", "description": "Strategie di comunicazione e acquisizione clienti per coach.", "key_points": ["Personal branding", "Social media", "Content strategy", "Networking"], "order": 31},
-                {"course_id": "cat_biz3", "category": "business", "title": "Digital Presence", "description": "Costruire e gestire la propria presenza digitale professionale.", "key_points": ["Sito web", "LinkedIn strategy", "Newsletter", "SEO per coach"], "order": 32},
-            ]
-            for course in seed:
-                await db.course_catalog.insert_one(course)
-            catalog_courses = await db.course_catalog.find({}, {"_id": 0}).sort("order", 1).to_list(100)
-        event_courses = await db.courses_events.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+        return await _collect_training_courses()
 
-        items = []
-        for course in catalog_courses:
-            category_label = _category_label(course.get("category", ""), tags=course.get("tags", []))
-            items.append({
-                "course_id": course["course_id"],
-                "source": "catalog",
-                "title": course.get("title", ""),
-                "description": course.get("description", ""),
-                "category": category_label,
-                "category_key": course.get("category", ""),
-                "course_type": "training_program",
-                "timing_status": "always_available",
-                "dates": [],
-                "trainers": course.get("trainers", []),
-                "price": course.get("price", ""),
-                "location": course.get("location", ""),
-                "accreditation": course.get("accreditation", ""),
-                "tags": course.get("tags", []),
-                "key_points": course.get("key_points", []),
-                "link": course.get("link", ""),
-                "planned_label": "Offerta continuativa",
-            })
+    @router.get("/training-courses/{course_id}")
+    async def get_training_course_detail(request: Request, course_id: str):
+        await get_current_user(request)
+        items = await _collect_training_courses()
+        item = next((course for course in items if course["course_id"] == course_id), None)
+        if not item:
+            raise HTTPException(404, "Corso non trovato")
+        return item
 
-        for course in event_courses:
-            category_label = _category_label(course.get("tags", [""])[0] if course.get("tags") else "", course.get("accreditation", ""), course.get("tags", []))
-            timing_status = _timing_status(course.get("dates", []))
-            items.append({
-                "course_id": course["course_id"],
-                "source": "studio_course",
-                "title": course.get("title", ""),
-                "description": course.get("description", ""),
-                "category": category_label,
-                "category_key": category_label.lower().replace(" ", "_"),
-                "course_type": course.get("type", "course_multi"),
-                "timing_status": timing_status,
-                "dates": course.get("dates", []),
-                "trainers": course.get("trainers", []),
-                "price": course.get("price", ""),
-                "location": course.get("location", ""),
-                "accreditation": course.get("accreditation", ""),
-                "tags": course.get("tags", []),
-                "key_points": [],
-                "link": course.get("link", ""),
-                "planned_label": {
-                    "upcoming": "In programma",
-                    "ongoing": "In corso",
-                    "completed": "Concluso",
-                    "always_available": "Sempre disponibile",
-                }.get(timing_status, "In programma"),
-            })
-
-        items.sort(key=lambda item: (item["timing_status"] == "completed", item.get("title", "")))
-        return items
+    @router.get("/training-courses/{course_id}/admin-summary")
+    async def get_training_course_admin_summary(request: Request, course_id: str):
+        await require_admin_editor(request)
+        return await _collect_course_admin_summary(course_id)
 
     # ===== USER DETAILS (Billing/Profile) =====
     @router.get("/user-details")

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -212,6 +213,7 @@ function UserDetailsDialog({ userId, open, onClose }) {
 
 export default function UsersAdminPage() {
   const { user: currentUser } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -223,6 +225,22 @@ export default function UsersAdminPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    const userIdFromQuery = searchParams.get('userId');
+    if (userIdFromQuery) {
+      setSelectedUserId(userIdFromQuery);
+    }
+  }, [searchParams]);
+
+  const handleCloseDetails = () => {
+    setSelectedUserId(null);
+    if (searchParams.get('userId')) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('userId');
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   const handleChangeRole = async (userId, newRole) => {
     try {
@@ -264,7 +282,7 @@ export default function UsersAdminPage() {
 
   return (
     <div data-testid="users-admin-page">
-      <UserDetailsDialog userId={selectedUserId} open={!!selectedUserId} onClose={() => setSelectedUserId(null)} />
+      <UserDetailsDialog userId={selectedUserId} open={!!selectedUserId} onClose={handleCloseDetails} />
 
       <div className="mb-10">
         <h1 className="text-4xl font-semibold ariadne-heading mb-2">Utenti</h1>
@@ -303,7 +321,7 @@ export default function UsersAdminPage() {
       ) : (
         <div className="space-y-3">
           {filtered.map(u => (
-            <Card key={u.user_id} className={`border-gray-100 ${u.suspended ? 'opacity-60' : ''}`} data-testid={`user-card-${u.user_id}`}>
+            <Card key={u.user_id} className={`border-gray-100 ${u.suspended ? 'opacity-60' : ''} ${searchParams.get('userId') === u.user_id ? 'ring-2 ring-[#7B61FF]/30 border-[#7B61FF]/40' : ''}`} data-testid={`user-card-${u.user_id}`}>
               <CardContent className="p-5 flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 overflow-hidden" style={{ background: `hsl(${(u.name?.charCodeAt(0) || 0) * 7 % 360} 60% 90%)`, color: `hsl(${(u.name?.charCodeAt(0) || 0) * 7 % 360} 60% 35%)` }}>
                   {u.picture ? <img src={u.picture} alt="" className="w-full h-full object-cover" /> : u.name?.charAt(0)?.toUpperCase() || '?'}
@@ -324,7 +342,10 @@ export default function UsersAdminPage() {
                   <Button
                     variant="outline" size="sm"
                     className="gap-1 text-xs h-8"
-                    onClick={() => setSelectedUserId(u.user_id)}
+                    onClick={() => {
+                      setSelectedUserId(u.user_id);
+                      setSearchParams({ userId: u.user_id }, { replace: true });
+                    }}
                     data-testid={`user-details-${u.user_id}`}
                   >
                     <FileText className="w-3 h-3" />

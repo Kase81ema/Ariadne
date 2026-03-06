@@ -22,25 +22,25 @@ const studioNavGroups = [
     title: 'Avvio',
     items: [
       { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-      { to: '/start', icon: PlayCircle, label: 'Start Content Production' },
+      { to: '/start', icon: PlayCircle, label: 'Avvio contenuti' },
     ],
   },
   {
     id: 'produzione',
     title: 'Produzione',
     items: [
-      { to: '/workflow', icon: GitBranch, label: 'Guided Production' },
-      { to: '/approvals', icon: CheckCircle2, label: 'Approvals' },
-      { to: '/export', icon: Download, label: 'Export for Publishing' },
+      { to: '/workflow', icon: GitBranch, label: 'Produzione guidata' },
+      { to: '/approvals', icon: CheckCircle2, label: 'Approvazioni' },
+      { to: '/export', icon: Download, label: 'Esporta e pubblica' },
     ],
   },
   {
     id: 'contenuti',
     title: 'Contenuti',
     items: [
-      { to: '/courses', icon: GraduationCap, label: 'Courses and Events' },
-      { to: '/editorial', icon: FileText, label: 'Editorial' },
-      { to: '/images', icon: BookOpen, label: 'Images' },
+      { to: '/courses', icon: GraduationCap, label: 'Corsi ed eventi' },
+      { to: '/editorial', icon: FileText, label: 'Editoriale' },
+      { to: '/images', icon: BookOpen, label: 'Immagini' },
     ],
   },
   {
@@ -48,9 +48,9 @@ const studioNavGroups = [
     title: 'Impostazioni',
     items: [
       { to: '/repository', icon: FolderOpen, label: 'Repository', setupKey: 'repository' },
-      { to: '/rules', icon: Settings2, label: 'Rules', setupKey: 'rules' },
-      { to: '/profiles', icon: Users, label: 'Social Profiles', setupKey: 'profiles' },
-      { to: '/agents', icon: Bot, label: 'Agents', setupKey: 'agents' },
+      { to: '/rules', icon: Settings2, label: 'Regole', setupKey: 'rules' },
+      { to: '/profiles', icon: Users, label: 'Profili social', setupKey: 'profiles' },
+      { to: '/agents', icon: Bot, label: 'Agenti', setupKey: 'agents' },
     ],
   },
 ];
@@ -61,9 +61,9 @@ const schoolNavGroups = [
     title: 'Community',
     items: [
       { to: '/community', icon: LayoutDashboard, label: 'Dashboard' },
-      { to: '/my-journey', icon: Map, label: 'My Journey' },
-      { to: '/feed', icon: MessageSquare, label: 'Community Board' },
-      { to: '/materials', icon: BookOpen, label: 'Materials' },
+      { to: '/my-journey', icon: Map, label: 'Il mio percorso' },
+      { to: '/feed', icon: MessageSquare, label: 'Bacheca community' },
+      { to: '/materials', icon: BookOpen, label: 'Materiali' },
       { to: '/assistant', icon: HelpCircle, label: 'Ariadne AI' },
     ],
   },
@@ -71,8 +71,8 @@ const schoolNavGroups = [
     id: 'risorse',
     title: 'Risorse',
     items: [
-      { to: '/training-courses', icon: GraduationCap, label: 'Training Courses' },
-      { to: '/courses', icon: CalendarDays, label: 'Courses and Events', roles: ['admin', 'editor'] },
+      { to: '/training-courses', icon: GraduationCap, label: 'Corsi di formazione' },
+      { to: '/courses', icon: CalendarDays, label: 'Corsi ed eventi', roles: ['admin', 'editor'] },
       { to: '/repository', icon: FolderOpen, label: 'Repository', roles: ['admin', 'editor'] },
     ],
   },
@@ -81,12 +81,12 @@ const schoolNavGroups = [
     title: 'Gestione scuola',
     adminOnly: true,
     items: [
-      { to: '/inbox', icon: Mail, label: 'Inbox' },
-      { to: '/routing-rules', icon: GitBranch, label: 'Routing Rules' },
-      { to: '/email-templates', icon: FileOutput, label: 'Email Templates' },
-      { to: '/users-admin', icon: Users, label: 'Users' },
-      { to: '/cohorts-admin', icon: GraduationCap, label: 'Editions and Materials' },
-      { to: '/banners-admin', icon: Megaphone, label: 'Recommended Banners' },
+      { to: '/inbox', icon: Mail, label: 'Posta in arrivo' },
+      { to: '/routing-rules', icon: GitBranch, label: 'Regole di smistamento' },
+      { to: '/email-templates', icon: FileOutput, label: 'Template email' },
+      { to: '/users-admin', icon: Users, label: 'Utenti' },
+      { to: '/cohorts-admin', icon: GraduationCap, label: 'Edizioni e materiali' },
+      { to: '/banners-admin', icon: Megaphone, label: 'Banner consigliati' },
     ],
   },
 ];
@@ -239,7 +239,7 @@ export default function Layout({ children }) {
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-semibold ariadne-heading" style={{ color: sidebarText }} data-testid="app-title">Ariadne</h1>
             <p className="text-[10px] uppercase tracking-widest font-medium" style={{ color: sidebarMuted }}>
-              {area === 'school' ? 'Scuola & Community' : 'Editorial Studio'}
+              {area === 'school' ? 'Scuola e community' : 'Studio editoriale'}
             </p>
           </div>
           {area === 'studio' && readiness && (
@@ -299,13 +299,19 @@ export default function Layout({ children }) {
           {visibleGroups.map((group) => {
               const isOpen = openGroups[group.id] !== false;
               return (
-                <Collapsible key={group.id} open={isOpen} onOpenChange={() => toggleGroup(group.id)}>
-                  <CollapsibleTrigger className="group-trigger" data-testid={`group-${group.id}`}>
-                    <span className="group-label">{group.title}</span>
-                    <ChevronRight className="group-chevron" data-open={isOpen ? 'true' : 'false'} />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="space-y-0.5 pb-1">
+                <div key={group.id} className="sidebar-group-card" data-testid={`sidebar-group-card-${group.id}`}>
+                  <Collapsible open={isOpen} onOpenChange={() => toggleGroup(group.id)}>
+                    <CollapsibleTrigger className="group-trigger" data-testid={`group-${group.id}`}>
+                      <span className="group-heading-wrap">
+                        <span className="group-label">{group.title}</span>
+                        <span className="group-line" />
+                      </span>
+                      <span className="group-chevron-shell">
+                        <ChevronRight className="group-chevron" data-open={isOpen ? 'true' : 'false'} />
+                      </span>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="space-y-1 pb-1 px-1.5">
                       {group.items.map(({ to, icon: Icon, label, setupKey }) => (
                         <TooltipProvider key={to} delayDuration={500}>
                           <Tooltip>
@@ -331,9 +337,10 @@ export default function Layout({ children }) {
                           </Tooltip>
                         </TooltipProvider>
                       ))}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
               );
             })}
         </nav>
