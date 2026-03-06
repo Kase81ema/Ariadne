@@ -52,10 +52,15 @@ def create_community_router(db, get_current_user, log_audit):
         for e in events:
             for d in e.get("dates", []):
                 if d.get("date", "") >= today:
-                    upcoming.append({"title": e["title"], "date": d["date"], "label": d.get("label", ""), "type": e.get("type", "")})
+                    upcoming.append({"title": e["title"], "date": d["date"], "label": d.get("label", ""), "type": e.get("type", ""), "course_id": e.get("course_id", "")})
                     break
         upcoming.sort(key=lambda x: x["date"])
         upcoming = upcoming[:5]
+        # Enrich with user interest status
+        user_interests = await db.course_interest_status.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(100)
+        interest_map = {i["course_id"]: i.get("status", "") for i in user_interests}
+        for ev in upcoming:
+            ev["user_interest"] = interest_map.get(ev.get("course_id", ""), "")
 
         # Recent feed posts
         recent_posts = await db.feed_posts.find({"deleted": {"$ne": True}}, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)

@@ -334,111 +334,42 @@ async def _buffer_get_profiles():
     organizations = (((org_response or {}).get('data') or {}).get('account') or {}).get('organizations') or []
 
     flattened_channels = []
-    channel_queries = [
-        """
-        query GetOrganizationChannels($organizationId: ID!) {
-          organization(id: $organizationId) {
+
+    # Use a simple query with only valid fields
+    channel_query = """
+    query GetAllOrgs {
+      account {
+        organizations {
+          id
+          name
+          channels {
             id
             name
-            channels {
-              id
-              name
-              displayName
-              service
-              serviceUsername
-              formattedUsername
-            }
+            displayName
+            service
           }
         }
-        """,
-        """
-        query GetOrganizationsWithChannels {
-          account {
-            organizations {
-              id
-              name
-              channels {
-                id
-                name
-                displayName
-                service
-                serviceUsername
-                formattedUsername
-              }
-            }
-          }
-        }
-        """,
-        """
-        query GetViewerProfiles {
-          viewer {
-            profiles {
-              id
-              displayName
-              service
-              serviceUsername
-              formattedUsername
-            }
-          }
-        }
-        """,
-    ]
+      }
+    }
+    """
 
-    for organization in organizations:
-        for query in channel_queries[:1]:
-            try:
-                response = await _buffer_graphql(query, {'organizationId': organization['id']})
-                org_data = ((response or {}).get('data') or {}).get('organization') or {}
-                channels = org_data.get('channels') or []
-                if channels:
-                    for channel in channels:
-                        flattened_channels.append({
-                            'id': channel.get('id', ''),
-                            'service': channel.get('service', ''),
-                            'name': channel.get('name') or channel.get('displayName') or channel.get('formattedUsername') or channel.get('serviceUsername') or channel.get('id', ''),
-                            'display_name': channel.get('displayName') or channel.get('name') or '',
-                            'formatted_username': channel.get('formattedUsername') or '',
-                            'service_username': channel.get('serviceUsername') or '',
-                            'organization_id': organization.get('id', ''),
-                            'organization_name': organization.get('name', ''),
-                        })
-            except HTTPException:
-                continue
-
-    if not flattened_channels:
-        for query in channel_queries[1:]:
-            try:
-                response = await _buffer_graphql(query)
-                data = (response or {}).get('data') or {}
-                if data.get('account'):
-                    for organization in data['account'].get('organizations') or []:
-                        for channel in organization.get('channels') or []:
-                            flattened_channels.append({
-                                'id': channel.get('id', ''),
-                                'service': channel.get('service', ''),
-                                'name': channel.get('name') or channel.get('displayName') or channel.get('formattedUsername') or channel.get('serviceUsername') or channel.get('id', ''),
-                                'display_name': channel.get('displayName') or channel.get('name') or '',
-                                'formatted_username': channel.get('formattedUsername') or '',
-                                'service_username': channel.get('serviceUsername') or '',
-                                'organization_id': organization.get('id', ''),
-                                'organization_name': organization.get('name', ''),
-                            })
-                    break
-                if data.get('viewer'):
-                    for channel in data['viewer'].get('profiles') or []:
-                        flattened_channels.append({
-                            'id': channel.get('id', ''),
-                            'service': channel.get('service', ''),
-                            'name': channel.get('displayName') or channel.get('formattedUsername') or channel.get('serviceUsername') or channel.get('id', ''),
-                            'display_name': channel.get('displayName') or '',
-                            'formatted_username': channel.get('formattedUsername') or '',
-                            'service_username': channel.get('serviceUsername') or '',
-                            'organization_id': '',
-                            'organization_name': '',
-                        })
-                    break
-            except HTTPException:
-                continue
+    try:
+        response = await _buffer_graphql(channel_query)
+        data = (response or {}).get('data') or {}
+        for organization in (data.get('account') or {}).get('organizations') or []:
+            for channel in organization.get('channels') or []:
+                flattened_channels.append({
+                    'id': channel.get('id', ''),
+                    'service': channel.get('service', ''),
+                    'name': channel.get('name') or channel.get('displayName') or channel.get('id', ''),
+                    'display_name': channel.get('displayName') or channel.get('name') or '',
+                    'formatted_username': channel.get('name') or '',
+                    'service_username': channel.get('name') or '',
+                    'organization_id': organization.get('id', ''),
+                    'organization_name': organization.get('name', ''),
+                })
+    except HTTPException:
+        pass
 
     return flattened_channels
 

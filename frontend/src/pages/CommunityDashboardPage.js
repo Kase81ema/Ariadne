@@ -12,7 +12,7 @@ import { communityAPI, schoolAPI } from '../lib/api';
 import {
   ArrowRight, Heart, MessageCircle, Calendar, Sparkles,
   Target, GraduationCap, Briefcase, Loader2,
-  BookOpen, Map, Bell, Users
+  BookOpen, Map, Bell, Users, FolderOpen, Download, Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
@@ -100,6 +100,12 @@ function getColor(name) {
   return { bg: `hsl(${h} 55% 90%)`, fg: `hsl(${h} 55% 35%)` };
 }
 
+const INTEREST_BADGE = {
+  interested: { label: 'Interessato/a', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  confirmed: { label: 'Confermato/a', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  enrolled: { label: 'Iscritto/a', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+};
+
 export default function CommunityDashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -168,62 +174,76 @@ export default function CommunityDashboardPage() {
         <p className="text-base text-gray-500">Uno spazio pensato per orientarti, nutrire la tua crescita e sentirti parte della community Ariadne.</p>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1.02fr_0.98fr] gap-6 mb-6 items-start">
-        <Card className="border-gray-100" data-testid="school-welcome-card">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
-              <div>
-                <Badge variant="outline" className="text-[10px] badge-yellow mb-3">Benvenuto</Badge>
-                <h2 className="text-xl font-semibold ariadne-heading mb-3">{firstName}, questo spazio può accompagnarti con cura e concretezza.</h2>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Qui puoi orientarti, restare in connessione con la community e dare continuità al tuo cammino professionale con uno sguardo più presente, consapevole e personale.
-                </p>
-              </div>
-            </div>
-            <div className="rounded-2xl bg-[hsl(82,60%,42%)]/6 border border-[hsl(82,60%,42%)]/12 p-4 mb-4">
-              <p className="text-sm font-medium text-gray-700">Un saluto da Emanuele, Arianna e Emanuele</p>
-              <p className="text-xs text-gray-500 mt-1">Con la cura di chi accompagna processi di crescita, presenza e trasformazione nella relazione con sé e con gli altri.</p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Button variant="outline" className="justify-between h-auto py-3" onClick={() => navigate('/feed')} data-testid="welcome-connect-community">
-                <span className="text-left">
-                  <span className="block text-sm font-semibold">Entra nella community</span>
-                  <span className="block text-[11px] text-gray-500 mt-1">Partecipa alle conversazioni della bacheca</span>
-                </span>
-                <Users className="w-4 h-4" />
-              </Button>
-              <Button variant="outline" className="justify-between h-auto py-3" onClick={() => navigate('/my-journey')} data-testid="welcome-grow-professionally">
-                <span className="text-left">
-                  <span className="block text-sm font-semibold">Coltiva il tuo percorso</span>
-                  <span className="block text-[11px] text-gray-500 mt-1">Dai continuità alla tua crescita professionale</span>
-                </span>
-                <BookOpen className="w-4 h-4" />
-              </Button>
-              <Button variant="outline" className="justify-between h-auto py-3" onClick={() => navigate('/community/events')} data-testid="welcome-stay-updated">
-                <span className="text-left">
-                  <span className="block text-sm font-semibold">Resta aggiornato/a</span>
-                  <span className="block text-[11px] text-gray-500 mt-1">Scopri webinar, workshop e nuove occasioni</span>
-                </span>
-                <Bell className="w-4 h-4" />
-              </Button>
+      {/* ===== TOP ROW: Benvenuto + Iscrizioni aperte (equal height) ===== */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6" style={{ alignItems: 'stretch' }}>
+        {/* BENVENUTO */}
+        <Card className="border-gray-100 flex flex-col" data-testid="school-welcome-card">
+          <CardContent className="p-6 flex flex-col flex-1">
+            <Badge variant="outline" className="text-[10px] badge-yellow mb-3 self-start">Benvenuto</Badge>
+            <h2 className="text-xl font-semibold ariadne-heading mb-3">{firstName}, questo spazio ti accompagna con cura e concretezza.</h2>
+            <p className="text-sm text-gray-600 leading-relaxed mb-4">
+              Qui puoi orientarti, restare in connessione con la community e dare continuita al tuo cammino professionale con uno sguardo piu presente, consapevole e personale.
+              Emanuele, Arianna ed Emanuele ti accolgono in questo spazio con la cura di chi accompagna processi di crescita, presenza e trasformazione nella relazione con se e con gli altri.
+            </p>
+            <div className="mt-auto grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <button
+                onClick={() => navigate('/feed')}
+                className="group flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-150 bg-white text-left transition-all hover:bg-[hsl(82,60%,42%)]/8 hover:border-[hsl(82,60%,42%)]/30"
+                data-testid="welcome-connect-community"
+              >
+                <div className="w-9 h-9 rounded-lg bg-gray-100 group-hover:bg-[hsl(82,60%,42%)]/15 flex items-center justify-center flex-shrink-0 transition-colors">
+                  <Users className="w-4 h-4 text-gray-500 group-hover:text-[hsl(82,60%,42%)]" />
+                </div>
+                <div className="min-w-0">
+                  <span className="block text-sm font-semibold text-gray-800 leading-tight">Entra nella community</span>
+                  <span className="block text-[11px] text-gray-400 mt-0.5 leading-snug">Partecipa alla bacheca</span>
+                </div>
+              </button>
+              <button
+                onClick={() => navigate('/my-journey')}
+                className="group flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-150 bg-white text-left transition-all hover:bg-[hsl(82,60%,42%)]/8 hover:border-[hsl(82,60%,42%)]/30"
+                data-testid="welcome-grow-professionally"
+              >
+                <div className="w-9 h-9 rounded-lg bg-gray-100 group-hover:bg-[hsl(82,60%,42%)]/15 flex items-center justify-center flex-shrink-0 transition-colors">
+                  <BookOpen className="w-4 h-4 text-gray-500 group-hover:text-[hsl(82,60%,42%)]" />
+                </div>
+                <div className="min-w-0">
+                  <span className="block text-sm font-semibold text-gray-800 leading-tight">Coltiva il percorso</span>
+                  <span className="block text-[11px] text-gray-400 mt-0.5 leading-snug">Crescita professionale</span>
+                </div>
+              </button>
+              <button
+                onClick={() => navigate('/community/events')}
+                className="group flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-150 bg-white text-left transition-all hover:bg-[hsl(82,60%,42%)]/8 hover:border-[hsl(82,60%,42%)]/30"
+                data-testid="welcome-stay-updated"
+              >
+                <div className="w-9 h-9 rounded-lg bg-gray-100 group-hover:bg-[hsl(82,60%,42%)]/15 flex items-center justify-center flex-shrink-0 transition-colors">
+                  <Bell className="w-4 h-4 text-gray-500 group-hover:text-[hsl(82,60%,42%)]" />
+                </div>
+                <div className="min-w-0">
+                  <span className="block text-sm font-semibold text-gray-800 leading-tight">Resta aggiornato/a</span>
+                  <span className="block text-[11px] text-gray-400 mt-0.5 leading-snug">Webinar e occasioni</span>
+                </div>
+              </button>
             </div>
           </CardContent>
         </Card>
 
+        {/* ISCRIZIONI APERTE */}
         {openEnrollmentBanner && (
-          <Card className="border-gray-100 overflow-hidden" data-testid="open-enrolment-banner-card">
+          <Card className="border-gray-100 overflow-hidden flex flex-col" data-testid="open-enrolment-banner-card">
             {openEnrollmentBanner.image_url && (
-              <div className="aspect-[16/9] overflow-hidden">
+              <div className="h-[180px] overflow-hidden flex-shrink-0">
                 <img src={openEnrollmentBanner.image_url} alt="Iscrizioni aperte" className="w-full h-full object-cover" />
               </div>
             )}
-            <CardContent className="p-5 space-y-3">
-              <Badge variant="outline" className="text-[10px] badge-green">Iscrizioni aperte</Badge>
-              <div>
+            <CardContent className="p-5 space-y-3 flex flex-col flex-1">
+              <Badge variant="outline" className="text-[10px] badge-green self-start">Iscrizioni aperte</Badge>
+              <div className="flex-1">
                 <h2 className="text-lg font-semibold leading-tight">{openEnrollmentBanner.title}</h2>
                 <p className="text-sm text-gray-500 mt-2 leading-relaxed">{openEnrollmentBanner.body}</p>
               </div>
-              <Button className="w-full gap-2" onClick={() => navigate(openEnrollmentCourse ? `/course/${openEnrollmentCourse.course_id}` : '/training-courses')} data-testid="open-enrolment-banner-cta">
+              <Button className="w-full gap-2 mt-auto" onClick={() => navigate(openEnrollmentCourse ? `/course/${openEnrollmentCourse.course_id}` : '/training-courses')} data-testid="open-enrolment-banner-cta">
                 Scopri il programma <ArrowRight className="w-4 h-4" />
               </Button>
             </CardContent>
@@ -231,6 +251,7 @@ export default function CommunityDashboardPage() {
         )}
       </div>
 
+      {/* ===== SECOND ROW: Il mio percorso (full width) ===== */}
       <Card className="border-gray-100 mb-6" data-testid="journey-summary-card">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
@@ -254,46 +275,65 @@ export default function CommunityDashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-gray-500">
             <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
               <p className="font-semibold text-gray-700 mb-1">Dove sei ora</p>
-              <p>{completedCourses > 0 ? `Hai già consolidato ${completedCourses} passaggi del tuo cammino.` : 'Stai iniziando a dare forma al tuo percorso con Ariadne.'}</p>
+              <p>{completedCourses > 0 ? `Hai gia consolidato ${completedCourses} passaggi del tuo cammino.` : 'Stai iniziando a dare forma al tuo percorso con Ariadne.'}</p>
             </div>
             <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
               <p className="font-semibold text-gray-700 mb-1">Cosa puoi far crescere</p>
-              <p>{inProgressCourses > 0 ? `Hai ${inProgressCourses} esperienza/e da far maturare nelle prossime settimane.` : 'Puoi scegliere il prossimo passo formativo più adatto al momento che stai vivendo.'}</p>
+              <p>{inProgressCourses > 0 ? `Hai ${inProgressCourses} esperienza/e da far maturare nelle prossime settimane.` : 'Puoi scegliere il prossimo passo formativo piu adatto al momento che stai vivendo.'}</p>
             </div>
             <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
               <p className="font-semibold text-gray-700 mb-1">Come orientarti</p>
-              <p>Usa dashboard, bacheca e prossime occasioni per restare presente e dare continuità alla tua crescita.</p>
+              <p>Usa dashboard, bacheca e prossime occasioni per restare presente e dare continuita alla tua crescita.</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
+      {/* ===== THIRD ROW: Le prossime occasioni (left) + Dalla bacheca (right) ===== */}
       <div className="grid grid-cols-1 xl:grid-cols-[0.82fr_1.18fr] gap-6 mb-6 items-start">
-        <div className="space-y-4" data-testid="upcoming-events-card">
-          <Card className="border-gray-100">
+        {/* LEFT COLUMN: Events + Featured program + Materiali */}
+        <div className="space-y-4" data-testid="upcoming-events-column">
+          {/* Le prossime occasioni */}
+          <Card className="border-gray-100" data-testid="upcoming-events-card">
             <CardContent className="p-6 space-y-5">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
                   <h2 className="text-base font-semibold">Le prossime occasioni</h2>
-                  <p className="text-xs text-gray-400 mt-1">Eventi in calendario e passi concreti per restare in contatto con le opportunità che stanno prendendo forma.</p>
+                  <p className="text-xs text-gray-400 mt-1">Eventi e programmi da esplorare — clicca per saperne di piu.</p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => navigate('/community/events')} className="text-xs gap-1" data-testid="goto-events">
                   Tutte le occasioni <ArrowRight className="w-3 h-3" />
                 </Button>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {data?.upcoming_events?.length > 0 ? (
-                  data.upcoming_events.map((e, i) => (
-                    <div key={i} className="flex items-center gap-3 p-4 rounded-2xl bg-gray-50/70 border border-gray-100">
-                      <div className="w-11 h-11 rounded-xl bg-[hsl(82,60%,42%)]/8 flex items-center justify-center flex-shrink-0">
-                        <Calendar className="w-4 h-4 text-[hsl(82,60%,42%)]" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{e.title}</p>
-                        <p className="text-xs text-gray-400">{e.label && `${e.label} · `}{new Date(e.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                      </div>
-                    </div>
-                  ))
+                  data.upcoming_events.map((e, i) => {
+                    const interestBadge = INTEREST_BADGE[e.user_interest] || null;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => navigate(e.course_id ? `/course/${e.course_id}` : '/training-courses')}
+                        className="w-full flex items-center gap-3 p-4 rounded-2xl bg-gray-50/70 border border-gray-100 text-left transition-all hover:bg-[hsl(82,60%,42%)]/6 hover:border-[hsl(82,60%,42%)]/20 group"
+                        data-testid={`upcoming-event-${i}`}
+                      >
+                        <div className="w-11 h-11 rounded-xl bg-[hsl(82,60%,42%)]/8 group-hover:bg-[hsl(82,60%,42%)]/15 flex items-center justify-center flex-shrink-0 transition-colors">
+                          <Calendar className="w-4 h-4 text-[hsl(82,60%,42%)]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <p className="text-sm font-medium truncate">{e.title}</p>
+                            {interestBadge && (
+                              <Badge variant="outline" className={`text-[10px] flex-shrink-0 ${interestBadge.className}`}>
+                                {interestBadge.label}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-400">{e.label && `${e.label} · `}{new Date(e.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                        </div>
+                        <ArrowRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-[hsl(82,60%,42%)] flex-shrink-0 transition-colors" />
+                      </button>
+                    );
+                  })
                 ) : (
                   <p className="text-sm text-gray-400 text-center py-8">Al momento non ci sono eventi in calendario, ma presto troverai nuove occasioni da seguire.</p>
                 )}
@@ -301,6 +341,7 @@ export default function CommunityDashboardPage() {
             </CardContent>
           </Card>
 
+          {/* Percorso in evidenza */}
           {(featuredProgramCourse || featuredProgramBanner) && (
             <Card className="border-gray-100 overflow-hidden bg-gradient-to-br from-[hsl(82,60%,42%)]/6 to-white" data-testid="featured-program-card">
               {featuredProgramBanner?.image_url && (
@@ -317,16 +358,56 @@ export default function CommunityDashboardPage() {
                   </p>
                 </div>
                 <div className="rounded-xl bg-white/90 border border-white p-3">
-                  <p className="text-xs text-gray-500">Aprendo la scheda corso puoi segnalarci con un clic che vuoi saperne di più: il tuo interesse verrà registrato e sarà visibile anche al team Ariadne.</p>
+                  <p className="text-xs text-gray-500">Aprendo la scheda corso puoi segnalarci con un clic che vuoi saperne di piu: il tuo interesse verra registrato e sara visibile anche al team Ariadne.</p>
                 </div>
                 <Button className="w-full gap-2" onClick={() => navigate(featuredProgramCourse ? `/course/${featuredProgramCourse.course_id}` : '/training-courses')} data-testid="featured-program-cta">
-                  Voglio saperne di più <ArrowRight className="w-4 h-4" />
+                  Voglio saperne di piu <ArrowRight className="w-4 h-4" />
                 </Button>
               </CardContent>
             </Card>
           )}
+
+          {/* MATERIALI section */}
+          <Card className="border-gray-100" data-testid="materiali-section-card">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[hsl(82,60%,42%)]/8 flex items-center justify-center">
+                  <FolderOpen className="w-5 h-5 text-[hsl(82,60%,42%)]" />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold">Materiali</h2>
+                  <p className="text-xs text-gray-400">Risorse e contenuti dalla formazione Ariadne</p>
+                </div>
+              </div>
+              <div className="space-y-3 mb-4">
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                  <Download className="w-4 h-4 text-[hsl(82,60%,42%)] mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Risorse pratiche</p>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">Micro-guide, schede e strumenti utili per la tua pratica, accessibili anche se sei nuovo/a nel mondo Ariadne.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                  <Eye className="w-4 h-4 text-[hsl(82,60%,42%)] mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Esempi e contenuti dai corsi</p>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">Immagini, materiali visibili e anteprime che raccontano l'esperienza formativa: scopri il tipo di lavoro che Ariadne propone, anche se non hai ancora partecipato.</p>
+                  </div>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                className="w-full gap-2 group hover:bg-[hsl(82,60%,42%)]/8 hover:border-[hsl(82,60%,42%)]/30 hover:text-[hsl(82,60%,42%)]"
+                onClick={() => navigate('/materials')}
+                data-testid="goto-materiali"
+              >
+                <FolderOpen className="w-4 h-4" /> Esplora i materiali <ArrowRight className="w-3.5 h-3.5 ml-auto" />
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
+        {/* RIGHT COLUMN: Dalla bacheca */}
         <Card className="border-gray-100" data-testid="dashboard-board-card">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
