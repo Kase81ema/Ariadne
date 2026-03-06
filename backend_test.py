@@ -11,7 +11,7 @@ from typing import Dict, Any
 from datetime import datetime
 
 # Configurazione test
-BASE_URL = "https://content-academy-12.preview.emergentagent.com"
+BASE_URL = "https://studio-refactor-1.preview.emergentagent.com"
 EDITOR_CREDENTIALS = {
     "email": "arianna.perrone@ariadne.test",
     "password": "password123"
