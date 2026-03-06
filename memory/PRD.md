@@ -83,6 +83,30 @@ Studio comunicazione, Community core, School Operations, Community avanzata - tu
 - Report `iteration_9.json`: backend 100%, frontend 100%
 - Buffer live publish NON completamente verificabile finché l’account non ha almeno un canale collegato
 
+### Fase 10 - Sidebar governance + Training Courses hub (06/03/2026) - COMPLETATO E TESTATO
+**NAVIGAZIONE E RUOLI:**
+- Sidebar alleggerita con font menu ridotto per una gerarchia visiva più pulita
+- Area Studio aggiornata con sidebar chiara e contenuto principale scuro
+- Rimossi dalla sidebar `Eventi e annunci`; restano solo nei dashboard/overview interni
+- `Corsi ed eventi` e `Repository` resi visibili e accessibili solo a Editor/Admin, sia lato menu sia lato route/API principali
+- Nuova voce sidebar `Training Courses`
+
+**TRAINING COURSES PAGE:**
+- Nuova pagina catalogo unica per tutti gli utenti con card corsi, ricerca e filtri per categoria/timing
+- Supporto a corsi continuativi, upcoming, ongoing e completed
+- Vista Admin/Editor estesa con tab operative: catalogo, course operations, payment schedule
+
+**OPERATIVITÀ ADMIN:**
+- Gestione course/edition/participants in un unico punto con stati `Interested`, `Confirmed`, `Enrolled`
+- Creazione edizioni collegate ai corsi tramite `course_id`
+- Workflow cumulativo per piani rateali: selezione corso -> edizione -> partecipanti -> 1-5 rate flessibili per persona
+- Nuova vista aggregata scadenze pagamenti/receivables con overdue, upcoming e totale da incassare
+
+**TEST:**
+- Self-test backend completato con utente editor + utente regular
+- Report `iteration_10.json`: backend 100%, frontend 100%
+- Verificati: blocco role-based su `/courses` e `/repository`, catalogo Training Courses per regular user, hub operativo completo per Editor/Admin
+
 ## Prioritized Backlog
 
 ### P0 - COMPLETATO
@@ -103,12 +127,14 @@ Studio comunicazione, Community core, School Operations, Community avanzata - tu
 - [ ] Drag & drop calendario
 - [ ] Dashboard analytics
 - [ ] Ricerca avanzata inbox
+- [ ] Hardening completo dei permessi backend secondari sul repository immagini/media interni se si vorrà estendere la segregazione dati oltre le route principali
 
 ## Test Reports
 - iteration_6: Batch 1-3 (100%)
 - iteration_7: Fase 7 grande overhaul (100%, 13 backend + 20 frontend)
 - iteration_8: Verifica finale Studio + Scuola (100%, 6 endpoint backend + 15 scenari frontend)
 - iteration_9: Modulo immagini Studio + Buffer GraphQL (100%, backend + frontend)
+- iteration_10: Sidebar role-based + Training Courses hub + payment overview (100%, backend + frontend)
 
 ## Test Credentials
 - Admin: admin@ariadne.training / admin123
