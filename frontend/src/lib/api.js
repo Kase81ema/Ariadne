@@ -227,6 +227,8 @@ export const schoolAPI = {
   // Course catalog
   getCatalog: () => api.get('/school/catalog'),
   listTrainingCourses: () => api.get('/school/training-courses'),
+  getTrainingCourseDetail: (courseId) => api.get(`/school/training-courses/${courseId}`),
+  getTrainingCourseAdminSummary: (courseId) => api.get(`/school/training-courses/${courseId}/admin-summary`),
   updateCourseProgress: (courseId, status) => api.post('/school/catalog/progress', { course_id: courseId, status }),
   // User details
   getUserDetails: () => api.get('/school/user-details'),

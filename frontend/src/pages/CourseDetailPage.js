@@ -4,10 +4,13 @@ import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Separator } from '../components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { schoolAPI } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'sonner';
 import {
   ArrowLeft, Calendar, Clock, MapPin, Users, Award, Star,
-  CheckCircle2, GraduationCap, Loader2, ExternalLink, BookOpen
+  CheckCircle2, GraduationCap, Loader2, BookOpen, UserRoundCog
 } from 'lucide-react';
 
 // Detailed course data (enriched info per course)
@@ -69,24 +72,48 @@ const DEFAULT_DETAIL = {
   testimonials: [],
 };
 
+const STATUS_OPTIONS = [
+  { value: 'interested', label: 'Interessato' },
+  { value: 'confirmed', label: 'Confermato' },
+  { value: 'enrolled', label: 'Iscritto' },
+];
+
 function getColor(name) {
   const h = (name?.charCodeAt(0) || 0) * 7 % 360;
   return { bg: `hsl(${h} 50% 88%)`, fg: `hsl(${h} 50% 30%)` };
 }
 
 export default function CourseDetailPage() {
+  const { user } = useAuth();
   const { courseId } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState(null);
+  const [adminSummary, setAdminSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const isPrivileged = user?.role === 'admin' || user?.role === 'editor';
 
   useEffect(() => {
-    schoolAPI.getCatalog().then(r => {
-      const found = r.data.find(c => c.course_id === courseId);
-      setCourse(found);
+    setLoading(true);
+    Promise.all([
+      schoolAPI.getTrainingCourseDetail(courseId),
+      isPrivileged ? schoolAPI.getTrainingCourseAdminSummary(courseId).catch(() => ({ data: null })) : Promise.resolve({ data: null }),
+    ]).then(([courseResponse, summaryResponse]) => {
+      setCourse(courseResponse.data);
+      setAdminSummary(summaryResponse.data);
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, [courseId]);
+  }, [courseId, isPrivileged]);
+
+  const handleStatusChange = async (editionId, userId, participationStatus) => {
+    try {
+      await schoolAPI.updateMember(editionId, userId, { participation_status: participationStatus });
+      const refreshed = await schoolAPI.getTrainingCourseAdminSummary(courseId);
+      setAdminSummary(refreshed.data);
+      toast.success('Stato partecipante aggiornato');
+    } catch {
+      toast.error('Impossibile aggiornare lo stato del partecipante');
+    }
+  };
 
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>;
   if (!course) return <div className="text-center py-16"><p className="text-gray-400">Corso non trovato</p><Button variant="outline" onClick={() => navigate(-1)} className="mt-4">Indietro</Button></div>;
@@ -94,22 +121,25 @@ export default function CourseDetailPage() {
   const detail = COURSE_DETAILS[courseId] || DEFAULT_DETAIL;
   const catColors = {
     ariadne: 'hsl(82, 60%, 42%)',
-    tecnica: 'hsl(195, 100%, 45%)',
+    external_trainers: 'hsl(30, 85%, 52%)',
+    icf: 'hsl(195, 100%, 45%)',
+    coach_technique: 'hsl(195, 100%, 45%)',
     business: 'hsl(30, 100%, 50%)',
   };
-  const accentColor = catColors[course.category] || catColors.ariadne;
+  const accentColor = catColors[course.category_key] || catColors.ariadne;
+  const overview = adminSummary?.summary || { interested: 0, confirmed: 0, enrolled: 0 };
 
   return (
     <div className="max-w-4xl mx-auto" data-testid={`course-detail-${courseId}`}>
       {/* Back + breadcrumb */}
       <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-1 mb-6 -ml-2" data-testid="back-btn">
-        <ArrowLeft className="w-4 h-4" /> Torna al percorso
+        <ArrowLeft className="w-4 h-4" /> Torna ai corsi
       </Button>
 
       {/* Hero */}
       <div className="mb-8">
         <Badge variant="outline" className="text-[10px] mb-3" style={{ borderColor: accentColor, color: accentColor }}>
-          {course.category === 'ariadne' ? 'Formazione Coach ICF' : course.category === 'tecnica' ? 'Formazione Coach tecnica' : 'Formazione Coach business'}
+          {course.category}
         </Badge>
         <h1 className="text-4xl font-semibold ariadne-heading mb-2">{course.title}</h1>
         {detail.subtitle && <p className="text-base text-gray-400">{detail.subtitle}</p>}
@@ -189,6 +219,71 @@ export default function CourseDetailPage() {
         </Card>
       )}
 
+      {isPrivileged && (
+        <Card className="border-gray-100 mb-8" data-testid="course-admin-summary-card">
+          <CardContent className="p-6 space-y-5">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <h3 className="text-lg font-semibold flex items-center gap-2"><UserRoundCog className="w-4 h-4" style={{ color: accentColor }} /> Vista amministrativa del corso</h3>
+                <p className="text-sm text-gray-500">Qui puoi vedere chi è interessato, confermato o iscritto e aggiornare lo stato direttamente dalla scheda corso.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                { key: 'interested', label: 'Interessati' },
+                { key: 'confirmed', label: 'Confermati' },
+                { key: 'enrolled', label: 'Iscritti' },
+              ].map((item) => (
+                <Card key={item.key} className="border-gray-100">
+                  <CardContent className="p-4">
+                    <p className="text-xs text-gray-400 uppercase tracking-wide">{item.label}</p>
+                    <p className="text-2xl font-semibold ariadne-heading" data-testid={`course-admin-count-${item.key}`}>{overview[item.key] || 0}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <div className="space-y-4">
+              {(adminSummary?.editions || []).map((edition) => (
+                <Card key={edition.cohort_id} className="border-gray-100" data-testid={`course-admin-edition-${edition.cohort_id}`}>
+                  <CardContent className="p-5 space-y-4">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-900">{edition.name}</h4>
+                        <p className="text-xs text-gray-400">{edition.start_date || 'Data da definire'}{edition.end_date ? ` · ${edition.end_date}` : ''}</p>
+                      </div>
+                      <Badge variant="outline" className="text-[10px]">{edition.members?.length || 0} partecipanti</Badge>
+                    </div>
+                    <div className="space-y-3">
+                      {(edition.members || []).map((member) => (
+                        <div key={member.user_id} className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px_auto] gap-3 items-center rounded-xl border border-gray-100 p-4" data-testid={`course-admin-member-${edition.cohort_id}-${member.user_id}`}>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">{member.user_name}</p>
+                            <p className="text-xs text-gray-400">{member.user_email}</p>
+                          </div>
+                          <Select value={member.participation_status || 'enrolled'} onValueChange={(value) => handleStatusChange(edition.cohort_id, member.user_id, value)}>
+                            <SelectTrigger data-testid={`course-admin-status-${edition.cohort_id}-${member.user_id}`}><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {STATUS_OPTIONS.map((status) => <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                          <Button variant="outline" onClick={() => navigate(`/users-admin?userId=${member.user_id}`)} data-testid={`course-admin-open-user-${member.user_id}`}>
+                            Scheda utente
+                          </Button>
+                        </div>
+                      ))}
+                      {(edition.members || []).length === 0 && <p className="text-sm text-gray-400">Nessun partecipante registrato per questa edizione.</p>}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {(adminSummary?.editions || []).length === 0 && <p className="text-sm text-gray-400">Per questo corso non ci sono ancora edizioni collegate.</p>}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Edition photos */}
       {detail.editionPhotos.length > 0 && (
         <div className="mb-8" data-testid="edition-photos">
@@ -244,8 +339,8 @@ export default function CourseDetailPage() {
             >
               <Calendar className="w-4 h-4" /> Prenota una chiamata
             </Button>
-            <Button variant="outline" className="gap-2 rounded-full px-6" onClick={() => navigate('/my-journey')} data-testid="course-cta-journey">
-              Il mio percorso
+            <Button variant="outline" className="gap-2 rounded-full px-6" onClick={() => navigate('/training-courses')} data-testid="course-cta-journey">
+              Torna ai corsi
             </Button>
           </div>
         </CardContent>
