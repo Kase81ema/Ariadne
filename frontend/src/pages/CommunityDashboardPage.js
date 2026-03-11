@@ -24,9 +24,10 @@ const OBJECTIVES = [
 ];
 
 const LEVELS = [
-  { id: 'interessato', label: 'Interessato/a' },
-  { id: 'studente', label: 'Studente' },
-  { id: 'alumni', label: 'Alumni' },
+  { id: 'interessato', label: 'Interessato/a', desc: 'Sto esplorando i percorsi Ariadne' },
+  { id: 'studente', label: 'Studente', desc: 'Sto frequentando un corso Ariadne' },
+  { id: 'alumni', label: 'Alumni', desc: 'Ho completato un percorso formativo' },
+  { id: 'trainer', label: 'Trainer Ariadne', desc: 'Faccio parte del team formatori' },
 ];
 
 function OnboardingDialog({ open, onComplete, userName }) {
@@ -77,13 +78,22 @@ function OnboardingDialog({ open, onComplete, userName }) {
             </div>
           </div>
           <div className="space-y-2">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-gray-400">Il tuo livello</Label>
-            <Select value={level} onValueChange={setLevel}>
-              <SelectTrigger data-testid="onboarding-level"><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-              <SelectContent>
-                {LEVELS.map(l => <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <Label className="text-xs font-semibold uppercase tracking-wider text-gray-400">Come ti definiresti oggi?</Label>
+            <div className="space-y-2">
+              {LEVELS.map(l => (
+                <button
+                  key={l.id}
+                  onClick={() => setLevel(l.id)}
+                  className={`w-full text-left p-3 rounded-lg border transition-all ${
+                    level === l.id ? 'border-[hsl(82,60%,42%)] bg-[hsl(82,60%,42%)]/5' : 'border-gray-100 hover:border-gray-200'
+                  }`}
+                  data-testid={`onboarding-level-${l.id}`}
+                >
+                  <span className="text-sm font-medium block">{l.label}</span>
+                  <span className="text-[11px] text-gray-400">{l.desc}</span>
+                </button>
+              ))}
+            </div>
           </div>
           <Button onClick={handleSubmit} disabled={!name.trim() || !objective || !level || saving} className="w-full h-11 gap-2" data-testid="onboarding-submit">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
@@ -181,9 +191,12 @@ export default function CommunityDashboardPage() {
           <CardContent className="p-6 flex flex-col flex-1">
             <Badge variant="outline" className="text-[10px] badge-yellow mb-3 self-start">Benvenuto</Badge>
             <h2 className="text-xl font-semibold ariadne-heading mb-3">{firstName}, questo spazio ti accompagna con cura e concretezza.</h2>
-            <p className="text-sm text-gray-600 leading-relaxed mb-4">
+            <p className="text-sm text-gray-600 leading-relaxed mb-2">
               Qui puoi orientarti, restare in connessione con la community e dare continuita al tuo cammino professionale con uno sguardo piu presente, consapevole e personale.
               Emanuele, Arianna ed Emanuele ti accolgono in questo spazio con la cura di chi accompagna processi di crescita, presenza e trasformazione nella relazione con se e con gli altri.
+            </p>
+            <p className="text-xs text-gray-400 leading-relaxed mb-4">
+              Nella community trovi persone con percorsi diversi: chi si sta avvicinando per la prima volta (<strong>Interessati</strong>), chi sta frequentando un corso (<strong>Studenti</strong>), chi ha completato un percorso e resta in connessione (<strong>Alumni</strong>) e chi fa parte del team formativo (<strong>Trainer Ariadne</strong>). Ognuno porta il proprio contributo.
             </p>
             <div className="mt-auto grid grid-cols-1 sm:grid-cols-3 gap-3">
               <button

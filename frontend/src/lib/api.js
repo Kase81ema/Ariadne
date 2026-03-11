@@ -195,6 +195,9 @@ export const inboxAPI = {
   updateTemplate: (templateId, data) => api.put(`/inbox/templates/${templateId}`, data),
   deleteTemplate: (templateId) => api.delete(`/inbox/templates/${templateId}`),
   gmailStatus: () => api.get('/inbox/gmail-status'),
+  gmailConnect: () => api.get('/inbox/gmail/connect'),
+  gmailDisconnect: () => api.get('/inbox/gmail/disconnect'),
+  gmailFetch: (count = 20) => api.post('/inbox/gmail/fetch', { count }),
 };
 
 // School (Programs, Cohorts, Materials, Journey, Assistant)
