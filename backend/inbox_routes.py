@@ -495,10 +495,13 @@ NOTE DI ATTENZIONE: [eventuali note, oppure "Nessuna"]"""
             raise HTTPException(400, "Credenziali Google non configurate")
         flow = _make_gmail_flow()
         url, state = flow.authorization_url(access_type='offline', prompt='consent')
+        # Store code_verifier for PKCE
+        code_verifier = flow.code_verifier
         await db.gmail_oauth_state.delete_many({})
         await db.gmail_oauth_state.insert_one({
             'state': state,
             'user_id': user['user_id'],
+            'code_verifier': code_verifier,
             'created_at': datetime.now(timezone.utc).isoformat(),
         })
         return {"auth_url": url}
@@ -514,6 +517,8 @@ NOTE DI ATTENZIONE: [eventuali note, oppure "Nessuna"]"""
             return HTMLResponse("<html><body><h2>Sessione scaduta</h2><p>Riprova il collegamento.</p><script>window.close()</script></body></html>")
         import warnings
         flow = _make_gmail_flow(state=state)
+        # Restore the code_verifier from the original flow
+        flow.code_verifier = state_doc.get('code_verifier')
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             flow.fetch_token(code=code)
