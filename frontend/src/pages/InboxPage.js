@@ -227,6 +227,121 @@ function ThreadDetail({ thread, onClose, onRefresh }) {
   );
 }
 
+function GmailPanel({ onImported }) {
+  const [status, setStatus] = useState(null);
+  const [fetchCount, setFetchCount] = useState(20);
+  const [fetching, setFetching] = useState(false);
+  const [fetchResult, setFetchResult] = useState(null);
+
+  const loadStatus = () => {
+    inboxAPI.gmailStatus().then(r => setStatus(r.data)).catch(() => {});
+  };
+
+  useEffect(() => {
+    loadStatus();
+    const handler = (e) => { if (e.data === 'gmail_connected') { loadStatus(); } };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  const handleConnect = async () => {
+    try {
+      const res = await inboxAPI.gmailConnect();
+      if (res.data?.auth_url) {
+        window.open(res.data.auth_url, 'gmail_auth', 'width=500,height=700');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Errore nella connessione Gmail');
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (!window.confirm('Disconnettere Gmail?')) return;
+    await inboxAPI.gmailDisconnect();
+    loadStatus();
+    toast.success('Gmail disconnesso');
+  };
+
+  const handleFetch = async () => {
+    setFetching(true);
+    setFetchResult(null);
+    try {
+      const res = await inboxAPI.gmailFetch(fetchCount);
+      setFetchResult(res.data);
+      toast.success(`Importate ${res.data.imported} email`);
+      if (onImported) onImported();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Errore nel recupero email');
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  if (!status) return null;
+
+  return (
+    <Card className="border-gray-100 mb-6" data-testid="gmail-panel">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${status.connected ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-400'}`}>
+              <Mail className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold">{status.connected ? `Connesso a ${status.email}` : 'Gmail non collegato'}</h3>
+              <p className="text-xs text-gray-400">{status.message}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {status.connected ? (
+              <>
+                <Select value={String(fetchCount)} onValueChange={v => setFetchCount(Number(v))}>
+                  <SelectTrigger className="w-[130px] h-9" data-testid="gmail-fetch-count">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">Ultime 10</SelectItem>
+                    <SelectItem value="20">Ultime 20</SelectItem>
+                    <SelectItem value="50">Ultime 50</SelectItem>
+                    <SelectItem value="100">Ultime 100</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={handleFetch} disabled={fetching} className="gap-2 h-9" data-testid="gmail-fetch-btn">
+                  {fetching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Import className="w-4 h-4" />}
+                  {fetching ? 'Importazione...' : 'Importa email'}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleDisconnect} className="h-9 text-xs" data-testid="gmail-disconnect-btn">
+                  Disconnetti
+                </Button>
+              </>
+            ) : status.configured ? (
+              <Button onClick={handleConnect} className="gap-2" data-testid="gmail-connect-btn">
+                <Mail className="w-4 h-4" /> Collega Gmail
+              </Button>
+            ) : (
+              <Badge variant="outline" className="text-xs text-gray-400">Credenziali mancanti</Badge>
+            )}
+          </div>
+        </div>
+        {fetchResult && (
+          <div className="mt-4 p-3 rounded-xl bg-gray-50 border border-gray-100" data-testid="gmail-fetch-result">
+            <p className="text-sm font-medium text-gray-700 mb-1">
+              Importate {fetchResult.imported} email, {fetchResult.skipped} ignorate (spam/pubblicita o gia presenti)
+            </p>
+            {Object.keys(fetchResult.categories || {}).length > 0 && (
+              <div className="flex gap-2 flex-wrap mt-2">
+                {Object.entries(fetchResult.categories).map(([cat, count]) => (
+                  <Badge key={cat} variant="outline" className="text-[10px]">{CAT_LABELS[cat] || cat}: {count}</Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function InboxPage() {
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -244,13 +359,15 @@ export default function InboxPage() {
 
   return (
     <div data-testid="inbox-page">
-      <div className="flex items-center justify-between mb-10">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-4xl font-semibold ariadne-heading mb-2">Inbox</h1>
-          <p className="text-base text-gray-500">Gestione richieste in ingresso</p>
+          <p className="text-base text-gray-500">Gestione comunicazioni in ingresso</p>
         </div>
         <ImportDialog onImported={() => load()} />
       </div>
+
+      <GmailPanel onImported={() => load()} />
 
       {selected ? (
         <div>

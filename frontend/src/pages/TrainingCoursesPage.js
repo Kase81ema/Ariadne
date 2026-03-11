@@ -590,7 +590,7 @@ export default function TrainingCoursesPage() {
               <Card className="border-gray-100"><CardContent className="p-5"><p className="text-xs text-gray-400 uppercase tracking-wide">Rate da incassare</p><p className="text-2xl font-semibold ariadne-heading" data-testid="payment-summary-count">{paymentOverview.summary.pending_count || 0}</p></CardContent></Card>
               <Card className="border-gray-100"><CardContent className="p-5"><p className="text-xs text-gray-400 uppercase tracking-wide">Persone con pagamenti aperti</p><p className="text-2xl font-semibold ariadne-heading">{paymentOverview.summary.people_with_due || 0}</p></CardContent></Card>
               <Card className="border-gray-100"><CardContent className="p-5"><p className="text-xs text-gray-400 uppercase tracking-wide">Totale da incassare</p><p className="text-2xl font-semibold ariadne-heading">{toCurrency(paymentOverview.summary.total_pending_amount)}</p></CardContent></Card>
-              <Card className="border-gray-100"><CardContent className="p-5"><p className="text-xs text-gray-400 uppercase tracking-wide">Scaduto</p><p className="text-2xl font-semibold ariadne-heading">{toCurrency(paymentOverview.summary.overdue_amount)}</p></CardContent></Card>
+              <Card className="border-gray-100"><CardContent className="p-5"><p className="text-xs text-gray-400 uppercase tracking-wide">Scaduto</p><p className="text-2xl font-semibold ariadne-heading text-red-600">{toCurrency(paymentOverview.summary.overdue_amount)}</p></CardContent></Card>
             </div>
 
             <Card className="border-gray-100" data-testid="payment-overview-card">
@@ -600,14 +600,37 @@ export default function TrainingCoursesPage() {
                     <h2 className="text-xl font-medium ariadne-heading">Vista aggregata scadenze</h2>
                     <p className="text-sm text-gray-500">Controlla in un’unica schermata rate in scadenza, insoluti e persone che devono ancora completare i pagamenti.</p>
                   </div>
-                  <div className="w-[260px] max-w-full">
-                    <Select value={paymentCourseFilter} onValueChange={setPaymentCourseFilter}>
-                      <SelectTrigger data-testid="payment-course-filter-select"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tutti i corsi</SelectItem>
-                        {adminCourses.map((course) => <SelectItem key={course.course_id} value={course.course_id}>{course.title}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                  <div className="flex items-center gap-3">
+                    <div className="w-[220px] max-w-full">
+                      <Select value={paymentCourseFilter} onValueChange={setPaymentCourseFilter}>
+                        <SelectTrigger data-testid="payment-course-filter-select"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tutti i corsi</SelectItem>
+                          {adminCourses.map((course) => <SelectItem key={course.course_id} value={course.course_id}>{course.title}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 text-xs"
+                      onClick={() => {
+                        if (paymentRows.length === 0) return;
+                        const header = 'Nome,Corso,Edizione,Descrizione,Scadenza,Importo,Stato';
+                        const rows = paymentRows.map(r => [r.user_name, r.course_title || '', r.edition_name || '', r.description, r.due_date || '', r.amount || 0, r.overdue ? 'Scaduta' : 'In arrivo'].map(v => `"${v}"`).join(','));
+                        const csv = [header, ...rows].join('\n');
+                        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `scadenze_pagamenti_${new Date().toISOString().split('T')[0]}.csv`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                      data-testid="payment-export-csv-btn"
+                    >
+                      <CreditCard className="w-3.5 h-3.5" /> Esporta CSV
+                    </Button>
                   </div>
                 </div>
                 <div className="space-y-3">
