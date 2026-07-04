@@ -25,6 +25,11 @@ Piattaforma e-learning e community per Ariadne Training. Percorsi formativi per 
 6. **Teen Coaching** (cat_teen) — 16 ore coaching con adolescenti
 7. **Advanced Coaching** (cat_advanced) — Livello 3 sperimentale
 
+## Eventi Reali (aggiornati 2026-07-04)
+1. **Core Quadrant® Pro Training** — 30 settembre / 1 ottobre 2026 (invariato)
+2. **Presentazione percorsi formativi 2026-2027** — 14 luglio 2026, 18:30-20:00, Arianna Perrone + Emanuele Ciccarelli, Online (Zoom)
+3. **Atelier — Apericoaching** — Ricorrenza mensile, Cascina Ovi, Segrate (Milano), nessuna data fittizia
+
 ## Trainer Reali
 - **Arianna Perrone** — Co-fondatrice, MCC ICF, 2500+ ore coaching
 - **Emanuele Ciccarelli** — Co-fondatore, PCC ICF, Integral Coach
@@ -37,24 +42,36 @@ Piattaforma e-learning e community per Ariadne Training. Percorsi formativi per 
 ### Ristrutturazione Sessione 3 — Wizard iscrizione (6 step) ✅
 ### Ristrutturazione Sessione 4 — Admin separazione + pipeline + KPI ✅
 ### Contenuti reali — Prompt_1_Contenuti_Reali.md ✅
-- Catalogo con 7 corsi reali (3 ICF + 4 specializzazione)
-- 3 eventi reali (Core Quadrant Pro, Webinar demo, Aperitivo coaching)
-- WelcomePage con storia reale Ariadne, 3 trainer reali, tono caldo
-- CourseDetailPage senza testimonial inventati e senza stock photos
-- TrainingCoursesPage con 2 sezioni (ICF + arricchimento)
-- MyJourneyPage con categorie aggiornate
-- Backend enrollment: status in_progress → confirmed, collection installments
+### UX Miglioramenti — Prompt_2_UX_Miglioramenti.md ✅ (2026-07-04)
+- Widget "Prossimo Passo" nella Home (stato utente dinamico)
+- Cross-linking MyJourney ↔ MyEnrollments ↔ CourseDetail
+- Badge prerequisiti nel catalogo (Aperto a tutti / Prerequisito)
+- Empty states con tono Ariadne (MyEnrollments, MyJourney)
+- Breadcrumb in ProfilePage, MyEnrollmentsPage, CourseDetailPage
+- Sidebar: evidenziazione sotto-pagine (/course/* → Percorsi formativi)
+- Testo coerente CTA: "Vorrei saperne di più"
+- Profilo: avviso profilo incompleto con bordi arancio
+### Correzione Eventi — Micro_Prompt_Correzione_Eventi.md ✅ (2026-07-04)
+- Webinar → Presentazione percorsi formativi 2026-2027
+- Aperitivo → Atelier — Apericoaching (ricorrente mensile)
+- Supporto eventi ricorrenti in dashboard, eventi page
+- Fix API CourseDetailPage (registerInterest → saveTrainingCourseInterest)
 
 ## API Endpoints Chiave
 - `POST /api/school/enrollments` — Crea/riprendi enrollment (status: in_progress)
 - `POST /api/school/enrollments/{id}/confirm` — Conferma (status: confirmed)
-- `GET /api/school/training-courses` — 7 corsi reali (no eventi)
-- `GET /api/community/events` — 3 eventi reali
-- `GET /api/school/admin/enrollment-pipeline` — Pipeline admin (solo in_progress)
+- `GET /api/school/enrollments/my` — Lista iscrizioni utente
+- `GET /api/school/my-payments` — Lista rate utente
+- `GET /api/school/training-courses` — Lista percorsi formativi con eventi
+- `GET /api/school/training-courses/{id}` — Dettaglio percorso
+- `POST /api/school/training-courses/{id}/interest` — Segnala interesse
+- `GET /api/community/dashboard` — Dashboard con widget, eventi, interessi
+- `GET /api/community/events` — Lista eventi (inclusi ricorrenti)
+- `GET /api/school/user-details` — Dati profilo utente
 
-## In Attesa
-- Gmail API: utente deve abilitare Gmail API su Google Cloud Console
+## Issue Note
+- **Gmail API**: OAuth code funziona, ma l'API Gmail non è abilitata nel progetto GCP dell'utente. Serve azione utente.
 
-## Backlog
-- P1: Google Drive integration per info@ariadne.training
-- P2: Polish finale e notifiche
+## Task Futuri
+- P1: Google Drive Integration per info@ariadne.training
+- P2: Polish finale, notifiche, dashboard personalizzata
