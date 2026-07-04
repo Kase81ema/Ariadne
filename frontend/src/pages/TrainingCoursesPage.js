@@ -5,49 +5,36 @@ import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { toast } from 'sonner';
-import { Search, Users } from 'lucide-react';
-
-const TIMING_LABELS = {
-  upcoming: 'In programma',
-  ongoing: 'In corso',
-  completed: 'Concluso',
-  always_available: 'Continuativo',
-};
+import { Search, GraduationCap, Sparkles, Users, ArrowRight, Calendar, MapPin } from 'lucide-react';
 
 function CourseCard({ course, onOpen }) {
   return (
     <Card className="border-gray-100 hover:border-gray-200 transition-colors h-full" data-testid={`training-course-card-${course.course_id}`}>
-      <CardContent className="p-6 h-full flex flex-col gap-4">
+      <CardContent className="p-6 h-full flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="flex flex-wrap gap-2 mb-2">
-              <Badge variant="outline" className="text-[10px] badge-purple" data-testid={`training-course-category-${course.course_id}`}>{course.category}</Badge>
-              <Badge variant="outline" className="text-[10px]" data-testid={`training-course-timing-${course.course_id}`}>{TIMING_LABELS[course.timing_status] || course.planned_label}</Badge>
-            </div>
             <h3 className="text-lg font-semibold text-gray-900" data-testid={`training-course-title-${course.course_id}`}>{course.title}</h3>
+            {course.subtitle && <p className="text-xs text-[#f9af43] mt-0.5">{course.subtitle}</p>}
           </div>
-          {course.accreditation && <Badge variant="outline" className="text-[10px] badge-green">{course.accreditation}</Badge>}
+          {course.accreditation && <Badge variant="outline" className="text-[10px] badge-green flex-shrink-0">{course.accreditation}</Badge>}
         </div>
-        <p className="text-sm text-gray-500 flex-1" data-testid={`training-course-description-${course.course_id}`}>{course.description}</p>
+        <p className="text-sm text-gray-500 flex-1">{course.description}</p>
+        <div className="space-y-1.5 text-xs text-gray-400">
+          {course.duration && <p><span className="font-medium text-gray-600">Durata:</span> {course.duration}</p>}
+          {course.trainers?.length > 0 && <p><span className="font-medium text-gray-600">Trainer:</span> {course.trainers.join(', ')}</p>}
+          {course.prerequisites && <p><span className="font-medium text-gray-600">Prerequisiti:</span> {course.prerequisites}</p>}
+          {course.price && <p><span className="font-medium text-gray-600">Prezzo:</span> €{course.price}{course.price_note ? ` (${course.price_note})` : ''}</p>}
+          {course.next_edition && <p><span className="font-medium text-gray-600">Prossima edizione:</span> {course.next_edition}</p>}
+          {course.location && <p><span className="font-medium text-gray-600">Sede:</span> {course.location}</p>}
+        </div>
         {course.key_points?.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {course.key_points.slice(0, 4).map((point) => <Badge key={point} variant="outline" className="text-[10px]">{point}</Badge>)}
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {course.key_points.slice(0, 3).map((point) => <Badge key={point} variant="outline" className="text-[9px]">{point}</Badge>)}
           </div>
         )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-gray-400">
-          <div data-testid={`training-course-dates-${course.course_id}`}>
-            <p className="font-semibold text-gray-500 mb-1">Calendario</p>
-            {course.dates?.length > 0 ? course.dates.map((item) => item.label ? `${item.label}: ${item.date}` : item.date).join(' · ') : course.planned_label}
-          </div>
-          <div data-testid={`training-course-trainers-${course.course_id}`}>
-            <p className="font-semibold text-gray-500 mb-1">Docenti</p>
-            {course.trainers?.length > 0 ? course.trainers.join(', ') : 'Team Ariadne'}
-          </div>
-        </div>
-        <Button variant="outline" className="mt-1 w-full" onClick={() => onOpen(course.course_id)} data-testid={`training-course-open-${course.course_id}`}>
-          Apri scheda corso
+        <Button variant="outline" className="mt-1 w-full gap-2" onClick={() => onOpen(course.course_id)} data-testid={`training-course-open-${course.course_id}`}>
+          Scopri di più <ArrowRight className="w-3.5 h-3.5" />
         </Button>
       </CardContent>
     </Card>
@@ -58,24 +45,22 @@ export default function TrainingCoursesPage() {
   const navigate = useNavigate();
   const [catalog, setCatalog] = useState([]);
   const [query, setQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [timingFilter, setTimingFilter] = useState('all');
 
   useEffect(() => {
-    schoolAPI.listTrainingCourses().then(r => setCatalog(r.data)).catch(() => toast.error('Impossibile caricare i corsi di formazione'));
+    schoolAPI.listTrainingCourses().then(r => setCatalog(r.data)).catch(() => toast.error('Impossibile caricare i corsi'));
   }, []);
 
-  const filteredCatalog = useMemo(() => {
-    return catalog.filter((item) => {
-      const text = `${item.title} ${item.description} ${item.category} ${(item.tags || []).join(' ')}`.toLowerCase();
-      const matchesQuery = !query.trim() || text.includes(query.trim().toLowerCase());
-      const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
-      const matchesTiming = timingFilter === 'all' || item.timing_status === timingFilter;
-      return matchesQuery && matchesCategory && matchesTiming;
-    });
-  }, [catalog, query, categoryFilter, timingFilter]);
+  const icfCourses = useMemo(() => catalog.filter(c => c.section === 'icf' || c.category === 'percorso_icf'), [catalog]);
+  const enrichmentCourses = useMemo(() => catalog.filter(c => c.section === 'enrichment' || c.category === 'specializzazione'), [catalog]);
 
-  const categories = useMemo(() => ['all', ...Array.from(new Set(catalog.map((item) => item.category).filter(Boolean)))], [catalog]);
+  const filterCourses = (list) => {
+    if (!query.trim()) return list;
+    const q = query.trim().toLowerCase();
+    return list.filter(c => `${c.title} ${c.description} ${c.subtitle || ''} ${(c.trainers || []).join(' ')}`.toLowerCase().includes(q));
+  };
+
+  const filteredIcf = filterCourses(icfCourses);
+  const filteredEnrichment = filterCourses(enrichmentCourses);
 
   return (
     <div data-testid="training-courses-page">
@@ -86,36 +71,44 @@ export default function TrainingCoursesPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_220px_220px] gap-4 mb-8">
-        <div className="relative">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <Input className="pl-9" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cerca per corso, tema o docente" data-testid="training-course-search-input" />
-        </div>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger data-testid="training-course-category-filter"><SelectValue placeholder="Categoria" /></SelectTrigger>
-          <SelectContent>
-            {categories.map((c) => <SelectItem key={c} value={c}>{c === 'all' ? 'Tutte le categorie' : c}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={timingFilter} onValueChange={setTimingFilter}>
-          <SelectTrigger data-testid="training-course-timing-filter"><SelectValue placeholder="Periodo" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tutti i periodi</SelectItem>
-            {Object.entries(TIMING_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
-          </SelectContent>
-        </Select>
+      <div className="relative mb-10">
+        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <Input className="pl-9 max-w-lg" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cerca per corso, tema o docente" data-testid="training-course-search-input" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filteredCatalog.map((course) => <CourseCard key={`${course.source}-${course.course_id}`} course={course} onOpen={(id) => navigate(`/course/${id}`)} />)}
+      {/* SEZIONE A: Percorso coaching ICF */}
+      <div className="mb-12" data-testid="section-icf">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-xl bg-[#2D2649]/8 flex items-center justify-center">
+            <GraduationCap className="w-5 h-5 text-[#2D2649]" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold ariadne-heading">Percorso coaching ICF</h2>
+            <p className="text-sm text-gray-500">Il percorso per ottenere le credenziali ICF, dalla prima formazione alla specializzazione.</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-5">
+          {filteredIcf.map((course) => <CourseCard key={course.course_id} course={course} onOpen={(id) => navigate(`/course/${id}`)} />)}
+        </div>
+        {filteredIcf.length === 0 && <p className="text-sm text-gray-400 text-center py-8">Nessun corso corrisponde alla ricerca.</p>}
       </div>
 
-      {filteredCatalog.length === 0 && (
-        <div className="text-center py-14 text-gray-400" data-testid="training-courses-empty-state">
-          <Users className="w-10 h-10 mx-auto mb-3 text-gray-200" />
-          <p className="text-sm">Nessun corso corrisponde ai filtri selezionati.</p>
+      {/* SEZIONE B: Corsi di arricchimento e specializzazione */}
+      <div className="mb-8" data-testid="section-enrichment">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-xl bg-[#f9af43]/10 flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-[#f9af43]" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold ariadne-heading">Corsi di arricchimento e specializzazione</h2>
+            <p className="text-sm text-gray-500">Per chi vuole approfondire ambiti specifici del coaching e dello sviluppo.</p>
+          </div>
         </div>
-      )}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-5">
+          {filteredEnrichment.map((course) => <CourseCard key={course.course_id} course={course} onOpen={(id) => navigate(`/course/${id}`)} />)}
+        </div>
+        {filteredEnrichment.length === 0 && <p className="text-sm text-gray-400 text-center py-8">Nessun corso corrisponde alla ricerca.</p>}
+      </div>
     </div>
   );
 }

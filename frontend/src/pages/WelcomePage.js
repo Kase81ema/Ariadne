@@ -6,40 +6,52 @@ import { Badge } from '../components/ui/badge';
 import { schoolAPI, communityAPI } from '../lib/api';
 import {
   ArrowRight, GraduationCap, Users, BookOpen, Calendar,
-  Video, ExternalLink, Star, Quote, Phone, Loader2, Sparkles,
-  CheckCircle2, Heart, MessageCircle, Compass
+  ExternalLink, Phone, Loader2, Sparkles,
+  CheckCircle2, Compass, CreditCard
 } from 'lucide-react';
 
-const HERO_IMAGE = 'https://static.prod-images.emergentagent.com/jobs/c9938035-3f55-4e0f-8c59-2b9d43e1859c/images/53e90dd1020945d69aa529a1b9cd27f9ddb8cdad2bff25fe68530bb91914653b.png';
-
 const SCHOOL_STORY = {
-  title: 'La scuola Ariadne',
+  title: 'Come è nata Ariadne',
   subtitle: 'Creative-Experiential Training & Coaching',
-  description: `Ariadne nasce dalla visione di portare creativita e esperienza diretta nel mondo del coaching e della formazione. Il nostro approccio creativo-esperienziale integra le metodologie di coaching riconosciute ICF con tecniche innovative che coinvolgono corpo, mente ed emozioni.
+  content: `Ariadne non è nata da un business plan. È nata da una serie di incontri.
 
-Da oltre 15 anni formiamo coach professionisti che fanno la differenza. Il nostro metodo unico combina la solidita teorica con l'apprendimento esperienziale, permettendo a ogni partecipante di sviluppare il proprio stile autentico di coaching.`,
+Nel 2018 Arianna Perrone e Emanuele Ciccarelli si incontrano e scoprono una sintonia professionale profonda attorno allo sviluppo del potenziale umano.
+
+Nel 2021, in piena pandemia, nasce Ariadne: una scuola di coaching creativo-esperienziale. L'idea è semplice — le trasformazioni più profonde nascono dagli incontri, dalle relazioni e dalle comunità che scegliamo di costruire insieme.
+
+Nel 2024 entra Emanuele Casero, coach e imprenditore, che porta visione strategica e struttura.
+
+Nel 2025 nasce Ariadne SRL.
+
+Oggi siamo tre founder e una comunità in crescita, con un approccio che mette la creatività nella relazione, non nelle tecniche.`,
   approach: [
     'Apprendimento esperienziale: non solo teoria, ma pratica fin dal primo giorno',
     'Supervisione continua con coach senior certificati ICF PCC e MCC',
     'Piccoli gruppi (max 15 partecipanti) per un percorso personalizzato',
-    'Approccio creativo che integra arte, movimento e mindfulness',
-    'Comunita di pratica che continua oltre la formazione',
-  ],
-  bibliography: [
-    { title: 'Co-Active Coaching', author: 'H. Kimsey-House, K. Kimsey-House, P. Sandahl, L. Whitworth' },
-    { title: 'Coaching for Performance', author: 'John Whitmore' },
-    { title: 'The Art of Coaching', author: 'Elena Aguilar' },
-    { title: 'Ontological Coaching', author: 'A. Olalla, J. Echeverria' },
-    { title: 'Presence-Based Coaching', author: 'Doug Silsbee' },
+    'Approccio creativo che integra arte, movimento e facilitazione',
+    'Comunità di pratica che continua oltre la formazione',
   ],
 };
 
 const TRAINERS = [
-  { name: 'Maria Rossi', role: 'Direttrice didattica', credentials: 'MCC ICF', bio: 'Oltre 20 anni di esperienza nel coaching esperienziale. Ha formato piu di 500 coach in Italia e all\'estero.' },
-  { name: 'Luca Bianchi', role: 'Trainer senior', credentials: 'PCC ICF', bio: 'Esperto di team coaching e dinamiche di gruppo. Autore di \'Il Coach Creativo\' (2023).' },
-  { name: 'Giulia Verdi', role: 'Trainer & Business Coach', credentials: 'PCC ICF', bio: 'Specializzata in coaching per imprenditori e liberi professionisti. Ha lanciato il programma Business del Coach.' },
-  { name: 'Marco Ferrari', role: 'Trainer & Supervisore', credentials: 'PCC ICF', bio: 'Pioniere del team coaching in Italia. Conduce il laboratorio avanzato di Team Coaching.' },
-  { name: 'Elena Conti', role: 'Mentor Coach', credentials: 'PCC ICF', bio: 'Guida i coach alle prime armi nel loro percorso di crescita professionale attraverso il mentoring individuale e di gruppo.' },
+  {
+    name: 'Arianna Perrone',
+    role: 'Co-fondatrice e Trainer',
+    credentials: 'MCC ICF',
+    bio: 'Master Certified Coach ICF con oltre 2500 ore di coaching. Formatrice esperienziale specializzata in soft skills e intelligenza emotiva. Facilitatrice certificata Lego® Serious Play® e Sikkhona®. 18 anni di esperienza in azienda come Responsabile Sviluppo Risorse Umane. Docente in Master Universitari e Business Schools.',
+  },
+  {
+    name: 'Emanuele Ciccarelli',
+    role: 'Co-fondatore e Trainer',
+    credentials: 'PCC ICF · Integral Coach',
+    bio: 'Co-fondatore di Ariadne, co-creatore dell\'approccio creativo-esperienziale. Facilitatore certificato Lego® Serious Play® e KaosPilot. Trainer nei percorsi Core Coaching, Team Coaching e Core Quadrant.',
+  },
+  {
+    name: 'Emanuele Casero',
+    role: 'Co-fondatore',
+    credentials: 'PCC ICF',
+    bio: 'Coach e imprenditore. Si occupa dello sviluppo strategico della scuola e della progettazione dei percorsi formativi.',
+  },
 ];
 
 function getColor(name) {
@@ -67,24 +79,24 @@ export default function WelcomePage() {
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>;
 
   const discountBanner = banners.find(b => b.audience === 'interessato');
+  const icfCourses = courses.filter(c => c.section === 'icf' || c.category === 'percorso_icf');
 
   return (
     <div className="max-w-5xl mx-auto" data-testid="welcome-page">
-      {/* Hero section */}
+      {/* Hero section — solid color, no stock photos */}
       <div className="relative rounded-2xl overflow-hidden mb-10" data-testid="welcome-hero">
-        <img src={HERO_IMAGE} alt="Ariadne — Formazione e coaching" className="w-full h-[340px] object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-8 md:p-10">
-          <Badge variant="outline" className="bg-white/20 text-white border-white/30 text-[10px] mb-3 backdrop-blur-sm">
-            Benvenuto nella community Ariadne
-          </Badge>
-          <h1 className="text-3xl sm:text-4xl font-semibold text-white leading-tight mb-3">
-            Formazione e coaching<br />creativo-esperienziale
-          </h1>
-          <p className="text-white/80 text-sm max-w-xl leading-relaxed">
-            Uno spazio dove crescita personale e professionale si incontrano.
-            Esplora i percorsi, conosci la community e trova il prossimo passo per il tuo cammino.
-          </p>
+        <div className="bg-[#2D2649] h-[300px] flex items-end">
+          <div className="p-8 md:p-10">
+            <Badge variant="outline" className="bg-white/10 text-white/90 border-white/20 text-[10px] mb-3 backdrop-blur-sm">
+              Benvenuto nel tuo spazio Ariadne
+            </Badge>
+            <h1 className="text-3xl sm:text-4xl font-semibold text-white leading-tight mb-3">
+              Questo è il tuo spazio.
+            </h1>
+            <p className="text-white/70 text-sm max-w-xl leading-relaxed">
+              Da qui puoi esplorare i percorsi, seguire il tuo cammino formativo e restare in contatto con la comunità Ariadne.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -96,17 +108,12 @@ export default function WelcomePage() {
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { icon: GraduationCap, title: 'Percorsi formativi', desc: 'Scopri i corsi, segui il tuo avanzamento e accedi ai materiali didattici.', to: '/my-journey', color: 'text-[hsl(82,60%,42%)]', bg: 'bg-[hsl(82,60%,42%)]/8' },
-            { icon: Users, title: 'Community', desc: 'Condividi riflessioni, leggi aggiornamenti e resta in contatto con il gruppo.', to: '/feed', color: 'text-[#7B61FF]', bg: 'bg-[#7B61FF]/8' },
-            { icon: Calendar, title: 'Eventi e occasioni', desc: 'Consulta il calendario, esplora i programmi in arrivo e segnala il tuo interesse.', to: '/community/events', color: 'text-[#F5A623]', bg: 'bg-[#F5A623]/8' },
-            { icon: BookOpen, title: 'Materiali', desc: 'Risorse pratiche, micro-guide e contenuti visibili dalle edizioni Ariadne.', to: '/materials', color: 'text-[#3B82F6]', bg: 'bg-[#3B82F6]/8' },
+            { icon: GraduationCap, title: 'Percorsi formativi', desc: 'Scopri i corsi, segui il tuo avanzamento e accedi ai materiali didattici.', to: '/training-courses', color: 'text-[hsl(82,60%,42%)]', bg: 'bg-[hsl(82,60%,42%)]/8' },
+            { icon: CreditCard, title: 'Le mie iscrizioni', desc: 'Segui lo stato delle tue iscrizioni e il piano rate.', to: '/my-enrollments', color: 'text-[#7B61FF]', bg: 'bg-[#7B61FF]/8' },
+            { icon: Users, title: 'Community', desc: 'Condividi riflessioni, leggi aggiornamenti e resta in contatto con il gruppo.', to: '/feed', color: 'text-[#F5A623]', bg: 'bg-[#F5A623]/8' },
+            { icon: Calendar, title: 'Eventi', desc: 'Consulta il calendario e i programmi in arrivo.', to: '/community/events', color: 'text-[#3B82F6]', bg: 'bg-[#3B82F6]/8' },
           ].map(item => (
-            <Card
-              key={item.title}
-              className="border-gray-100 hover:border-gray-200 transition-all cursor-pointer group"
-              onClick={() => navigate(item.to)}
-              data-testid={`welcome-feature-${item.to.replace('/', '')}`}
-            >
+            <Card key={item.title} className="border-gray-100 hover:border-gray-200 transition-all cursor-pointer group" onClick={() => navigate(item.to)} data-testid={`welcome-feature-${item.to.replace(/\//g, '')}`}>
               <CardContent className="p-5">
                 <div className={`w-10 h-10 rounded-xl ${item.bg} flex items-center justify-center mb-3`}>
                   <item.icon className={`w-5 h-5 ${item.color}`} />
@@ -135,7 +142,7 @@ export default function WelcomePage() {
             {[
               { label: 'Interessati', desc: 'Chi sta scoprendo il mondo del coaching Ariadne e vuole orientarsi tra i percorsi disponibili.' },
               { label: 'Studenti', desc: 'Chi sta frequentando un corso e vuole seguire il proprio avanzamento, accedere ai materiali e restare connesso.' },
-              { label: 'Alumni', desc: 'Chi ha completato un percorso e desidera mantenere la connessione con la community e le nuove opportunita.' },
+              { label: 'Alumni', desc: 'Chi ha completato un percorso e desidera mantenere la connessione con la community e le nuove opportunità.' },
               { label: 'Trainer Ariadne', desc: 'Chi fa parte del team formativo e utilizza la piattaforma come strumento di lavoro e comunicazione.' },
             ].map(a => (
               <div key={a.label} className="flex items-start gap-3 p-4 rounded-xl bg-gray-50/70 border border-gray-100">
@@ -150,28 +157,21 @@ export default function WelcomePage() {
         </CardContent>
       </Card>
 
-      {/* Discount banner for new users */}
+      {/* Discount banner */}
       {discountBanner && (
         <Card className="border-[hsl(82,60%,42%)]/20 bg-[hsl(82,60%,42%)]/[0.03] mb-10 overflow-hidden" data-testid="discount-banner">
-          <CardContent className="p-0">
-            <div className="flex flex-col md:flex-row">
-              {discountBanner.image_url && (
-                <div className="md:w-1/3 h-40 md:h-auto overflow-hidden">
-                  <img src={discountBanner.image_url} alt="" className="w-full h-full object-cover" />
-                </div>
-              )}
-              <div className="flex-1 p-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="w-4 h-4 text-[hsl(82,60%,42%)]" />
-                  <Badge variant="outline" className="badge-green text-[10px]">Offerta per te</Badge>
-                </div>
-                <h3 className="text-lg font-semibold mb-2">{discountBanner.title}</h3>
-                <p className="text-sm text-gray-500 mb-4">{discountBanner.body}</p>
-                <Button className="gap-2" onClick={() => discountBanner.link && discountBanner.link !== '#' && window.open(discountBanner.link)}>
-                  {discountBanner.cta_text} <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="w-4 h-4 text-[hsl(82,60%,42%)]" />
+              <Badge variant="outline" className="badge-green text-[10px]">Per te</Badge>
             </div>
+            <h3 className="text-lg font-semibold mb-2">{discountBanner.title}</h3>
+            <p className="text-sm text-gray-500 mb-4">{discountBanner.body}</p>
+            {discountBanner.link && discountBanner.link !== '#' && (
+              <Button className="gap-2" onClick={() => window.open(discountBanner.link)}>
+                {discountBanner.cta_text} <ArrowRight className="w-4 h-4" />
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
@@ -181,7 +181,7 @@ export default function WelcomePage() {
         <CardContent className="p-8">
           <h2 className="text-2xl font-semibold ariadne-heading mb-2">{SCHOOL_STORY.title}</h2>
           <p className="text-xs uppercase tracking-widest text-gray-400 mb-6">{SCHOOL_STORY.subtitle}</p>
-          <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line mb-6">{SCHOOL_STORY.description}</p>
+          <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line mb-6">{SCHOOL_STORY.content}</p>
           <h3 className="text-sm font-semibold mb-3">Il nostro approccio</h3>
           <div className="space-y-2">
             {SCHOOL_STORY.approach.map((a, i) => (
@@ -196,8 +196,8 @@ export default function WelcomePage() {
 
       {/* Trainers */}
       <div className="mb-10" data-testid="trainers-section">
-        <h2 className="text-xl font-semibold ariadne-heading mb-4">I nostri trainer</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <h2 className="text-xl font-semibold ariadne-heading mb-4">Chi siamo</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {TRAINERS.map(t => {
             const color = getColor(t.name);
             return (
@@ -221,102 +221,47 @@ export default function WelcomePage() {
         </div>
       </div>
 
-      {/* Video placeholder */}
-      <Card className="border-gray-100 mb-10 overflow-hidden" data-testid="video-section">
-        <CardContent className="p-0">
-          <div className="bg-gray-900 h-64 flex items-center justify-center relative">
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3 cursor-pointer hover:bg-white/30 transition-colors">
-                <Video className="w-8 h-8 text-white" />
-              </div>
-              <p className="text-white/80 text-sm">Video di presentazione</p>
-              <p className="text-white/50 text-xs mt-1">Scopri il nostro approccio in 3 minuti</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Corsi in partenza */}
-      <div className="mb-10" data-testid="courses-section">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold ariadne-heading">Corsi in partenza</h2>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/my-journey')} className="gap-1 text-xs">
-            Tutti i corsi <ArrowRight className="w-3 h-3" />
-          </Button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {courses.filter(c => c.category === 'ariadne').slice(0, 4).map(c => (
-            <Card key={c.course_id} className="border-gray-100 hover:border-gray-200 transition-all cursor-pointer" onClick={() => navigate('/my-journey')}>
-              <CardContent className="p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <GraduationCap className="w-4 h-4 text-[hsl(82,60%,42%)]" />
-                  <h3 className="text-sm font-semibold">{c.title}</h3>
-                </div>
-                <p className="text-xs text-gray-500 line-clamp-2 mb-3">{c.description}</p>
-                {c.key_points?.slice(0, 2).map((kp, i) => (
-                  <div key={i} className="flex items-center gap-1.5 mb-1">
-                    <span className="w-1 h-1 rounded-full bg-[hsl(82,60%,42%)]" />
-                    <span className="text-[11px] text-gray-400">{kp}</span>
+      {icfCourses.length > 0 && (
+        <div className="mb-10" data-testid="courses-section">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold ariadne-heading">Percorsi in partenza</h2>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/training-courses')} className="gap-1 text-xs">
+              Tutti i percorsi <ArrowRight className="w-3 h-3" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {icfCourses.slice(0, 4).map(c => (
+              <Card key={c.course_id} className="border-gray-100 hover:border-gray-200 transition-all cursor-pointer" onClick={() => navigate(`/course/${c.course_id}`)}>
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <GraduationCap className="w-4 h-4 text-[hsl(82,60%,42%)]" />
+                    <h3 className="text-sm font-semibold">{c.title}</h3>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-          ))}
+                  {c.subtitle && <p className="text-xs text-[#F5A623] mb-1">{c.subtitle}</p>}
+                  <p className="text-xs text-gray-500 line-clamp-2 mb-2">{c.description}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {c.accreditation && <Badge variant="outline" className="text-[9px] badge-green">{c.accreditation}</Badge>}
+                    {c.next_edition && c.next_edition !== 'Da definire' && <Badge variant="outline" className="text-[9px]">{c.next_edition}</Badge>}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
-      </div>
-
-      {/* Photo storyboard placeholder */}
-      <Card className="border-gray-100 mb-10" data-testid="storyboard-section">
-        <CardContent className="p-6">
-          <h2 className="text-xl font-semibold ariadne-heading mb-4">Le nostre edizioni</h2>
-          <p className="text-sm text-gray-500 mb-4">Alcuni momenti dalle edizioni precedenti del Core Coaching Program</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              'https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=200&fit=crop',
-              'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=300&h=200&fit=crop',
-              'https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=300&h=200&fit=crop',
-              'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=300&h=200&fit=crop',
-            ].map((src, i) => (
-              <div key={i} className="rounded-lg overflow-hidden aspect-[3/2]">
-                <img src={src} alt={`Edizione ${i + 1}`} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Bibliography */}
-      <Card className="border-gray-100 mb-10" data-testid="bibliography-section">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <BookOpen className="w-5 h-5 text-[hsl(82,60%,42%)]" />
-            <h2 className="text-xl font-semibold ariadne-heading">Bibliografia di riferimento</h2>
-          </div>
-          <div className="space-y-3">
-            {SCHOOL_STORY.bibliography.map((b, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50/50">
-                <Quote className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium">{b.title}</p>
-                  <p className="text-xs text-gray-400">{b.author}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      )}
 
       {/* CTA - Book a call */}
-      <Card className="border-[hsl(82,60%,42%)]/20 bg-[hsl(82,60%,42%)]/[0.03] mb-10" data-testid="cta-calendly">
+      <Card className="border-[#f9af43]/20 bg-[#f9af43]/[0.03] mb-10" data-testid="cta-calendly">
         <CardContent className="p-8 text-center">
-          <Phone className="w-8 h-8 text-[hsl(82,60%,42%)] mx-auto mb-3" />
-          <h2 className="text-xl font-semibold ariadne-heading mb-2">Vuoi saperne di piu?</h2>
+          <Phone className="w-8 h-8 text-[#f9af43] mx-auto mb-3" />
+          <h2 className="text-xl font-semibold ariadne-heading mb-2">Vuoi saperne di più?</h2>
           <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">
-            Prenota una chiamata conoscitiva gratuita con il nostro team. Ti racconteremo tutto sui percorsi e ti aiuteremo a scegliere quello giusto per te.
+            Se senti che potrebbe essere il momento giusto per te, prenota una chiamata conoscitiva. Porta con te le tue domande — ci sarà spazio per ascoltarle.
           </p>
           <Button
             size="lg"
-            className="gap-2 rounded-full px-8"
+            className="gap-2 rounded-full px-8 bg-[#2D2649] hover:bg-[#3d3659]"
             onClick={() => window.open('https://calendly.com/ariadne-training', '_blank')}
             data-testid="book-call-btn"
           >
