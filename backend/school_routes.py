@@ -188,8 +188,13 @@ def create_school_router(db, get_current_user, log_audit):
     async def _ensure_events_seed():
         """Seed real events into courses_events collection."""
         events_count = await db.courses_events.count_documents({})
+        # Migrate old placeholder events if detected
         if events_count > 0:
-            return
+            old = await db.courses_events.find_one({"title": {"$in": ["Webinar demo Ariadne", "Aperitivo coaching Ariadne"]}})
+            if old:
+                await db.courses_events.delete_many({"title": {"$in": ["Webinar demo Ariadne", "Aperitivo coaching Ariadne"]}})
+            else:
+                return
         real_events = [
             {
                 "course_id": f"evt_{uuid.uuid4().hex[:8]}",
@@ -206,31 +211,39 @@ def create_school_router(db, get_current_user, log_audit):
             },
             {
                 "course_id": f"evt_{uuid.uuid4().hex[:8]}",
-                "title": "Webinar demo Ariadne",
-                "description": "Un appuntamento aperto per scoprire Ariadne e il suo approccio creativo-esperienziale al coaching. Spazio per domande e confronto.",
+                "title": "Presentazione percorsi formativi 2026-2027",
+                "description": "Un'ora e mezza per entrare nel cuore dei programmi, conoscere il metodo e i contenuti, fare domande e capire se uno dei nostri percorsi pu\u00f2 essere in risonanza con il momento personale e professionale che stai vivendo.",
                 "type": "webinar",
-                "dates": [{"date": "2026-10-15"}],
-                "trainers": ["Arianna Perrone"],
+                "dates": [{"date": "2026-07-14", "time": "18:30", "end_time": "20:00"}],
+                "trainers": ["Arianna Perrone", "Emanuele Ciccarelli"],
                 "location": "Online (Zoom)",
-                "tags": ["open_event"],
+                "tags": ["open_event", "presentazione_corsi"],
+                "related_courses": ["Core Coaching Program", "Professional Coaching Program", "Team Coaching Program"],
                 "link": "",
                 "created_at": datetime.now(timezone.utc).isoformat(),
             },
             {
                 "course_id": f"evt_{uuid.uuid4().hex[:8]}",
-                "title": "Aperitivo coaching Ariadne",
-                "description": "Un incontro informale per chi vuole conoscere Ariadne dal vivo. Un\u2019occasione per incontrare i trainer, gli alumni e la comunit\u00e0.",
-                "type": "event_single",
-                "dates": [{"date": "2026-11-12"}],
+                "title": "Atelier \u2014 Apericoaching",
+                "description": "Un incontro informale mensile per chi vuole conoscere Ariadne dal vivo: un\u2019occasione per incontrare i trainer, gli alumni e la comunit\u00e0. Aperto anche a coach di altre scuole.",
+                "type": "recurring_community",
+                "dates": [],
+                "recurrence": "Mensile",
                 "trainers": [],
-                "location": "Milano (sede da confermare)",
-                "tags": ["community"],
+                "location": "Cascina Ovi, Segrate (Milano)",
+                "tags": ["community", "ricorrente"],
                 "link": "",
                 "created_at": datetime.now(timezone.utc).isoformat(),
             },
         ]
+        # Only insert events that don't already exist (by title)
+        existing_titles = set()
+        existing = await db.courses_events.find({}, {"title": 1, "_id": 0}).to_list(100)
+        for e in existing:
+            existing_titles.add(e.get("title", ""))
         for evt in real_events:
-            await db.courses_events.insert_one(evt)
+            if evt["title"] not in existing_titles:
+                await db.courses_events.insert_one(evt)
 
     async def _collect_training_courses():
         catalog_courses = await _ensure_catalog_seed()

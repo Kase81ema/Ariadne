@@ -5,7 +5,7 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { schoolAPI } from '../lib/api';
 import { toast } from 'sonner';
-import { CreditCard, GraduationCap, ArrowRight, Loader2, CalendarDays, FileText } from 'lucide-react';
+import { CreditCard, GraduationCap, ArrowRight, ArrowLeft, Loader2, CalendarDays, FileText } from 'lucide-react';
 
 const STATUS_MAP = {
   in_progress: { label: 'In fase di iscrizione', className: 'bg-amber-50 text-amber-700 border-amber-200' },
@@ -64,6 +64,9 @@ export default function MyEnrollmentsPage() {
 
   return (
     <div data-testid="my-enrollments-page">
+      <Button variant="ghost" size="sm" onClick={() => navigate('/community')} className="gap-1 mb-6 -ml-2" data-testid="enrollments-back-btn">
+        <ArrowLeft className="w-4 h-4" /> Il mio spazio
+      </Button>
       <div className="mb-8">
         <h1 className="text-4xl font-semibold ariadne-heading mb-2">Le mie iscrizioni</h1>
         <p className="text-base text-gray-500">I tuoi percorsi formativi e lo stato dei pagamenti.</p>
@@ -73,9 +76,10 @@ export default function MyEnrollmentsPage() {
         <Card className="border-gray-100" data-testid="enrollments-empty-state">
           <CardContent className="p-12 text-center">
             <GraduationCap className="w-10 h-10 mx-auto mb-4 text-gray-200" />
-            <p className="text-sm text-gray-500 mb-4">Non hai ancora iscrizioni attive. Esplora i percorsi formativi per iniziare.</p>
+            <h3 className="text-base font-semibold mb-2">Non hai ancora iscrizioni attive</h3>
+            <p className="text-sm text-gray-500 mb-4 max-w-md mx-auto">{"Quando ti iscriverai a un percorso, qui troverai tutti i dettagli: lo stato dell'iscrizione, le rate e i documenti."}</p>
             <Button variant="outline" className="gap-2" onClick={() => navigate('/training-courses')} data-testid="enrollments-explore-btn">
-              Esplora i percorsi <ArrowRight className="w-4 h-4" />
+              Esplora i percorsi formativi <ArrowRight className="w-4 h-4" />
             </Button>
           </CardContent>
         </Card>
@@ -142,6 +146,10 @@ export default function MyEnrollmentsPage() {
                       </div>
                     </div>
                   )}
+
+                  <button onClick={() => navigate(`/course/${enr.course_id}`)} className="text-[11px] text-[hsl(82,60%,42%)] hover:underline inline-flex items-center gap-1" data-testid={`enrollment-goto-course-${enr.enrollment_id}`}>
+                    Torna alla scheda del percorso <ArrowRight className="w-3 h-3" />
+                  </button>
                 </CardContent>
               </Card>
             );

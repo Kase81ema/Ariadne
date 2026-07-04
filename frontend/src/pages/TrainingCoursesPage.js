@@ -9,6 +9,10 @@ import { toast } from 'sonner';
 import { Search, GraduationCap, Sparkles, Users, ArrowRight, Calendar, MapPin } from 'lucide-react';
 
 function CourseCard({ course, onOpen }) {
+  const prereqBadge = course.prerequisites
+    ? { label: course.prerequisites, className: 'bg-[#6859a3]/8 text-[#6859a3] border-[#6859a3]/20' }
+    : { label: 'Aperto a tutti', className: 'bg-[#94c356]/10 text-[#5a8a1e] border-[#94c356]/30' };
+
   return (
     <Card className="border-gray-100 hover:border-gray-200 transition-colors h-full" data-testid={`training-course-card-${course.course_id}`}>
       <CardContent className="p-6 h-full flex flex-col gap-3">
@@ -19,11 +23,13 @@ function CourseCard({ course, onOpen }) {
           </div>
           {course.accreditation && <Badge variant="outline" className="text-[10px] badge-green flex-shrink-0">{course.accreditation}</Badge>}
         </div>
+        <Badge variant="outline" className={`text-[10px] self-start ${prereqBadge.className}`} data-testid={`prereq-badge-${course.course_id}`}>
+          {prereqBadge.label}
+        </Badge>
         <p className="text-sm text-gray-500 flex-1">{course.description}</p>
         <div className="space-y-1.5 text-xs text-gray-400">
           {course.duration && <p><span className="font-medium text-gray-600">Durata:</span> {course.duration}</p>}
           {course.trainers?.length > 0 && <p><span className="font-medium text-gray-600">Trainer:</span> {course.trainers.join(', ')}</p>}
-          {course.prerequisites && <p><span className="font-medium text-gray-600">Prerequisiti:</span> {course.prerequisites}</p>}
           {course.price && <p><span className="font-medium text-gray-600">Prezzo:</span> €{course.price}{course.price_note ? ` (${course.price_note})` : ''}</p>}
           {course.next_edition && <p><span className="font-medium text-gray-600">Prossima edizione:</span> {course.next_edition}</p>}
           {course.location && <p><span className="font-medium text-gray-600">Sede:</span> {course.location}</p>}
@@ -67,7 +73,7 @@ export default function TrainingCoursesPage() {
       <div className="mb-10">
         <h1 className="text-4xl font-semibold ariadne-heading mb-2">Percorsi formativi</h1>
         <p className="text-base text-gray-500" data-testid="training-courses-description">
-          Esplora i percorsi formativi Ariadne. Ogni percorso è un'esperienza unica di crescita personale e professionale.
+          {"Esplora i percorsi formativi Ariadne. Ogni percorso è un'esperienza unica di crescita personale e professionale."}
         </p>
       </div>
 

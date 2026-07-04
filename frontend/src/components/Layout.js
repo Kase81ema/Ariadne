@@ -117,6 +117,19 @@ export default function Layout({ children }) {
     navigate('/login');
   };
 
+  // Map sub-pages to their parent sidebar route for active highlighting
+  const SUB_PAGE_MAP = {
+    '/course/': '/training-courses',
+    '/enroll/': '/training-courses',
+  };
+
+  const getParentRoute = (pathname) => {
+    for (const [prefix, parent] of Object.entries(SUB_PAGE_MAP)) {
+      if (pathname.startsWith(prefix)) return parent;
+    }
+    return null;
+  };
+
   const SidebarContent = () => (
     <div className="flex flex-col h-full" style={{ background: 'hsl(var(--card))' }}>
       {/* Header with logo */}
@@ -156,7 +169,10 @@ export default function Layout({ children }) {
                           key={to}
                           to={to}
                           onClick={() => setMobileOpen(false)}
-                          className="sidebar-link"
+                          className={({ isActive }) => {
+                            const parentMatch = getParentRoute(location.pathname) === to;
+                            return `sidebar-link${isActive || parentMatch ? ' active' : ''}`;
+                          }}
                           data-testid={`nav-${to.replace(/\//g, '-').replace(/^-/, '')}`}
                         >
                           <span className="sidebar-link-icon" aria-hidden="true">

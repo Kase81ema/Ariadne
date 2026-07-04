@@ -50,11 +50,15 @@ def create_community_router(db, get_current_user, log_audit):
         events = await db.courses_events.find({}, {"_id": 0}).to_list(100)
         upcoming = []
         for e in events:
-            for d in e.get("dates", []):
-                if d.get("date", "") >= today:
-                    upcoming.append({"title": e["title"], "date": d["date"], "label": d.get("label", ""), "type": e.get("type", ""), "course_id": e.get("course_id", "")})
-                    break
-        upcoming.sort(key=lambda x: x["date"])
+            dates = e.get("dates", [])
+            if dates:
+                for d in dates:
+                    if d.get("date", "") >= today:
+                        upcoming.append({"title": e["title"], "date": d["date"], "label": d.get("label", ""), "type": e.get("type", ""), "course_id": e.get("course_id", ""), "time": d.get("time", ""), "end_time": d.get("end_time", "")})
+                        break
+            elif e.get("type") == "recurring_community":
+                upcoming.append({"title": e["title"], "date": "", "label": e.get("recurrence", "Ricorrente"), "type": e.get("type", ""), "course_id": e.get("course_id", ""), "recurring": True, "location": e.get("location", "")})
+        upcoming.sort(key=lambda x: (x.get("date") or "9999-99-99"))
         upcoming = upcoming[:5]
         # Enrich with user interest status
         user_interests = await db.course_interest_status.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(100)
@@ -79,6 +83,9 @@ def create_community_router(db, get_current_user, log_audit):
         total_steps = len(journey_progress)
         completed_steps = sum(1 for j in journey_progress if j.get("status") == "completed")
 
+        # User course interests for widget
+        user_course_interests = await db.course_interest_status.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(100)
+
         return {
             "onboarded": onboarded,
             "profile": profile,
@@ -87,6 +94,7 @@ def create_community_router(db, get_current_user, log_audit):
             "recent_posts": recent_posts,
             "community_members": community_members,
             "journey_summary": {"total_steps": total_steps, "completed_steps": completed_steps},
+            "user_course_interests": user_course_interests,
         }
 
     # ===== FEED =====
@@ -373,10 +381,13 @@ def create_community_router(db, get_current_user, log_audit):
         events = await db.courses_events.find({}, {"_id": 0}).to_list(100)
         upcoming = []
         for e in events:
-            future_dates = [d for d in e.get("dates", []) if d.get("date", "") >= today]
+            dates = e.get("dates", [])
+            future_dates = [d for d in dates if d.get("date", "") >= today]
             if future_dates:
                 upcoming.append({**e, "next_date": future_dates[0]["date"]})
-        upcoming.sort(key=lambda x: x.get("next_date", "9999"))
+            elif e.get("type") == "recurring_community":
+                upcoming.append({**e, "next_date": "", "recurring": True})
+        upcoming.sort(key=lambda x: x.get("next_date") or "9999")
         return upcoming
 
     return router
