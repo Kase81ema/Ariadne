@@ -22,7 +22,11 @@ import AssistantPage from "./pages/AssistantPage";
 import WelcomePage from "./pages/WelcomePage";
 import CourseDetailPage from "./pages/CourseDetailPage";
 import TrainingCoursesPage from "./pages/TrainingCoursesPage";
-import PlaceholderPage from "./pages/PlaceholderPage";
+import ProfilePage from "./pages/ProfilePage";
+import MyEnrollmentsPage from "./pages/MyEnrollmentsPage";
+import EnrollmentWizardPage from "./pages/EnrollmentWizardPage";
+import AdminEnrollmentsPage from "./pages/AdminEnrollmentsPage";
+import AdminCommsPage from "./pages/AdminCommsPage";
 
 function ProtectedRoute({ children, requiredRole }) {
   const { user, loading } = useAuth();
@@ -69,8 +73,13 @@ function AppRouter() {
       <Route path="/my-journey" element={<ProtectedRoute><MyJourneyPage /></ProtectedRoute>} />
       <Route path="/materials" element={<ProtectedRoute><MaterialsPage /></ProtectedRoute>} />
       <Route path="/assistant" element={<ProtectedRoute><AssistantPage /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+      <Route path="/my-enrollments" element={<ProtectedRoute><MyEnrollmentsPage /></ProtectedRoute>} />
+      <Route path="/enroll/:courseId" element={<ProtectedRoute><EnrollmentWizardPage /></ProtectedRoute>} />
 
       {/* Admin only */}
+      <Route path="/admin/enrollments" element={<ProtectedRoute requiredRole="admin"><AdminEnrollmentsPage /></ProtectedRoute>} />
+      <Route path="/admin/comms" element={<ProtectedRoute requiredRole="admin"><AdminCommsPage /></ProtectedRoute>} />
       <Route path="/courses" element={<ProtectedRoute requiredRole="admin"><CoursesPage /></ProtectedRoute>} />
       <Route path="/repository" element={<ProtectedRoute requiredRole="admin"><RepositoryPage /></ProtectedRoute>} />
       <Route path="/inbox" element={<ProtectedRoute requiredRole="admin"><InboxPage /></ProtectedRoute>} />
@@ -79,8 +88,6 @@ function AppRouter() {
       <Route path="/users-admin" element={<ProtectedRoute requiredRole="admin"><UsersAdminPage /></ProtectedRoute>} />
       <Route path="/cohorts-admin" element={<ProtectedRoute requiredRole="admin"><CohortsAdminPage /></ProtectedRoute>} />
       <Route path="/banners-admin" element={<ProtectedRoute requiredRole="admin"><BannersAdminPage /></ProtectedRoute>} />
-
-      <Route path="/profile" element={<ProtectedRoute><PlaceholderPage title="Il mio profilo" description="Qui potrai gestire i tuoi dati personali e di fatturazione." backTo="/community" /></ProtectedRoute>} />
 
       <Route path="/" element={<DefaultRedirect />} />
       <Route path="*" element={<DefaultRedirect />} />

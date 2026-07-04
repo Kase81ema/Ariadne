@@ -160,6 +160,20 @@ export const schoolAPI = {
   adminUpdateInstallment: (id, data) => api.put(`/school/admin/installments/${id}`, data),
   adminDeleteInstallment: (id) => api.delete(`/school/admin/installments/${id}`),
   getMyPayments: () => api.get('/school/my-payments'),
+  // Enrollments
+  createEnrollment: (data) => api.post('/school/enrollments', data),
+  getMyEnrollments: () => api.get('/school/enrollments/my'),
+  getEnrollment: (id) => api.get(`/school/enrollments/${id}`),
+  updateEnrollment: (id, data) => api.put(`/school/enrollments/${id}`, data),
+  saveEnrollmentContract: (id, data) => api.post(`/school/enrollments/${id}/contract`, data),
+  uploadEnrollmentDocument: (id, file, docType) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('doc_type', docType || 'identity');
+    return api.post(`/school/enrollments/${id}/documents`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+  confirmEnrollment: (id) => api.post(`/school/enrollments/${id}/confirm`),
+  adminEnrollmentPipeline: () => api.get('/school/admin/enrollment-pipeline'),
 };
 
 export const mediaAPI = {

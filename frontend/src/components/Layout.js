@@ -10,7 +10,7 @@ import {
   LogOut, Menu, X,
   MessageSquare, Map, BookOpen,
   Mail, Megaphone, HelpCircle, CalendarDays,
-  ChevronRight
+  ChevronRight, CreditCard, ClipboardList
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -21,6 +21,7 @@ const navGroups = [
     title: 'Il mio spazio',
     items: [
       { to: '/community', icon: LayoutDashboard, label: 'Home' },
+      { to: '/my-enrollments', icon: CreditCard, label: 'Le mie iscrizioni' },
       { to: '/my-journey', icon: Map, label: 'Il mio percorso' },
       { to: '/materials', icon: BookOpen, label: 'Materiali' },
     ],
@@ -40,10 +41,11 @@ const navGroups = [
     title: 'Gestione',
     adminOnly: true,
     items: [
+      { to: '/admin/enrollments', icon: ClipboardList, label: 'Iscrizioni e pagamenti' },
       { to: '/cohorts-admin', icon: GraduationCap, label: 'Edizioni e materiali' },
       { to: '/users-admin', icon: Users, label: 'Utenti' },
       { to: '/courses', icon: CalendarDays, label: 'Corsi ed eventi' },
-      { to: '/inbox', icon: Mail, label: 'Comunicazioni' },
+      { to: '/admin/comms', icon: Mail, label: 'Comunicazioni' },
       { to: '/banners-admin', icon: Megaphone, label: 'Banner' },
     ],
   },

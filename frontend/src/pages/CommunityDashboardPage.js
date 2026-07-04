@@ -8,11 +8,12 @@ import { Label } from '../components/ui/label';
 import { Progress } from '../components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { communityAPI, schoolAPI } from '../lib/api';
+import { communityAPI, schoolAPI, adminAPI } from '../lib/api';
 import {
   ArrowRight, Heart, MessageCircle, Calendar, Sparkles,
   Target, GraduationCap, Briefcase, Loader2,
-  BookOpen, Map, Bell, Users, FolderOpen, Download, Eye
+  BookOpen, Map, Bell, Users, FolderOpen, Download, Eye,
+  CreditCard, ClipboardList
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
@@ -125,6 +126,7 @@ export default function CommunityDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [userName, setUserName] = useState('');
+  const [adminKpi, setAdminKpi] = useState(null);
 
   const normalizeText = (value) => String(value || '').toLowerCase();
 
@@ -152,6 +154,21 @@ export default function CommunityDashboardPage() {
       if (!dashRes.data.onboarded) {
         setUserName(dashRes.data.profile?.display_name || '');
         setShowOnboarding(true);
+      }
+      // Admin KPI
+      if (user?.role === 'admin') {
+        const [usersRes, paymentsRes, pipelineRes] = await Promise.all([
+          adminAPI.listUsers().catch(() => ({ data: [] })),
+          schoolAPI.adminPaymentOverview().catch(() => ({ data: { summary: {} } })),
+          schoolAPI.adminEnrollmentPipeline().catch(() => ({ data: [] })),
+        ]);
+        setAdminKpi({
+          totalUsers: usersRes.data?.length || 0,
+          activeEnrollments: (pipelineRes.data || []).filter(e => e.status === 'enrolled' || e.status === 'active').length,
+          pendingPayments: paymentsRes.data?.summary?.pending_count || 0,
+          overdueAmount: paymentsRes.data?.summary?.overdue_amount || 0,
+          pipelineOnboarding: (pipelineRes.data || []).filter(e => e.status === 'onboarding').length,
+        });
       }
     } catch { /* ignore */ } finally {
       setLoading(false);
@@ -469,6 +486,55 @@ export default function CommunityDashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ===== ADMIN KPI WIDGETS (only for admin) ===== */}
+      {user?.role === 'admin' && adminKpi && (
+        <Card className="border-gray-100 mb-6" data-testid="admin-kpi-card">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+                  <ClipboardList className="w-5 h-5 text-gray-500" />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold">Panoramica gestione</h2>
+                  <p className="text-xs text-gray-400">I numeri chiave della scuola in tempo reale</p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => navigate('/admin/enrollments')} className="gap-1 text-xs" data-testid="admin-kpi-goto">
+                Iscrizioni e pagamenti <ArrowRight className="w-3 h-3" />
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                <Users className="w-4 h-4 text-gray-400 mb-1" />
+                <p className="text-2xl font-semibold ariadne-heading">{adminKpi.totalUsers}</p>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Utenti registrati</p>
+              </div>
+              <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                <GraduationCap className="w-4 h-4 text-gray-400 mb-1" />
+                <p className="text-2xl font-semibold ariadne-heading">{adminKpi.activeEnrollments}</p>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Iscrizioni attive</p>
+              </div>
+              <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                <CreditCard className="w-4 h-4 text-gray-400 mb-1" />
+                <p className="text-2xl font-semibold ariadne-heading">{adminKpi.pendingPayments}</p>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Rate in scadenza</p>
+              </div>
+              <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                <CreditCard className="w-4 h-4 text-red-400 mb-1" />
+                <p className="text-2xl font-semibold text-red-600">€ {adminKpi.overdueAmount.toFixed(0)}</p>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Scaduto</p>
+              </div>
+              <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                <ClipboardList className="w-4 h-4 text-amber-500 mb-1" />
+                <p className="text-2xl font-semibold ariadne-heading">{adminKpi.pipelineOnboarding}</p>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Pipeline onboarding</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
