@@ -82,7 +82,7 @@ export default function LoginPage() {
             <AriadneLogoLogin />
             <div>
               <h1 className="text-2xl font-semibold ariadne-heading" data-testid="login-brand-title">Ariadne</h1>
-              <p className="text-xs text-gray-400 uppercase tracking-[0.2em] font-medium">Scuola e community</p>
+              <p className="text-xs text-gray-400 uppercase tracking-[0.2em] font-medium">Il tuo spazio Ariadne</p>
             </div>
           </div>
           <h2 className="text-4xl sm:text-5xl font-semibold ariadne-heading text-gray-900 mb-6 leading-tight">
@@ -102,7 +102,7 @@ export default function LoginPage() {
             <AriadneLogoLogin />
             <div>
               <h1 className="text-xl font-semibold ariadne-heading">Ariadne</h1>
-              <p className="text-[10px] text-gray-400 uppercase tracking-[0.2em]">Scuola e community</p>
+              <p className="text-[10px] text-gray-400 uppercase tracking-[0.2em]">Il tuo spazio Ariadne</p>
             </div>
           </div>
 
