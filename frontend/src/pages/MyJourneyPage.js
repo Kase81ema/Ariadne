@@ -8,8 +8,8 @@ import { Input } from '../components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { schoolAPI } from '../lib/api';
 import {
-  CheckCircle2, Circle, Clock, BookOpen, Briefcase, Loader2,
-  ChevronDown, Award, GraduationCap, Target, Sparkles
+  CheckCircle2, Circle, Clock, BookOpen, Loader2,
+  ChevronDown, Award, GraduationCap, Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -20,9 +20,12 @@ const STATUS_CONFIG = {
 };
 
 const CATEGORY_CONFIG = {
-  ariadne: { label: 'Formazione Coach ICF', icon: GraduationCap, color: 'text-[hsl(82,60%,42%)]', bg: 'bg-[hsl(82,60%,42%)]/8' },
-  tecnica: { label: 'Formazione Coach tecnica', icon: Target, color: 'text-[hsl(195,100%,45%)]', bg: 'bg-[hsl(195,100%,45%)]/8' },
-  business: { label: 'Formazione Coach business', icon: Briefcase, color: 'text-[hsl(30,100%,50%)]', bg: 'bg-[hsl(30,100%,50%)]/8' },
+  percorso_icf: { label: 'Percorso coaching ICF', icon: GraduationCap, color: 'text-[#2D2649]', bg: 'bg-[#2D2649]/8' },
+  specializzazione: { label: 'Arricchimento e specializzazione', icon: Sparkles, color: 'text-[#f9af43]', bg: 'bg-[#f9af43]/10' },
+  // Legacy keys for backward compatibility
+  ariadne: { label: 'Percorso coaching ICF', icon: GraduationCap, color: 'text-[#2D2649]', bg: 'bg-[#2D2649]/8' },
+  tecnica: { label: 'Coach tecnica', icon: GraduationCap, color: 'text-[#3B82F6]', bg: 'bg-[#3B82F6]/8' },
+  business: { label: 'Coach business', icon: GraduationCap, color: 'text-[#10B981]', bg: 'bg-[#10B981]/8' },
 };
 
 // ICF Credential requirements with detailed tracking

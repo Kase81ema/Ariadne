@@ -63,75 +63,212 @@ def create_school_router(db, get_current_user, log_audit):
 
     async def _ensure_catalog_seed():
         seed = [
-            {"course_id": "cat_cc2026", "category": "ariadne", "title": "Programma Core Coaching 2026", "description": "Percorso base di coaching creativo-esperienziale riconosciuto ICF. 200 ore di formazione pratica.", "key_points": ["Fondamenti del coaching ICF", "Approccio creativo-esperienziale", "Supervisione e pratica", "Certificazione ICF ACC"], "order": 1},
-            {"course_id": "cat_adv", "category": "ariadne", "title": "Laboratorio avanzato di coaching", "description": "Laboratorio avanzato per coach certificati. Tecniche avanzate e specializzazioni per il livello PCC.", "key_points": ["Specializzazioni tematiche", "Supervisione avanzata", "Progettazione sessioni complesse", "Preparazione PCC"], "order": 2},
-            {"course_id": "cat_mentor", "category": "ariadne", "title": "Mentoring per Coach", "description": "Percorso di mentoring individuale e di gruppo per lo sviluppo della pratica professionale.", "key_points": ["Sessioni individuali", "Gruppo di pari", "Feedback strutturato", "Ore ICF riconosciute"], "order": 3},
-            {"course_id": "cat_team", "category": "ariadne", "title": "Team coaching ICF", "description": "Modulo specialistico sul coaching di team e gruppi secondo le competenze ICF.", "key_points": ["Dinamiche di gruppo", "Facilitazione", "Co-creazione obiettivi team", "Competenze ICF team"], "order": 4},
-            {"course_id": "cat_tec1", "category": "tecnica", "title": "Coaching con tecniche creative", "description": "Utilizzo di arte, movimento e metafore nel processo di coaching.", "key_points": ["Art-based coaching", "Movimento corporeo", "Metafore e storytelling", "Visualizzazione guidata"], "order": 20},
-            {"course_id": "cat_tec2", "category": "tecnica", "title": "Coaching e Mindfulness", "description": "Integrazione di pratiche di mindfulness e presenza nel coaching.", "key_points": ["Meditazione per coach", "Ascolto consapevole", "Gestione dello stress", "Presenza nel processo"], "order": 21},
-            {"course_id": "cat_tec3", "category": "tecnica", "title": "Assessment e strumenti diagnostici", "description": "Utilizzo di strumenti di assessment e diagnostica nel percorso di coaching.", "key_points": ["Test di personalita", "360 feedback", "Strumenti di autovalutazione", "Interpretazione risultati"], "order": 22},
-            {"course_id": "cat_biz1", "category": "business", "title": "Business del Coach", "description": "Come avviare e gestire una pratica di coaching indipendente.", "key_points": ["Posizionamento", "Pricing", "Marketing etico", "Aspetti legali e fiscali"], "order": 30},
-            {"course_id": "cat_biz2", "category": "business", "title": "Marketing per Coach", "description": "Strategie di comunicazione e acquisizione clienti per coach.", "key_points": ["Personal branding", "Social media", "Content strategy", "Networking"], "order": 31},
-            {"course_id": "cat_biz3", "category": "business", "title": "Presenza digitale per coach", "description": "Costruire e gestire la propria presenza digitale professionale.", "key_points": ["Sito web", "Strategia LinkedIn", "Newsletter", "SEO per coach"], "order": 32},
+            # ===== SEZIONE A: Percorso coaching ICF =====
+            {
+                "course_id": "cat_cc2026", "category": "percorso_icf", "section": "icf",
+                "title": "Core Coaching Program",
+                "subtitle": "Livello 1 ICF — Credenziale ACC",
+                "description": "Il percorso base per diventare coach professionista con credenziale ICF ACC. 8 giornate in presenza + moduli online, in un gruppo di massimo 15 persone.",
+                "key_points": ["Credenziale ACC (Associate Certified Coach)", "Accreditamento ICF Level 1 ACSTH", "Approccio creativo-esperienziale", "Supervisione con coach MCC e PCC", "Piccoli gruppi (max 15 partecipanti)"],
+                "trainers": ["Arianna Perrone", "Emanuele Ciccarelli"],
+                "price": "2.900",
+                "price_note": "Rateizzabile",
+                "duration": "Circa 6 mesi — 8 giornate in presenza + moduli online",
+                "max_participants": 15,
+                "accreditation": "ICF Level 1 ACSTH",
+                "credential": "ACC (Associate Certified Coach)",
+                "prerequisites": "Nessuno — aperto a tutti",
+                "next_edition": "Settembre 2026",
+                "location": "In presenza + online",
+                "order": 1
+            },
+            {
+                "course_id": "cat_pcp2026", "category": "percorso_icf", "section": "icf",
+                "title": "Professional Coaching Program",
+                "subtitle": "Livello 2 ICF — Credenziale PCC",
+                "description": "Il percorso completo Level 1 + Level 2 per ottenere la credenziale PCC. 65 ore di formazione specifica, con un risparmio di €500 rispetto all'acquisto separato.",
+                "key_points": ["Credenziale PCC (Professional Certified Coach)", "Accreditamento ICF Level 2", "Include intero percorso Level 1 + Level 2", "65 ore di formazione specifica", "Risparmio €500 vs acquisto separato"],
+                "trainers": ["Arianna Perrone", "Emanuele Ciccarelli"],
+                "price": "5.300",
+                "price_note": "Include Level 1 + Level 2. Risparmio di €500 rispetto all'acquisto separato.",
+                "duration": "Circa 10 mesi — 65 ore di formazione specifica",
+                "accreditation": "ICF Level 2",
+                "credential": "PCC (Professional Certified Coach)",
+                "prerequisites": "Aver completato un programma Level 1 ICF",
+                "next_edition": "Settembre 2026",
+                "location": "In presenza + online",
+                "order": 2
+            },
+            {
+                "course_id": "cat_tcp2026", "category": "percorso_icf", "section": "icf",
+                "title": "Team Coaching Program",
+                "subtitle": "Livello 2 ICF — Credenziale PCC + ACTC",
+                "description": "Percorso specialistico di team coaching: 5 Discipline di Hawkins, Core Quadrant di Team, Cynefin, Kantor. 65 ore tra moduli in presenza e 11 moduli online.",
+                "key_points": ["Credenziale PCC + ACTC", "Accreditamento ICF Level 2 + ACTC", "5 Discipline di Hawkins", "Core Quadrant di Team", "Cynefin, Kantor"],
+                "trainers": ["Arianna Perrone", "Emanuele Ciccarelli"],
+                "price": "2.900",
+                "duration": "Circa 6 mesi — 65 ore, moduli in presenza + 11 moduli online",
+                "accreditation": "ICF Level 2 + ACTC",
+                "credential": "PCC + ACTC (Advanced Certification in Team Coaching)",
+                "prerequisites": "Aver completato un programma Level 1 ICF (ACC o equivalente)",
+                "next_edition": "Da definire",
+                "location": "In presenza + online",
+                "order": 3
+            },
+            # ===== SEZIONE B: Corsi di arricchimento e specializzazione =====
+            {
+                "course_id": "cat_cqpro", "category": "specializzazione", "section": "enrichment",
+                "title": "Core Quadrant® Pro Training",
+                "subtitle": "Certificazione Daniel Ofman — uso professionale del Core Quadrant®",
+                "description": "Ariadne è l'unico partner italiano di Core Quality International. 2+1 giornate per ottenere la certificazione Core Quadrant Trainer e l'abilitazione all'uso professionale.",
+                "key_points": ["Certificazione Core Quadrant Trainer", "Unico partner italiano Core Quality International", "Abilitazione uso professionale", "2+1 giornate (2 consecutivi + 1 follow-up a 6 settimane)"],
+                "trainers": ["Arianna Perrone", "Emanuele Ciccarelli"],
+                "price": "1.795",
+                "duration": "2+1 giornate (2 giorni consecutivi + 1 giorno follow-up a 6 settimane)",
+                "max_participants": 12,
+                "credential": "Certificazione Core Quadrant Trainer",
+                "prerequisites": "Professionisti (coach, formatori, facilitatori, HR)",
+                "next_edition": "30 settembre – 1 ottobre 2026",
+                "location": "NTT Data, Milano (Metro 2 Romolo)",
+                "order": 10
+            },
+            {
+                "course_id": "cat_visual", "category": "specializzazione", "section": "enrichment",
+                "title": "Visual Coaching",
+                "subtitle": "Formazione avanzata in Visual Coaching",
+                "description": "20 ore di formazione avanzata per integrare strumenti visivi nel coaching. 2 giornate in presenza + mezza giornata online, in un gruppo ristretto di massimo 8 persone.",
+                "key_points": ["Attestato 20 ore formazione avanzata Visual Coaching", "Strumenti visivi per il coaching", "Gruppo ristretto (max 8)"],
+                "trainers": ["Melissa Parrinello", "Emanuele Ciccarelli"],
+                "price": "Da definire",
+                "duration": "20 ore (2 giornate in presenza + mezza giornata online)",
+                "max_participants": 8,
+                "credential": "Attestato 20 ore formazione avanzata Visual Coaching",
+                "prerequisites": "Coach o professionisti dello sviluppo",
+                "next_edition": "Da definire",
+                "location": "In presenza + online",
+                "order": 11
+            },
+            {
+                "course_id": "cat_teen", "category": "specializzazione", "section": "enrichment",
+                "title": "Teen Coaching",
+                "subtitle": "Coaching con adolescenti",
+                "description": "16 ore di formazione in presenza per coach e professionisti che lavorano con adolescenti. Gruppo di massimo 12 persone.",
+                "key_points": ["16 ore di formazione specifica", "Lavoro con adolescenti", "Gruppo ristretto (max 12)"],
+                "trainers": [],
+                "price": "Da definire",
+                "duration": "16 ore (2 giornate in presenza)",
+                "max_participants": 12,
+                "prerequisites": "Coach o professionisti che lavorano con adolescenti",
+                "next_edition": "Da definire",
+                "location": "In presenza",
+                "order": 12
+            },
+            {
+                "course_id": "cat_advanced", "category": "specializzazione", "section": "enrichment",
+                "title": "Advanced Coaching",
+                "subtitle": "Livello 3 — percorso sperimentale",
+                "description": "Un percorso avanzato e sperimentale per coach con credenziale PCC o equivalente. Dettagli in definizione.",
+                "key_points": ["Percorso sperimentale Livello 3", "Per coach esperti PCC+"],
+                "trainers": [],
+                "price": "Da definire",
+                "duration": "Da definire",
+                "prerequisites": "PCC o equivalente",
+                "next_edition": "Da definire",
+                "location": "Da definire",
+                "order": 13
+            },
         ]
         for course in seed:
             await db.course_catalog.update_one({"course_id": course["course_id"]}, {"$set": course}, upsert=True)
+        # Clean up old placeholder courses
+        valid_ids = {c["course_id"] for c in seed}
+        await db.course_catalog.delete_many({"course_id": {"$nin": list(valid_ids)}})
         return await db.course_catalog.find({}, {"_id": 0}).sort("order", 1).to_list(100)
+
+    async def _ensure_events_seed():
+        """Seed real events into courses_events collection."""
+        events_count = await db.courses_events.count_documents({})
+        if events_count > 0:
+            return
+        real_events = [
+            {
+                "course_id": f"evt_{uuid.uuid4().hex[:8]}",
+                "title": "Core Quadrant\u00ae Pro Training",
+                "description": "2+1 giornate per ottenere la certificazione Core Quadrant Trainer. Ariadne \u00e8 l'unico partner italiano di Core Quality International.",
+                "type": "course_multi",
+                "dates": [{"label": "Giorno 1", "date": "2026-09-30"}, {"label": "Giorno 2", "date": "2026-10-01"}],
+                "trainers": ["Arianna Perrone", "Emanuele Ciccarelli"],
+                "location": "NTT Data, Milano (Metro 2 Romolo)",
+                "accreditation": "Certificazione Core Quadrant Trainer",
+                "tags": ["specializzazione", "core_quadrant"],
+                "link": "",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            },
+            {
+                "course_id": f"evt_{uuid.uuid4().hex[:8]}",
+                "title": "Webinar demo Ariadne",
+                "description": "Un appuntamento aperto per scoprire Ariadne e il suo approccio creativo-esperienziale al coaching. Spazio per domande e confronto.",
+                "type": "webinar",
+                "dates": [{"date": "2026-10-15"}],
+                "trainers": ["Arianna Perrone"],
+                "location": "Online (Zoom)",
+                "tags": ["open_event"],
+                "link": "",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            },
+            {
+                "course_id": f"evt_{uuid.uuid4().hex[:8]}",
+                "title": "Aperitivo coaching Ariadne",
+                "description": "Un incontro informale per chi vuole conoscere Ariadne dal vivo. Un\u2019occasione per incontrare i trainer, gli alumni e la comunit\u00e0.",
+                "type": "event_single",
+                "dates": [{"date": "2026-11-12"}],
+                "trainers": [],
+                "location": "Milano (sede da confermare)",
+                "tags": ["community"],
+                "link": "",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            },
+        ]
+        for evt in real_events:
+            await db.courses_events.insert_one(evt)
 
     async def _collect_training_courses():
         catalog_courses = await _ensure_catalog_seed()
+        await _ensure_events_seed()
         event_courses = await db.courses_events.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
         items = []
         for course in catalog_courses:
-            category_label = _category_label(course.get("category", ""), tags=course.get("tags", []))
+            section = course.get("section", "icf")
+            timing = "upcoming" if course.get("next_edition", "") and course.get("next_edition") != "Da definire" else "always_available"
             items.append({
                 "course_id": course["course_id"],
                 "source": "catalog",
+                "section": section,
                 "title": course.get("title", ""),
+                "subtitle": course.get("subtitle", ""),
                 "description": course.get("description", ""),
-                "category": category_label,
+                "category": course.get("category", ""),
                 "category_key": course.get("category", ""),
                 "course_type": "training_program",
-                "timing_status": "always_available",
+                "timing_status": timing,
                 "dates": [],
                 "trainers": course.get("trainers", []),
                 "price": course.get("price", ""),
+                "price_note": course.get("price_note", ""),
+                "duration": course.get("duration", ""),
+                "max_participants": course.get("max_participants"),
                 "location": course.get("location", ""),
                 "accreditation": course.get("accreditation", ""),
+                "credential": course.get("credential", ""),
+                "prerequisites": course.get("prerequisites", ""),
+                "next_edition": course.get("next_edition", ""),
                 "tags": course.get("tags", []),
                 "key_points": course.get("key_points", []),
                 "link": course.get("link", ""),
-                "planned_label": "Offerta continuativa",
+                "planned_label": course.get("next_edition", ""),
             })
 
-        for course in event_courses:
-            category_label = _category_label(course.get("tags", [""])[0] if course.get("tags") else "", course.get("accreditation", ""), course.get("tags", []))
-            timing_status = _timing_status(course.get("dates", []))
-            items.append({
-                "course_id": course["course_id"],
-                "source": "studio_course",
-                "title": course.get("title", ""),
-                "description": course.get("description", ""),
-                "category": category_label,
-                "category_key": category_label.lower().replace(" ", "_"),
-                "course_type": course.get("type", "course_multi"),
-                "timing_status": timing_status,
-                "dates": course.get("dates", []),
-                "trainers": course.get("trainers", []),
-                "price": course.get("price", ""),
-                "location": course.get("location", ""),
-                "accreditation": course.get("accreditation", ""),
-                "tags": course.get("tags", []),
-                "key_points": [],
-                "link": course.get("link", ""),
-                "planned_label": {
-                    "upcoming": "In programma",
-                    "ongoing": "In corso",
-                    "completed": "Concluso",
-                    "always_available": "Sempre disponibile",
-                }.get(timing_status, "In programma"),
-            })
-        items.sort(key=lambda item: (item["timing_status"] == "completed", item.get("title", "")))
+        items.sort(key=lambda item: item.get("course_id", ""))
         return items
 
     async def _collect_course_admin_summary(course_id: str):
@@ -552,24 +689,9 @@ REPOSITORY ARIADNE:
     @router.get("/catalog")
     async def list_catalog(request: Request):
         user = await get_current_user(request)
+        # Ensure catalog is up to date
+        await _ensure_catalog_seed()
         courses = await db.course_catalog.find({}, {"_id": 0}).sort("order", 1).to_list(100)
-        if not courses:
-            # Seed initial catalog
-            seed = [
-                {"course_id": "cat_cc2026", "category": "ariadne", "title": "Core Coaching Program 2026", "description": "Percorso base di coaching creativo-esperienziale riconosciuto ICF. 200 ore di formazione pratica.", "key_points": ["Fondamenti del coaching ICF", "Approccio creativo-esperienziale", "Supervisione e pratica", "Certificazione ICF ACC"], "order": 1},
-                {"course_id": "cat_adv", "category": "ariadne", "title": "Advanced Coaching Lab", "description": "Laboratorio avanzato per coach certificati. Tecniche avanzate e specializzazioni per il livello PCC.", "key_points": ["Specializzazioni tematiche", "Supervisione avanzata", "Progettazione sessioni complesse", "Preparazione PCC"], "order": 2},
-                {"course_id": "cat_mentor", "category": "ariadne", "title": "Mentoring per Coach", "description": "Percorso di mentoring individuale e di gruppo per lo sviluppo della pratica professionale.", "key_points": ["Sessioni individuali", "Gruppo di pari", "Feedback strutturato", "Ore ICF riconosciute"], "order": 3},
-                {"course_id": "cat_team", "category": "ariadne", "title": "Team Coaching ICF", "description": "Modulo specialistico sul coaching di team e gruppi secondo le competenze ICF.", "key_points": ["Dinamiche di gruppo", "Facilitazione", "Co-creazione obiettivi team", "Competenze ICF team"], "order": 4},
-                {"course_id": "cat_tec1", "category": "tecnica", "title": "Coaching con tecniche creative", "description": "Utilizzo di arte, movimento e metafore nel processo di coaching.", "key_points": ["Art-based coaching", "Movimento corporeo", "Metafore e storytelling", "Visualizzazione guidata"], "order": 20},
-                {"course_id": "cat_tec2", "category": "tecnica", "title": "Coaching e Mindfulness", "description": "Integrazione di pratiche di mindfulness e presenza nel coaching.", "key_points": ["Meditazione per coach", "Ascolto consapevole", "Gestione dello stress", "Presenza nel processo"], "order": 21},
-                {"course_id": "cat_tec3", "category": "tecnica", "title": "Assessment e strumenti diagnostici", "description": "Utilizzo di strumenti di assessment e diagnostica nel percorso di coaching.", "key_points": ["Test di personalita", "360 feedback", "Strumenti di autovalutazione", "Interpretazione risultati"], "order": 22},
-                {"course_id": "cat_biz1", "category": "business", "title": "Business del Coach", "description": "Come avviare e gestire una pratica di coaching indipendente.", "key_points": ["Posizionamento", "Pricing", "Marketing etico", "Aspetti legali e fiscali"], "order": 30},
-                {"course_id": "cat_biz2", "category": "business", "title": "Marketing per Coach", "description": "Strategie di comunicazione e acquisizione clienti per coach.", "key_points": ["Personal branding", "Social media", "Content strategy", "Networking"], "order": 31},
-                {"course_id": "cat_biz3", "category": "business", "title": "Digital Presence", "description": "Costruire e gestire la propria presenza digitale professionale.", "key_points": ["Sito web", "LinkedIn strategy", "Newsletter", "SEO per coach"], "order": 32},
-            ]
-            for c in seed:
-                await db.course_catalog.insert_one(c)
-            courses = await db.course_catalog.find({}, {"_id": 0}).sort("order", 1).to_list(100)
         # Get user progress
         progress = await db.user_course_progress.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(100)
         progress_map = {p["course_id"]: p["status"] for p in progress}
