@@ -1,44 +1,43 @@
-# Ariadne — Scuola e Community
+# Ariadne — Il tuo spazio Ariadne
 
 ## Problem Statement
-Piattaforma per Ariadne Training: community, percorso formativo, gestione scuola (inbox email, smistamento AI, bozze), catalogo corsi, materiali didattici, assistente AI.
+Piattaforma per la community e i corsisti di Ariadne Training. Area riservata orientata all'utente (corsista), non al gestore.
 
 ## Architecture
 - **Frontend**: React + Tailwind + Shadcn/UI
-- **Backend**: FastAPI (Python) - modulare (server.py, community_routes.py, admin_routes.py, inbox_routes.py, school_routes.py, media_routes.py)
+- **Backend**: FastAPI (Python) — invariato
 - **Database**: MongoDB
 - **AI**: Claude Sonnet 4.5 via emergentintegrations
-- **Auth**: JWT + Google OAuth (Emergent Auth)
-- **Gmail**: OAuth integration (richiede GOOGLE_CLIENT_ID/SECRET)
+- **Auth**: JWT + Google OAuth
+- **Gmail**: OAuth integration configurata
 
-## Cleanup completato (Fase 19)
-Rimosso intero Studio comunicazione: 11 pagine, 12 API exports, area selector, sidebar Studio, ruolo editor, AdminEditorRoute.
+## Ristrutturazione completata (Sessione 1)
 
-### File eliminati
-DashboardPage, ProfilesPage, EditorialPage, RulesPage, WorkflowPage, ImagesPage, ApprovalsPage, ExportPage, AgentsPage, StartCampaignPage, CampaignsPage, RegisterPage
+### Layout.js — Navigazione
+- **"Il mio spazio"**: Home, Il mio percorso, Materiali
+- **"Scopri"**: Percorsi formativi, Bacheca, Eventi, Ariadne AI
+- **"Gestione"** (solo admin): Edizioni e materiali, Utenti, Corsi ed eventi, Comunicazioni, Banner
+- Sottotitolo: "Il tuo spazio Ariadne"
+- Link "Il mio profilo →" sotto email utente
+- storageKey aggiornato a 'ariadne_nav_groups'
 
-### File modificati
-- App.js: rimossi import Studio, route semplificate, DefaultRedirect → /community
-- Layout.js: sidebar solo Scuola (Community, Risorse, Gestione scuola)
-- api.js: rimossi profilesAPI, campaignsAPI, postsAPI, rulesAPI, templatesAPI, agentsAPI, setupAPI, generateAPI, exportAPI, dashboardAPI, auditAPI, bufferAPI
-- LoginPage.js: branding "Scuola e community", testo di benvenuto aggiornato
-- AuthCallback.js, AuthContext.js: redirect → /community
+### App.js
+- Route /profile → PlaceholderPage
 
-## Pagine attive
-### Tutti gli utenti
-/community, /welcome, /feed, /my-journey, /materials, /assistant, /training-courses, /course/:id, /community/events
+### Testi aggiornati
+- TrainingCoursesPage: "Percorsi formativi" + descrizione senza riferimenti admin
+- CourseDetailPage: "Voglio iscrivermi", "Vorrei saperne di più", "Iscrizione avviata"
+- MaterialsPage: "I materiali arriveranno qui" + "Non appena inizierai il tuo percorso..."
+- CommunityDashboardPage: "Presto troverai qui le prossime occasioni da vivere insieme."
+- LoginPage: branding "Il tuo spazio Ariadne"
 
-### Solo admin
-/courses, /repository, /inbox, /routing-rules, /email-templates, /users-admin, /cohorts-admin, /banners-admin
+## Test: iteration_17 — 100% (14/14 feature)
 
-## Test Reports
-- iteration_16: Studio cleanup (100% frontend)
-
-## Backlog
-- [ ] Collegamento Gmail (credenziali configurate, API da abilitare nel progetto Google)
-- [ ] Google Drive integration per repository
-- [ ] Rifinitura sidebar (stato attivo piu evidente)
-- [ ] Quick tour primo accesso
+## Sessioni successive (dal piano di ristrutturazione)
+- **Sessione 2**: Pagine profilo utente, Le mie iscrizioni, Iscrizioni e pagamenti (admin)
+- **Sessione 3**: WelcomePage aggiornata, wizard iscrizione, collegamento pagamenti
+- **Sessione 4**: Separazione area admin da area utente, pagine admin dedicate
+- **Sessione 5**: Dashboard personalizzata, notifiche, polish finale
 
 ## Credenziali test
 - Admin: admin@ariadne.training / admin123
