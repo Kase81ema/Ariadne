@@ -13,56 +13,47 @@ Piattaforma e-learning e community per Ariadne Training. Percorsi formativi per 
 - **Scopri**: Percorsi formativi, Bacheca, Eventi, Ariadne AI
 - **Gestione** (solo admin): Iscrizioni e pagamenti, Edizioni e materiali, Utenti, Corsi ed eventi, Comunicazioni, Banner
 
+## Catalogo Corsi (7 corsi reali)
+### Sezione A — Percorso coaching ICF
+1. **Core Coaching Program** (cat_cc2026) — Level 1 ICF, credenziale ACC, €2.900
+2. **Professional Coaching Program** (cat_pcp2026) — Level 2 ICF, credenziale PCC, €5.300
+3. **Team Coaching Program** (cat_tcp2026) — Level 2 + ACTC, credenziale PCC+ACTC, €2.900
+
+### Sezione B — Corsi di arricchimento e specializzazione
+4. **Core Quadrant® Pro Training** (cat_cqpro) — Certificazione Core Quadrant Trainer, €1.795
+5. **Visual Coaching** (cat_visual) — 20 ore formazione avanzata
+6. **Teen Coaching** (cat_teen) — 16 ore coaching con adolescenti
+7. **Advanced Coaching** (cat_advanced) — Livello 3 sperimentale
+
+## Trainer Reali
+- **Arianna Perrone** — Co-fondatrice, MCC ICF, 2500+ ore coaching
+- **Emanuele Ciccarelli** — Co-fondatore, PCC ICF, Integral Coach
+- **Emanuele Casero** — Co-fondatore, PCC ICF, sviluppo strategico
+
 ## Funzionalità Implementate
 
-### Sessione 1 — Menu, labels, tono di voce ✅
-- Navigazione ristrutturata in 3 gruppi (Il mio spazio / Scopri / Gestione)
-- Tono di voce caldo e user-centric in tutte le pagine
-- Empty states aggiornati
-
-### Sessione 2 — Profilo + Le mie iscrizioni ✅
-- `ProfilePage.js`: form dati anagrafici, indirizzo, fatturazione (toggle società/privato), documenti caricati
-- `MyEnrollmentsPage.js`: lista iscrizioni con status badge, piano rate per iscrizione
-- Backend: user-details esteso con campi first_name, last_name, birth_date, birth_place, billing_type
-
-### Sessione 3 — Wizard di iscrizione (6 step) ✅
-- `EnrollmentWizardPage.js`: Dati anagrafici → Motivazione → Piano pagamento → Contratto/consensi → Upload documenti → Conferma
-- Backend endpoints: POST/GET/PUT enrollments, contract signing con audit trail, document upload, confirm con creazione installments
-- Piano rate automatico 30%/35%/35%, coordinate bancarie, firma click-wrap
-- Status flow: in_progress → confirmed
-- Collection `installments` per rate create da wizard
-
-### Sessione 4 — Admin: separazione + pipeline + KPI ✅
-- `AdminEnrollmentsPage.js`: Pipeline onboarding + Operatività corsi + Scadenze pagamenti (3 tab)
-- `AdminCommsPage.js`: wrapper Posta in arrivo + Regole + Template (3 tab)
-- Widget KPI admin nella CommunityDashboardPage (utenti, iscrizioni, rate, scaduto, pipeline)
-- `TrainingCoursesPage.js` semplificato: solo catalogo per tutti gli utenti
-- `CourseDetailPage.js`: bottone "Iscriviti adesso" → wizard
-
-### Altre funzionalità ✅
-- Community feed con post, likes, commenti
-- Buffer integration per publishing su LinkedIn
-- Gmail OAuth PKCE per inbox (in attesa abilitazione API su GCP)
-- Catalogo corsi con dettagli, credenziali ICF, foto edizioni
-- Gestione edizioni, partecipanti, rate cumulative
+### Ristrutturazione Sessione 1 — Menu, labels, tono ✅
+### Ristrutturazione Sessione 2 — Profilo + Le mie iscrizioni ✅
+### Ristrutturazione Sessione 3 — Wizard iscrizione (6 step) ✅
+### Ristrutturazione Sessione 4 — Admin separazione + pipeline + KPI ✅
+### Contenuti reali — Prompt_1_Contenuti_Reali.md ✅
+- Catalogo con 7 corsi reali (3 ICF + 4 specializzazione)
+- 3 eventi reali (Core Quadrant Pro, Webinar demo, Aperitivo coaching)
+- WelcomePage con storia reale Ariadne, 3 trainer reali, tono caldo
+- CourseDetailPage senza testimonial inventati e senza stock photos
+- TrainingCoursesPage con 2 sezioni (ICF + arricchimento)
+- MyJourneyPage con categorie aggiornate
+- Backend enrollment: status in_progress → confirmed, collection installments
 
 ## API Endpoints Chiave
-- `POST /api/school/enrollments` — Crea/riprendi enrollment
-- `GET /api/school/enrollments/my` — Lista iscrizioni utente
-- `PUT /api/school/enrollments/{id}` — Salva bozza
-- `POST /api/school/enrollments/{id}/contract` — Firma contratto
-- `POST /api/school/enrollments/{id}/documents` — Upload documenti
-- `POST /api/school/enrollments/{id}/confirm` — Conferma iscrizione
+- `POST /api/school/enrollments` — Crea/riprendi enrollment (status: in_progress)
+- `POST /api/school/enrollments/{id}/confirm` — Conferma (status: confirmed)
+- `GET /api/school/training-courses` — 7 corsi reali (no eventi)
+- `GET /api/community/events` — 3 eventi reali
 - `GET /api/school/admin/enrollment-pipeline` — Pipeline admin (solo in_progress)
 
-## DB Collections
-- `enrollments`: { enrollment_id, user_id, course_id, status, current_step, motivation, background, payment_plan, consents, documents, ... }
-- `installments`: { installment_id, user_id, course_id, enrollment_id, description, amount, due_date, status }
-- `user_details`: { user_id, first_name, last_name, birth_date, billing_type, fiscal_code, ... }
-- `payment_installments`: rate create dall'admin (pre-wizard)
-
 ## In Attesa
-- Gmail API: utente deve abilitare Gmail API su Google Cloud Console (Project ID: 366481913824)
+- Gmail API: utente deve abilitare Gmail API su Google Cloud Console
 
 ## Backlog
 - P1: Google Drive integration per info@ariadne.training
