@@ -80,6 +80,8 @@ function AppRouter() {
       <Route path="/cohorts-admin" element={<ProtectedRoute requiredRole="admin"><CohortsAdminPage /></ProtectedRoute>} />
       <Route path="/banners-admin" element={<ProtectedRoute requiredRole="admin"><BannersAdminPage /></ProtectedRoute>} />
 
+      <Route path="/profile" element={<ProtectedRoute><PlaceholderPage title="Il mio profilo" description="Qui potrai gestire i tuoi dati personali e di fatturazione." backTo="/community" /></ProtectedRoute>} />
+
       <Route path="/" element={<DefaultRedirect />} />
       <Route path="*" element={<DefaultRedirect />} />
     </Routes>

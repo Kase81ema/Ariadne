@@ -6,10 +6,10 @@ import { Separator } from './ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from './ui/collapsible';
 import {
-  LayoutDashboard, Users, GraduationCap, FileText, Settings2,
-  GitBranch, CheckCircle2, Download, FolderOpen, LogOut, Menu, X,
-  PlayCircle, Bot, AlertCircle, MessageSquare, Map, BookOpen,
-  Mail, FileOutput, Megaphone, HelpCircle, CalendarDays,
+  LayoutDashboard, Users, GraduationCap,
+  LogOut, Menu, X,
+  MessageSquare, Map, BookOpen,
+  Mail, Megaphone, HelpCircle, CalendarDays,
   ChevronRight
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -17,36 +17,34 @@ import { useState, useEffect } from 'react';
 /* ===== NAV DEFINITIONS ===== */
 const navGroups = [
   {
-    id: 'community',
-    title: 'Community',
+    id: 'mio-spazio',
+    title: 'Il mio spazio',
     items: [
-      { to: '/community', icon: LayoutDashboard, label: 'Dashboard' },
+      { to: '/community', icon: LayoutDashboard, label: 'Home' },
       { to: '/my-journey', icon: Map, label: 'Il mio percorso' },
-      { to: '/feed', icon: MessageSquare, label: 'Bacheca community' },
       { to: '/materials', icon: BookOpen, label: 'Materiali' },
+    ],
+  },
+  {
+    id: 'scopri',
+    title: 'Scopri',
+    items: [
+      { to: '/training-courses', icon: GraduationCap, label: 'Percorsi formativi' },
+      { to: '/feed', icon: MessageSquare, label: 'Bacheca' },
+      { to: '/community/events', icon: CalendarDays, label: 'Eventi' },
       { to: '/assistant', icon: HelpCircle, label: 'Ariadne AI' },
     ],
   },
   {
-    id: 'risorse',
-    title: 'Risorse',
-    items: [
-      { to: '/training-courses', icon: GraduationCap, label: 'Corsi di formazione' },
-      { to: '/courses', icon: CalendarDays, label: 'Corsi ed eventi', roles: ['admin'] },
-      { to: '/repository', icon: FolderOpen, label: 'Repository', roles: ['admin'] },
-    ],
-  },
-  {
     id: 'gestione',
-    title: 'Gestione scuola',
+    title: 'Gestione',
     adminOnly: true,
     items: [
-      { to: '/inbox', icon: Mail, label: 'Posta in arrivo' },
-      { to: '/routing-rules', icon: GitBranch, label: 'Regole di smistamento' },
-      { to: '/email-templates', icon: FileOutput, label: 'Template email' },
-      { to: '/users-admin', icon: Users, label: 'Utenti' },
       { to: '/cohorts-admin', icon: GraduationCap, label: 'Edizioni e materiali' },
-      { to: '/banners-admin', icon: Megaphone, label: 'Banner consigliati' },
+      { to: '/users-admin', icon: Users, label: 'Utenti' },
+      { to: '/courses', icon: CalendarDays, label: 'Corsi ed eventi' },
+      { to: '/inbox', icon: Mail, label: 'Comunicazioni' },
+      { to: '/banners-admin', icon: Megaphone, label: 'Banner' },
     ],
   },
 ];
@@ -86,7 +84,7 @@ export default function Layout({ children }) {
     return visibleGroups[0]?.id;
   };
 
-  const storageKey = 'ariadne_groups';
+  const storageKey = 'ariadne_nav_groups';
   const [openGroups, setOpenGroups] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(storageKey) || '{}');
@@ -127,7 +125,7 @@ export default function Layout({ children }) {
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-semibold ariadne-heading" data-testid="app-title">Ariadne</h1>
             <p className="text-[10px] uppercase tracking-widest font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>
-              Scuola e community
+              Il tuo spazio Ariadne
             </p>
           </div>
         </div>
@@ -184,6 +182,9 @@ export default function Layout({ children }) {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium truncate">{user.name}</p>
               <p className="text-[11px] truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>{user.email}</p>
+              <NavLink to="/profile" onClick={() => setMobileOpen(false)} className="text-[11px] hover:underline" style={{ color: 'hsl(var(--muted-foreground))' }} data-testid="nav-profile-link">
+                Il mio profilo →
+              </NavLink>
             </div>
           </div>
         )}
