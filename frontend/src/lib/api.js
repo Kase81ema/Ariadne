@@ -24,14 +24,6 @@ export const authAPI = {
   logout: () => api.post('/auth/logout'),
 };
 
-// Social Profiles
-export const profilesAPI = {
-  list: () => api.get('/social-profiles'),
-  create: (data) => api.post('/social-profiles', data),
-  update: (id, data) => api.put(`/social-profiles/${id}`, data),
-  delete: (id) => api.delete(`/social-profiles/${id}`),
-};
-
 // Courses & Events
 export const coursesAPI = {
   list: () => api.get('/courses-events'),
@@ -39,46 +31,6 @@ export const coursesAPI = {
   update: (id, data) => api.put(`/courses-events/${id}`, data),
   delete: (id) => api.delete(`/courses-events/${id}`),
   clone: (id) => api.post(`/courses-events/${id}/clone`),
-};
-
-// Campaigns
-export const campaignsAPI = {
-  list: () => api.get('/campaigns'),
-  get: (id) => api.get(`/campaigns/${id}`),
-  create: (data) => api.post('/campaigns', data),
-  update: (id, data) => api.put(`/campaigns/${id}`, data),
-  delete: (id) => api.delete(`/campaigns/${id}`),
-  saveNotes: (id, notes, title) => api.post(`/campaigns/${id}/save-notes`, { notes, title }),
-};
-
-// Posts
-export const postsAPI = {
-  list: (params = {}) => api.get('/posts', { params }),
-  get: (id) => api.get(`/posts/${id}`),
-  create: (data) => api.post('/posts', data),
-  update: (id, data) => api.put(`/posts/${id}`, data),
-  delete: (id) => api.delete(`/posts/${id}`),
-  approve: (id) => api.post(`/posts/${id}/approve`),
-  batchApprove: (ids) => api.post('/posts/batch-approve', { post_ids: ids }),
-  versions: (id) => api.get(`/posts/${id}/versions`),
-  regenerate: (id, agents) => api.post(`/posts/${id}/regenerate`, { active_agents: agents }),
-  addComment: (id, text) => api.post(`/posts/${id}/comment`, { text }),
-  getComments: (id) => api.get(`/posts/${id}/comments`),
-};
-
-// Planning Rules
-export const rulesAPI = {
-  list: () => api.get('/planning-rules'),
-  create: (data) => api.post('/planning-rules', data),
-  update: (id, data) => api.put(`/planning-rules/${id}`, data),
-  delete: (id) => api.delete(`/planning-rules/${id}`),
-};
-
-// Templates
-export const templatesAPI = {
-  list: () => api.get('/templates'),
-  create: (data) => api.post('/templates', data),
-  delete: (id) => api.delete(`/templates/${id}`),
 };
 
 // Repository
@@ -101,44 +53,6 @@ export const repoAPI = {
     formData.append('title', title || '');
     return api.post('/media/repository-images/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
   },
-};
-
-// Agents
-export const agentsAPI = {
-  list: () => api.get('/agents'),
-  toggle: (id, active) => api.put(`/agents/${id}`, { active }),
-  applyPreset: (preset) => api.post('/agents/preset', { preset }),
-};
-
-// Setup readiness
-export const setupAPI = {
-  readiness: () => api.get('/setup/readiness'),
-};
-
-// Generation
-export const generateAPI = {
-  plan: (campaignId, agents) => api.post('/generate/plan', { campaign_id: campaignId, active_agents: agents }),
-  texts: (campaignId, postIds, agents) => api.post('/generate/texts', { campaign_id: campaignId, post_ids: postIds, active_agents: agents }),
-  startTextsJob: (campaignId, postIds, agents) => api.post('/generate/texts-job', { campaign_id: campaignId, post_ids: postIds, active_agents: agents }),
-  getJobStatus: (jobId) => api.get(`/generate/texts-job/${jobId}`),
-};
-
-// Export
-export const exportAPI = {
-  csvUrl: (campaignId) => `${API_BASE}/export/csv/${campaignId}`,
-  jsonUrl: (campaignId) => `${API_BASE}/export/json/${campaignId}`,
-  copyPackUrl: (campaignId) => `${API_BASE}/export/copy-pack/${campaignId}`,
-};
-
-// Dashboard
-export const dashboardAPI = {
-  stats: () => api.get('/dashboard/stats'),
-  calendar: (month, profileId) => api.get('/dashboard/calendar', { params: { month, profile_id: profileId } }),
-};
-
-// Audit
-export const auditAPI = {
-  logs: (limit = 50) => api.get('/audit-logs', { params: { limit } }),
 };
 
 // Community
@@ -228,7 +142,6 @@ export const schoolAPI = {
   getJourneyProgress: () => api.get('/school/journey/progress'),
   updateStepProgress: (stepId, data) => api.put(`/school/journey/progress/${stepId}`, data),
   assistantQuery: (question) => api.post('/school/assistant/query', { question }),
-  // Course catalog
   getCatalog: () => api.get('/school/catalog'),
   listTrainingCourses: () => api.get('/school/training-courses'),
   getTrainingCourseDetail: (courseId) => api.get(`/school/training-courses/${courseId}`),
@@ -236,10 +149,8 @@ export const schoolAPI = {
   saveTrainingCourseInterest: (courseId, data = {}) => api.post(`/school/training-courses/${courseId}/interest`, data),
   updateTrainingCourseInterest: (courseId, userId, data) => api.put(`/school/training-courses/${courseId}/interest/${userId}`, data),
   updateCourseProgress: (courseId, status) => api.post('/school/catalog/progress', { course_id: courseId, status }),
-  // User details
   getUserDetails: () => api.get('/school/user-details'),
   saveUserDetails: (data) => api.post('/school/user-details', data),
-  // Admin user details & payments
   adminGetUserDetails: (userId) => api.get(`/school/admin/user-details/${userId}`),
   adminSaveUserDetails: (userId, data) => api.post(`/school/admin/user-details/${userId}`, data),
   adminListInstallments: () => api.get('/school/admin/installments'),
@@ -248,7 +159,6 @@ export const schoolAPI = {
   adminBulkCreateInstallments: (data) => api.post('/school/admin/installments/bulk', data),
   adminUpdateInstallment: (id, data) => api.put(`/school/admin/installments/${id}`, data),
   adminDeleteInstallment: (id) => api.delete(`/school/admin/installments/${id}`),
-  // My payments
   getMyPayments: () => api.get('/school/my-payments'),
 };
 
@@ -266,22 +176,9 @@ export const mediaAPI = {
     formData.append('overlay_brand', overlayBrand ? 'true' : 'false');
     return api.post('/media/assets/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
   },
-  generateAsset: (data) => api.post('/media/assets/generate', data),
-  processAssets: (assetIds, applyImprove, overlayBrand = false) => api.post('/media/assets/process', { asset_ids: assetIds, apply_improve: applyImprove, overlay_brand: overlayBrand }),
-  getJob: (jobId) => api.get(`/media/jobs/${jobId}`),
   listRepositoryImages: (courseId = '') => api.get('/media/repository-images', { params: { course_id: courseId } }),
   indexRepositoryImages: () => api.post('/media/repository-images/index'),
   importRepositoryImage: (indexId) => api.post(`/media/repository-images/${indexId}/import`),
-  listAssignments: (campaignId = '') => api.get('/media/assignments', { params: { campaign_id: campaignId } }),
-  autoMatchAssignments: (data) => api.post('/media/assignments/auto-match', data),
-  upsertAssignment: (postId, data) => api.put(`/media/assignments/${postId}`, data),
-  removeAssignment: (postId) => api.delete(`/media/assignments/${postId}`),
-};
-
-export const bufferAPI = {
-  listProfiles: () => api.get('/buffer/profiles'),
-  publishPost: (postId) => api.post(`/buffer/publish-post/${postId}`),
-  publishCampaign: (campaignId) => api.post(`/buffer/publish-campaign/${campaignId}`),
 };
 
 export default api;

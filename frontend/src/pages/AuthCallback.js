@@ -29,7 +29,7 @@ export default function AuthCallback() {
           localStorage.setItem('ariadne_token', res.data.session_token);
         }
         setUser(res.data);
-        navigate('/dashboard', { replace: true });
+        navigate('/community', { replace: true });
       } catch (err) {
         console.error('Session exchange failed:', err);
         navigate('/login');

@@ -38,7 +38,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await loginJWT(loginData.email, loginData.password);
-      navigate('/dashboard');
+      navigate('/community');
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Errore di accesso');
     } finally {

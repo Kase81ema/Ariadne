@@ -5,18 +5,8 @@ import { Toaster } from "./components/ui/sonner";
 import Layout from "./components/Layout";
 import LoginPage from "./pages/LoginPage";
 import AuthCallback from "./pages/AuthCallback";
-import DashboardPage from "./pages/DashboardPage";
-import ProfilesPage from "./pages/ProfilesPage";
 import CoursesPage from "./pages/CoursesPage";
-import EditorialPage from "./pages/EditorialPage";
-import RulesPage from "./pages/RulesPage";
-import WorkflowPage from "./pages/WorkflowPage";
-import ImagesPage from "./pages/ImagesPage";
-import ApprovalsPage from "./pages/ApprovalsPage";
-import ExportPage from "./pages/ExportPage";
 import RepositoryPage from "./pages/RepositoryPage";
-import AgentsPage from "./pages/AgentsPage";
-import StartCampaignPage from "./pages/StartCampaignPage";
 import CommunityDashboardPage from "./pages/CommunityDashboardPage";
 import FeedPage from "./pages/FeedPage";
 import UsersAdminPage from "./pages/UsersAdminPage";
@@ -53,20 +43,11 @@ function ProtectedRoute({ children, requiredRole }) {
   return <Layout>{children}</Layout>;
 }
 
-function AdminEditorRoute({ children }) {
-  const { user, loading } = useAuth();
-  if (loading) return null;
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== 'admin' && user.role !== 'editor') return <Navigate to="/community" replace />;
-  return <Layout>{children}</Layout>;
-}
-
 function DefaultRedirect() {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role === 'user') return <Navigate to="/community" replace />;
-  return <Navigate to="/dashboard" replace />;
+  return <Navigate to="/community" replace />;
 }
 
 function AppRouter() {
@@ -77,20 +58,6 @@ function AppRouter() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-
-      {/* Studio comunicazione (admin/editor) */}
-      <Route path="/dashboard" element={<AdminEditorRoute><DashboardPage /></AdminEditorRoute>} />
-      <Route path="/profiles" element={<AdminEditorRoute><ProfilesPage /></AdminEditorRoute>} />
-      <Route path="/courses" element={<AdminEditorRoute><CoursesPage /></AdminEditorRoute>} />
-      <Route path="/editorial" element={<AdminEditorRoute><EditorialPage /></AdminEditorRoute>} />
-      <Route path="/rules" element={<AdminEditorRoute><RulesPage /></AdminEditorRoute>} />
-      <Route path="/workflow" element={<AdminEditorRoute><WorkflowPage /></AdminEditorRoute>} />
-      <Route path="/images" element={<AdminEditorRoute><ImagesPage /></AdminEditorRoute>} />
-      <Route path="/approvals" element={<AdminEditorRoute><ApprovalsPage /></AdminEditorRoute>} />
-      <Route path="/export" element={<AdminEditorRoute><ExportPage /></AdminEditorRoute>} />
-      <Route path="/repository" element={<AdminEditorRoute><RepositoryPage /></AdminEditorRoute>} />
-      <Route path="/agents" element={<AdminEditorRoute><AgentsPage /></AdminEditorRoute>} />
-      <Route path="/start" element={<AdminEditorRoute><StartCampaignPage /></AdminEditorRoute>} />
 
       {/* Scuola e community (tutti i ruoli) */}
       <Route path="/community" element={<ProtectedRoute><CommunityDashboardPage /></ProtectedRoute>} />
@@ -103,13 +70,15 @@ function AppRouter() {
       <Route path="/materials" element={<ProtectedRoute><MaterialsPage /></ProtectedRoute>} />
       <Route path="/assistant" element={<ProtectedRoute><AssistantPage /></ProtectedRoute>} />
 
-      {/* Admin/Editor only - Scuola e community management */}
-      <Route path="/inbox" element={<AdminEditorRoute><InboxPage /></AdminEditorRoute>} />
-      <Route path="/routing-rules" element={<AdminEditorRoute><RoutingRulesPage /></AdminEditorRoute>} />
-      <Route path="/email-templates" element={<AdminEditorRoute><EmailTemplatesPage /></AdminEditorRoute>} />
-      <Route path="/users-admin" element={<AdminEditorRoute><UsersAdminPage /></AdminEditorRoute>} />
-      <Route path="/cohorts-admin" element={<AdminEditorRoute><CohortsAdminPage /></AdminEditorRoute>} />
-      <Route path="/banners-admin" element={<AdminEditorRoute><BannersAdminPage /></AdminEditorRoute>} />
+      {/* Admin only */}
+      <Route path="/courses" element={<ProtectedRoute requiredRole="admin"><CoursesPage /></ProtectedRoute>} />
+      <Route path="/repository" element={<ProtectedRoute requiredRole="admin"><RepositoryPage /></ProtectedRoute>} />
+      <Route path="/inbox" element={<ProtectedRoute requiredRole="admin"><InboxPage /></ProtectedRoute>} />
+      <Route path="/routing-rules" element={<ProtectedRoute requiredRole="admin"><RoutingRulesPage /></ProtectedRoute>} />
+      <Route path="/email-templates" element={<ProtectedRoute requiredRole="admin"><EmailTemplatesPage /></ProtectedRoute>} />
+      <Route path="/users-admin" element={<ProtectedRoute requiredRole="admin"><UsersAdminPage /></ProtectedRoute>} />
+      <Route path="/cohorts-admin" element={<ProtectedRoute requiredRole="admin"><CohortsAdminPage /></ProtectedRoute>} />
+      <Route path="/banners-admin" element={<ProtectedRoute requiredRole="admin"><BannersAdminPage /></ProtectedRoute>} />
 
       <Route path="/" element={<DefaultRedirect />} />
       <Route path="*" element={<DefaultRedirect />} />
