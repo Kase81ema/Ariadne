@@ -408,7 +408,15 @@ export default function CourseDetailPage() {
               <p className="text-sm text-gray-600">{statusContent[userStatus].text}</p>
             </div>
           )}
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <Button
+              className="gap-2 rounded-full px-6"
+              style={{ background: accentColor }}
+              onClick={() => navigate(`/enroll/${courseId}`)}
+              data-testid="course-enroll-button"
+            >
+              <GraduationCap className="w-4 h-4" /> Iscriviti adesso
+            </Button>
             <Button
               variant={userStatus ? 'outline' : 'default'}
               className="gap-2 rounded-full px-6"
@@ -417,18 +425,15 @@ export default function CourseDetailPage() {
               data-testid="course-interest-button"
             >
               {savingInterest ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-              {userStatus ? 'Iscrizione avviata' : 'Voglio iscrivermi'}
+              {userStatus ? 'Interesse registrato' : 'Sono interessato/a'}
             </Button>
             <Button
+              variant="outline"
               className="gap-2 rounded-full px-6"
-              style={{ background: accentColor }}
               onClick={() => window.open('https://calendly.com/ariadne-training', '_blank')}
               data-testid="course-cta-call"
             >
               <Calendar className="w-4 h-4" /> Vorrei saperne di più
-            </Button>
-            <Button variant="outline" className="gap-2 rounded-full px-6" onClick={() => navigate('/training-courses')} data-testid="course-cta-journey">
-              Torna ai corsi
             </Button>
           </div>
         </CardContent>

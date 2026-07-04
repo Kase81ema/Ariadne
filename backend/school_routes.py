@@ -670,6 +670,13 @@ REPOSITORY ARIADNE:
         return {**record, "user_name": user_doc.get("name", "") if user_doc else "", "user_email": user_doc.get("email", "") if user_doc else ""}
 
     # ===== USER DETAILS (Billing/Profile) =====
+    ALLOWED_DETAIL_FIELDS = {
+        "first_name", "last_name", "birth_date", "birth_place",
+        "fiscal_code", "vat_number", "address", "city", "zip_code",
+        "province", "phone", "billing_name", "billing_type",
+        "sdi_code", "pec",
+    }
+
     @router.get("/user-details")
     async def get_user_details(request: Request):
         user = await get_current_user(request)
@@ -680,26 +687,182 @@ REPOSITORY ARIADNE:
     async def save_user_details(request: Request):
         user = await get_current_user(request)
         body = await request.json()
-        update_data = {
-            "user_id": user["user_id"],
-            "fiscal_code": body.get("fiscal_code", ""),
-            "vat_number": body.get("vat_number", ""),
-            "address": body.get("address", ""),
-            "city": body.get("city", ""),
-            "zip_code": body.get("zip_code", ""),
-            "province": body.get("province", ""),
-            "phone": body.get("phone", ""),
-            "billing_name": body.get("billing_name", ""),
-            "sdi_code": body.get("sdi_code", ""),
-            "pec": body.get("pec", ""),
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-        }
+        update_data = {"user_id": user["user_id"], "updated_at": datetime.now(timezone.utc).isoformat()}
+        for field in ALLOWED_DETAIL_FIELDS:
+            if field in body:
+                update_data[field] = body[field]
         await db.user_details.update_one(
             {"user_id": user["user_id"]},
             {"$set": update_data},
             upsert=True
         )
         return {"ok": True}
+
+    # ===== ENROLLMENTS =====
+    @router.post("/enrollments")
+    async def create_enrollment(request: Request):
+        user = await get_current_user(request)
+        body = await request.json()
+        course_id = body.get("course_id", "")
+        if not course_id:
+            raise HTTPException(400, "course_id obbligatorio")
+        existing = await db.enrollments.find_one({"user_id": user["user_id"], "course_id": course_id, "status": {"$ne": "cancelled"}}, {"_id": 0})
+        if existing:
+            return existing
+        enrollment = {
+            "enrollment_id": f"enr_{uuid.uuid4().hex[:12]}",
+            "user_id": user["user_id"],
+            "course_id": course_id,
+            "status": "onboarding",
+            "current_step": 1,
+            "motivation": "",
+            "background": "",
+            "referral_source": "",
+            "referral_detail": "",
+            "payment_plan": [],
+            "contract_accepted": False,
+            "contract_signed_at": "",
+            "consents": {},
+            "signature_text": "",
+            "documents": [],
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.enrollments.insert_one(enrollment)
+        enrollment.pop("_id", None)
+        await log_audit(user["user_id"], "create_enrollment", {"course_id": course_id, "enrollment_id": enrollment["enrollment_id"]})
+        return enrollment
+
+    @router.get("/enrollments/my")
+    async def my_enrollments(request: Request):
+        user = await get_current_user(request)
+        enrollments = await db.enrollments.find({"user_id": user["user_id"]}, {"_id": 0}).sort("created_at", -1).to_list(50)
+        for enr in enrollments:
+            course = await db.course_catalog.find_one({"course_id": enr.get("course_id")}, {"_id": 0})
+            if not course:
+                course = await db.courses_events.find_one({"course_id": enr.get("course_id")}, {"_id": 0})
+            enr["course_title"] = course.get("title", "") if course else ""
+            enr["course_description"] = course.get("description", "") if course else ""
+            cohort = await db.cohorts.find_one({"cohort_id": enr.get("cohort_id", "")}, {"_id": 0})
+            enr["edition_name"] = cohort.get("name", "") if cohort else ""
+            installments = await db.payment_installments.find({"user_id": user["user_id"], "course_id": enr.get("course_id")}, {"_id": 0}).sort("due_date", 1).to_list(20)
+            enr["installments"] = installments
+        return enrollments
+
+    @router.get("/enrollments/{enrollment_id}")
+    async def get_enrollment(request: Request, enrollment_id: str):
+        user = await get_current_user(request)
+        enrollment = await db.enrollments.find_one({"enrollment_id": enrollment_id, "user_id": user["user_id"]}, {"_id": 0})
+        if not enrollment:
+            raise HTTPException(404, "Iscrizione non trovata")
+        return enrollment
+
+    @router.put("/enrollments/{enrollment_id}")
+    async def update_enrollment(request: Request, enrollment_id: str):
+        user = await get_current_user(request)
+        body = await request.json()
+        enrollment = await db.enrollments.find_one({"enrollment_id": enrollment_id, "user_id": user["user_id"]})
+        if not enrollment:
+            raise HTTPException(404, "Iscrizione non trovata")
+        allowed = {"current_step", "motivation", "background", "referral_source", "referral_detail", "payment_plan", "status"}
+        updates = {k: v for k, v in body.items() if k in allowed}
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        await db.enrollments.update_one({"enrollment_id": enrollment_id}, {"$set": updates})
+        return await db.enrollments.find_one({"enrollment_id": enrollment_id}, {"_id": 0})
+
+    @router.post("/enrollments/{enrollment_id}/contract")
+    async def save_enrollment_contract(request: Request, enrollment_id: str):
+        user = await get_current_user(request)
+        body = await request.json()
+        enrollment = await db.enrollments.find_one({"enrollment_id": enrollment_id, "user_id": user["user_id"]})
+        if not enrollment:
+            raise HTTPException(404, "Iscrizione non trovata")
+        contract_data = {
+            "contract_accepted": True,
+            "contract_signed_at": datetime.now(timezone.utc).isoformat(),
+            "contract_ip": request.client.host if request.client else "",
+            "contract_user_agent": request.headers.get("user-agent", ""),
+            "consents": body.get("consents", {}),
+            "signature_text": body.get("signature_text", ""),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.enrollments.update_one({"enrollment_id": enrollment_id}, {"$set": contract_data})
+        await log_audit(user["user_id"], "sign_enrollment_contract", {"enrollment_id": enrollment_id})
+        return {"ok": True}
+
+    @router.post("/enrollments/{enrollment_id}/documents")
+    async def upload_enrollment_document(request: Request, enrollment_id: str, file: UploadFile = File(...), doc_type: str = Form("identity")):
+        user = await get_current_user(request)
+        enrollment = await db.enrollments.find_one({"enrollment_id": enrollment_id, "user_id": user["user_id"]})
+        if not enrollment:
+            raise HTTPException(404, "Iscrizione non trovata")
+        content = await file.read()
+        if len(content) > 10 * 1024 * 1024:
+            raise HTTPException(400, "File troppo grande (max 10MB)")
+        ext = file.filename.split(".")[-1].lower() if "." in file.filename else "bin"
+        filename = f"enr_{uuid.uuid4().hex[:12]}.{ext}"
+        filepath = UPLOAD_DIR / filename
+        async with aiofiles.open(filepath, "wb") as f:
+            await f.write(content)
+        doc_entry = {
+            "doc_type": doc_type,
+            "file_path": f"/api/uploads/{filename}",
+            "file_name": file.filename,
+            "uploaded_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.enrollments.update_one(
+            {"enrollment_id": enrollment_id},
+            {"$push": {"documents": doc_entry}, "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        return {"ok": True, "document": doc_entry}
+
+    @router.post("/enrollments/{enrollment_id}/confirm")
+    async def confirm_enrollment(request: Request, enrollment_id: str):
+        user = await get_current_user(request)
+        enrollment = await db.enrollments.find_one({"enrollment_id": enrollment_id, "user_id": user["user_id"]})
+        if not enrollment:
+            raise HTTPException(404, "Iscrizione non trovata")
+        course_id = enrollment.get("course_id", "")
+        payment_plan = enrollment.get("payment_plan", [])
+        for i, item in enumerate(payment_plan):
+            inst = {
+                "installment_id": f"inst_{uuid.uuid4().hex[:12]}",
+                "user_id": user["user_id"],
+                "course_id": course_id,
+                "cohort_id": "",
+                "description": item.get("description", f"Rata {i + 1}"),
+                "amount": float(item.get("amount", 0) or 0),
+                "due_date": item.get("due_date", ""),
+                "status": "pending",
+                "enrollment_id": enrollment_id,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+            await db.payment_installments.insert_one(inst)
+        await db.enrollments.update_one(
+            {"enrollment_id": enrollment_id},
+            {"$set": {"status": "enrolled", "current_step": 6, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        await db.course_interest_status.update_one(
+            {"course_id": course_id, "user_id": user["user_id"]},
+            {"$set": {"status": "enrolled", "updated_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True,
+        )
+        await log_audit(user["user_id"], "confirm_enrollment", {"enrollment_id": enrollment_id, "course_id": course_id})
+        return {"ok": True, "enrollment_id": enrollment_id}
+
+    @router.get("/admin/enrollment-pipeline")
+    async def admin_enrollment_pipeline(request: Request):
+        await require_admin_editor(request)
+        enrollments = await db.enrollments.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+        for enr in enrollments:
+            user_doc = await db.users.find_one({"user_id": enr.get("user_id", "")}, {"_id": 0, "password_hash": 0})
+            enr["user_name"] = user_doc.get("name", "") if user_doc else ""
+            enr["user_email"] = user_doc.get("email", "") if user_doc else ""
+            course = await db.course_catalog.find_one({"course_id": enr.get("course_id")}, {"_id": 0})
+            if not course:
+                course = await db.courses_events.find_one({"course_id": enr.get("course_id")}, {"_id": 0})
+            enr["course_title"] = course.get("title", "") if course else ""
+        return enrollments
 
     # ===== ADMIN: User Details & Payment Management =====
     @router.get("/admin/user-details/{user_id}")
