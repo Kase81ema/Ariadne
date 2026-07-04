@@ -397,9 +397,9 @@ export default function TrainingCoursesPage() {
   return (
     <div data-testid="training-courses-page">
       <div className="mb-10">
-        <h1 className="text-4xl font-semibold ariadne-heading mb-2">Corsi di formazione</h1>
+        <h1 className="text-4xl font-semibold ariadne-heading mb-2">Percorsi formativi</h1>
         <p className="text-base text-gray-500" data-testid="training-courses-description">
-          Sfoglia l’offerta Ariadne. Per admin ed editor questa area è anche il punto operativo per edizioni, partecipanti e scadenze di pagamento.
+          Esplora i percorsi formativi Ariadne. Ogni percorso è un'esperienza unica di crescita personale e professionale.
         </p>
       </div>
 

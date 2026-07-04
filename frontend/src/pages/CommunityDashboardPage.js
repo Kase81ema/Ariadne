@@ -348,7 +348,7 @@ export default function CommunityDashboardPage() {
                     );
                   })
                 ) : (
-                  <p className="text-sm text-gray-400 text-center py-8">Al momento non ci sono eventi in calendario, ma presto troverai nuove occasioni da seguire.</p>
+                  <p className="text-sm text-gray-400 text-center py-8">Presto troverai qui le prossime occasioni da vivere insieme.</p>
                 )}
               </div>
             </CardContent>

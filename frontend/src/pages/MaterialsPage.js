@@ -47,8 +47,8 @@ export default function MaterialsPage() {
         <Card className="border-gray-100 border-dashed border-2">
           <CardContent className="p-12 text-center">
             <BookOpen className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-            <h2 className="text-base font-semibold text-gray-600 mb-1">Nessun materiale disponibile</h2>
-            <p className="text-sm text-gray-400">I materiali appariranno qui quando sarai assegnato a un percorso.</p>
+            <h2 className="text-base font-semibold text-gray-600 mb-1">I materiali arriveranno qui</h2>
+            <p className="text-sm text-gray-400">Non appena inizierai il tuo percorso, qui troverai tutti i materiali e le risorse per accompagnarti.</p>
           </CardContent>
         </Card>
       ) : (

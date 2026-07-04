@@ -417,7 +417,7 @@ export default function CourseDetailPage() {
               data-testid="course-interest-button"
             >
               {savingInterest ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-              {userStatus ? 'Interesse già registrato' : 'Mi interessa questo percorso'}
+              {userStatus ? 'Iscrizione avviata' : 'Voglio iscrivermi'}
             </Button>
             <Button
               className="gap-2 rounded-full px-6"
@@ -425,7 +425,7 @@ export default function CourseDetailPage() {
               onClick={() => window.open('https://calendly.com/ariadne-training', '_blank')}
               data-testid="course-cta-call"
             >
-              <Calendar className="w-4 h-4" /> Richiedi più informazioni
+              <Calendar className="w-4 h-4" /> Vorrei saperne di più
             </Button>
             <Button variant="outline" className="gap-2 rounded-full px-6" onClick={() => navigate('/training-courses')} data-testid="course-cta-journey">
               Torna ai corsi
