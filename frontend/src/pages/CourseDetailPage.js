@@ -69,7 +69,7 @@ export default function CourseDetailPage() {
   const handleInterest = async () => {
     setSavingInterest(true);
     try {
-      await schoolAPI.registerInterest(courseId);
+      await schoolAPI.saveTrainingCourseInterest(courseId);
       setUserStatus('interested');
       toast.success('Interesse segnalato');
     } catch { toast.error('Qualcosa non ha funzionato'); }
@@ -87,7 +87,7 @@ export default function CourseDetailPage() {
 
   const handleProspectStatusChange = async (userId, status) => {
     try {
-      await schoolAPI.updateInterestStatus(courseId, userId, status);
+      await schoolAPI.updateTrainingCourseInterest(courseId, userId, { status });
       const r = await schoolAPI.getTrainingCourseDetail(courseId);
       setAdminSummary(r.data.admin_summary);
       toast.success('Stato aggiornato');
@@ -102,7 +102,7 @@ export default function CourseDetailPage() {
   return (
     <div className="max-w-4xl mx-auto" data-testid="course-detail-page">
       <Button variant="ghost" size="sm" onClick={() => navigate('/training-courses')} className="gap-1 mb-6 -ml-2" data-testid="course-back-btn">
-        <ArrowLeft className="w-4 h-4" /> Tutti i percorsi
+        <ArrowLeft className="w-4 h-4" /> Percorsi formativi
       </Button>
 
       {/* Hero — solid color */}

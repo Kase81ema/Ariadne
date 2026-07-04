@@ -35,6 +35,7 @@ export default function ProfilePage() {
   }, []);
 
   const update = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+  const emptyBorder = (field) => !form[field] ? 'border-[#f9af43]/40' : '';
 
   const handleSave = async () => {
     setSaving(true);
@@ -54,14 +55,21 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-3xl mx-auto" data-testid="profile-page">
-      <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-1 mb-6 -ml-2" data-testid="profile-back-btn">
-        <ArrowLeft className="w-4 h-4" /> Indietro
+      <Button variant="ghost" size="sm" onClick={() => navigate('/community')} className="gap-1 mb-6 -ml-2" data-testid="profile-back-btn">
+        <ArrowLeft className="w-4 h-4" /> Il mio spazio
       </Button>
 
       <div className="mb-8">
         <h1 className="text-4xl font-semibold ariadne-heading mb-2">Il mio profilo</h1>
         <p className="text-base text-gray-500">I tuoi dati personali e di fatturazione. Potrai modificarli in qualsiasi momento.</p>
       </div>
+
+      {/* Incomplete profile notice */}
+      {(!form.first_name || !form.last_name || !form.phone || !form.fiscal_code) && (
+        <div className="mb-6 rounded-xl border border-[#f9af43]/30 bg-[#f9af43]/[0.04] p-4" data-testid="profile-incomplete-notice">
+          <p className="text-sm text-gray-700">Completa i tuoi dati — ci serviranno se deciderai di iscriverti a un percorso.</p>
+        </div>
+      )}
 
       {/* Personal data */}
       <Card className="border-gray-100 mb-6" data-testid="profile-personal-card">
@@ -73,11 +81,11 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Nome</Label>
-              <Input value={form.first_name} onChange={e => update('first_name', e.target.value)} placeholder="Nome" data-testid="profile-first-name" />
+              <Input className={emptyBorder('first_name')} value={form.first_name} onChange={e => update('first_name', e.target.value)} placeholder="Nome" data-testid="profile-first-name" />
             </div>
             <div className="space-y-2">
               <Label>Cognome</Label>
-              <Input value={form.last_name} onChange={e => update('last_name', e.target.value)} placeholder="Cognome" data-testid="profile-last-name" />
+              <Input className={emptyBorder('last_name')} value={form.last_name} onChange={e => update('last_name', e.target.value)} placeholder="Cognome" data-testid="profile-last-name" />
             </div>
             <div className="space-y-2">
               <Label>Data di nascita</Label>
@@ -93,7 +101,7 @@ export default function ProfilePage() {
             </div>
             <div className="space-y-2">
               <Label>Telefono</Label>
-              <Input value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="+39 333 1234567" data-testid="profile-phone" />
+              <Input className={emptyBorder('phone')} value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="+39 333 1234567" data-testid="profile-phone" />
             </div>
           </div>
         </CardContent>
@@ -186,7 +194,7 @@ export default function ProfilePage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-400">I documenti che caricherai durante l'iscrizione appariranno qui.</p>
+            <p className="text-sm text-gray-400">{"I documenti che caricherai durante l'iscrizione appariranno qui."}</p>
           )}
         </CardContent>
       </Card>

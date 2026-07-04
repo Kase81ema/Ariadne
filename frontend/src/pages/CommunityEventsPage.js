@@ -4,8 +4,8 @@ import { Badge } from '../components/ui/badge';
 import { communityAPI } from '../lib/api';
 import { Calendar, MapPin, ExternalLink, Users, Loader2 } from 'lucide-react';
 
-const TYPE_LABELS = { course_multi: 'Corso multi-data', event_single: 'Evento singolo', webinar: 'Webinar', workshop: 'Workshop' };
-const TYPE_COLORS = { course_multi: 'badge-purple', event_single: 'badge-blue', webinar: 'badge-orange', workshop: 'badge-green' };
+const TYPE_LABELS = { course_multi: 'Corso multi-data', event_single: 'Evento singolo', webinar: 'Webinar', workshop: 'Workshop', recurring_community: 'Appuntamento ricorrente' };
+const TYPE_COLORS = { course_multi: 'badge-purple', event_single: 'badge-blue', webinar: 'badge-orange', workshop: 'badge-green', recurring_community: 'badge-yellow' };
 
 export default function CommunityEventsPage() {
   const [events, setEvents] = useState([]);
@@ -31,12 +31,21 @@ export default function CommunityEventsPage() {
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
                   <div className="w-14 h-14 rounded-xl bg-[#7B61FF]/8 flex flex-col items-center justify-center flex-shrink-0">
-                    <span className="text-lg font-bold text-[#7B61FF] leading-none">
-                      {e.next_date ? new Date(e.next_date).getDate() : '?'}
-                    </span>
-                    <span className="text-[10px] text-[#7B61FF]/70 uppercase">
-                      {e.next_date ? new Date(e.next_date).toLocaleDateString('it-IT', { month: 'short' }) : ''}
-                    </span>
+                    {e.recurring ? (
+                      <>
+                        <Calendar className="w-5 h-5 text-[#7B61FF]" />
+                        <span className="text-[9px] text-[#7B61FF]/70 uppercase mt-0.5">{e.recurrence || 'Ricorrente'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-lg font-bold text-[#7B61FF] leading-none">
+                          {e.next_date ? new Date(e.next_date).getDate() : '?'}
+                        </span>
+                        <span className="text-[10px] text-[#7B61FF]/70 uppercase">
+                          {e.next_date ? new Date(e.next_date).toLocaleDateString('it-IT', { month: 'short' }) : ''}
+                        </span>
+                      </>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1.5">

@@ -13,7 +13,7 @@ import {
   ArrowRight, Heart, MessageCircle, Calendar, Sparkles,
   Target, GraduationCap, Briefcase, Loader2,
   BookOpen, Map, Bell, Users, FolderOpen, Download, Eye,
-  CreditCard, ClipboardList
+  CreditCard, ClipboardList, Compass, AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
@@ -117,12 +117,140 @@ const INTEREST_BADGE = {
   enrolled: { label: 'Iscritto/a', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
 };
 
+function ProssimoPassoWidget({ enrollments, payments, interests, catalogCourses, trainingCourses, navigate }) {
+  // Determine user state with priority logic
+  // Priority: payment due soon > enrollment in progress > enrolled active > interest > new > alumnus
+
+  // Check for upcoming payment (within 15 days)
+  const now = new Date();
+  const in15Days = new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000);
+  const upcomingPayment = payments.find(p => {
+    if (p.status === 'paid') return false;
+    try {
+      const due = new Date(p.due_date);
+      return due >= now && due <= in15Days;
+    } catch { return false; }
+  });
+
+  // Check enrollment in progress (not completed)
+  const inProgressEnrollment = enrollments.find(e => e.status === 'in_progress');
+
+  // Check active enrollment (confirmed)
+  const activeEnrollment = enrollments.find(e => e.status === 'confirmed' || e.status === 'active');
+
+  // Check registered interests
+  const interestList = interests || [];
+  const firstInterest = interestList[0];
+  const interestCourse = firstInterest ? trainingCourses.find(c => c.course_id === firstInterest.course_id) : null;
+
+  // Check if alumnus (all courses completed)
+  const completedCourses = catalogCourses.filter(c => c.user_status === 'completed');
+  const isAlumnus = completedCourses.length > 0 && catalogCourses.every(c => c.user_status === 'completed' || c.user_status === 'not_started');
+
+  let widget = null;
+
+  if (upcomingPayment) {
+    const courseName = upcomingPayment.course_title || 'il tuo percorso';
+    const dueDate = new Date(upcomingPayment.due_date).toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
+    widget = (
+      <div className="rounded-xl border border-[#f9af43]/30 bg-[#f9af43]/[0.04] p-4 mb-4" data-testid="widget-payment-due">
+        <p className="text-sm text-gray-700">
+          Hai una rata in scadenza il <strong>{dueDate}</strong> per <strong>{courseName}</strong> — puoi verificare i dettagli nella sezione iscrizioni.
+        </p>
+        <button onClick={() => navigate('/my-enrollments')} className="text-xs text-[#f9af43] hover:underline mt-1.5 inline-flex items-center gap-1">
+          Vai alle iscrizioni <ArrowRight className="w-3 h-3" />
+        </button>
+      </div>
+    );
+  }
+
+  let mainWidget;
+  if (inProgressEnrollment) {
+    mainWidget = {
+      icon: ClipboardList,
+      iconBg: 'bg-amber-50',
+      iconColor: 'text-amber-600',
+      title: 'La tua iscrizione è in corso',
+      text: `Hai iniziato l'iscrizione a ${inProgressEnrollment.course_title || 'un percorso'}. Puoi riprendere da dove avevi lasciato.`,
+      action: { label: 'Riprendi iscrizione', to: `/enroll/${inProgressEnrollment.course_id}` },
+    };
+  } else if (activeEnrollment) {
+    mainWidget = {
+      icon: GraduationCap,
+      iconBg: 'bg-[hsl(82,60%,42%)]/10',
+      iconColor: 'text-[hsl(82,60%,42%)]',
+      title: 'Bentornato/a nel tuo percorso',
+      text: `Stai frequentando ${activeEnrollment.course_title || 'un percorso formativo'}.`,
+      action: { label: 'Il mio percorso', to: '/my-journey' },
+      secondary: { label: 'I tuoi materiali', to: '/materials' },
+    };
+  } else if (firstInterest && interestCourse) {
+    mainWidget = {
+      icon: Sparkles,
+      iconBg: 'bg-[#f9af43]/10',
+      iconColor: 'text-[#f9af43]',
+      title: 'Il tuo interesse è stato registrato',
+      text: `Hai mostrato interesse per ${interestCourse.title}. Ti contatteremo presto, oppure puoi completare i tuoi dati nel profilo.`,
+      action: { label: 'Vai al profilo', to: '/profile' },
+      secondary: { label: 'Esplora altri percorsi', to: '/training-courses' },
+    };
+  } else if (isAlumnus && completedCourses.length > 0) {
+    mainWidget = {
+      icon: Map,
+      iconBg: 'bg-[#6859a3]/10',
+      iconColor: 'text-[#6859a3]',
+      title: 'Il tuo percorso continua',
+      text: `Hai completato ${completedCourses.length} percors${completedCourses.length > 1 ? 'i' : 'o'}. Scopri i prossimi laboratori, le specializzazioni disponibili e resta in contatto con la comunità.`,
+      action: { label: 'Nuovi percorsi', to: '/training-courses' },
+      secondary: { label: 'Eventi e laboratori', to: '/community/events' },
+    };
+  } else {
+    mainWidget = {
+      icon: Compass,
+      iconBg: 'bg-[hsl(82,60%,42%)]/10',
+      iconColor: 'text-[hsl(82,60%,42%)]',
+      title: 'Da dove vuoi partire?',
+      text: 'Esplora i percorsi formativi per trovare quello più vicino al momento che stai vivendo.',
+      action: { label: 'Esplora i percorsi', to: '/training-courses' },
+    };
+  }
+
+  return (
+    <div data-testid="prossimo-passo-widget">
+      {widget}
+      <Card className="border-gray-100">
+        <CardContent className="p-5 flex items-start gap-4">
+          <div className={`w-10 h-10 rounded-xl ${mainWidget.iconBg} flex items-center justify-center flex-shrink-0`}>
+            <mainWidget.icon className={`w-5 h-5 ${mainWidget.iconColor}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-semibold mb-1" data-testid="prossimo-passo-title">{mainWidget.title}</h3>
+            <p className="text-xs text-gray-500 leading-relaxed mb-3">{mainWidget.text}</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button size="sm" className="gap-1.5 h-8 text-xs" onClick={() => navigate(mainWidget.action.to)} data-testid="prossimo-passo-action">
+                {mainWidget.action.label} <ArrowRight className="w-3 h-3" />
+              </Button>
+              {mainWidget.secondary && (
+                <Button variant="ghost" size="sm" className="gap-1.5 h-8 text-xs text-gray-500" onClick={() => navigate(mainWidget.secondary.to)} data-testid="prossimo-passo-secondary">
+                  {mainWidget.secondary.label}
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function CommunityDashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [data, setData] = useState(null);
   const [catalogCourses, setCatalogCourses] = useState([]);
   const [trainingCourses, setTrainingCourses] = useState([]);
+  const [enrollments, setEnrollments] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [userName, setUserName] = useState('');
@@ -143,14 +271,18 @@ export default function CommunityDashboardPage() {
 
   const load = async () => {
     try {
-      const [dashRes, catRes, trainingRes] = await Promise.all([
+      const [dashRes, catRes, trainingRes, enrRes, payRes] = await Promise.all([
         communityAPI.dashboard(),
         schoolAPI.getCatalog().catch(() => ({ data: [] })),
         schoolAPI.listTrainingCourses().catch(() => ({ data: [] })),
+        schoolAPI.getMyEnrollments().catch(() => ({ data: [] })),
+        schoolAPI.getMyPayments().catch(() => ({ data: [] })),
       ]);
       setData(dashRes.data);
       setCatalogCourses(catRes.data || []);
       setTrainingCourses(trainingRes.data || []);
+      setEnrollments(enrRes.data || []);
+      setPayments(payRes.data || []);
       if (!dashRes.data.onboarded) {
         setUserName(dashRes.data.profile?.display_name || '');
         setShowOnboarding(true);
@@ -199,6 +331,18 @@ export default function CommunityDashboardPage() {
           Ciao{data?.profile?.display_name ? `, ${data.profile.display_name}` : ''}!
         </h1>
         <p className="text-base text-gray-500">Uno spazio pensato per orientarti, nutrire la tua crescita e sentirti parte della community Ariadne.</p>
+      </div>
+
+      {/* ===== PROSSIMO PASSO WIDGET ===== */}
+      <div className="mb-6">
+        <ProssimoPassoWidget
+          enrollments={enrollments}
+          payments={payments}
+          interests={data?.user_course_interests || []}
+          catalogCourses={catalogCourses}
+          trainingCourses={trainingCourses}
+          navigate={navigate}
+        />
       </div>
 
       {/* ===== TOP ROW: Benvenuto + Iscrizioni aperte (equal height) ===== */}
@@ -339,6 +483,7 @@ export default function CommunityDashboardPage() {
                 {data?.upcoming_events?.length > 0 ? (
                   data.upcoming_events.map((e, i) => {
                     const interestBadge = INTEREST_BADGE[e.user_interest] || null;
+                    const isRecurring = e.recurring;
                     return (
                       <button
                         key={i}
@@ -358,7 +503,12 @@ export default function CommunityDashboardPage() {
                               </Badge>
                             )}
                           </div>
-                          <p className="text-xs text-gray-400">{e.label && `${e.label} · `}{new Date(e.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                          <p className="text-xs text-gray-400">
+                            {isRecurring
+                              ? `${e.label}${e.location ? ` · ${e.location}` : ''}`
+                              : `${e.label && `${e.label} · `}${new Date(e.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}${e.time ? ` · ${e.time}${e.end_time ? `-${e.end_time}` : ''}` : ''}`
+                            }
+                          </p>
                         </div>
                         <ArrowRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-[hsl(82,60%,42%)] flex-shrink-0 transition-colors" />
                       </button>
@@ -391,7 +541,7 @@ export default function CommunityDashboardPage() {
                   <p className="text-xs text-gray-500">Aprendo la scheda corso puoi segnalarci con un clic che vuoi saperne di piu: il tuo interesse verra registrato e sara visibile anche al team Ariadne.</p>
                 </div>
                 <Button className="w-full gap-2" onClick={() => navigate(featuredProgramCourse ? `/course/${featuredProgramCourse.course_id}` : '/training-courses')} data-testid="featured-program-cta">
-                  Voglio saperne di piu <ArrowRight className="w-4 h-4" />
+                  Vorrei saperne di più <ArrowRight className="w-4 h-4" />
                 </Button>
               </CardContent>
             </Card>
@@ -421,7 +571,7 @@ export default function CommunityDashboardPage() {
                   <Eye className="w-4 h-4 text-[hsl(82,60%,42%)] mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-gray-700">Esempi e contenuti dai corsi</p>
-                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">Immagini, materiali visibili e anteprime che raccontano l'esperienza formativa: scopri il tipo di lavoro che Ariadne propone, anche se non hai ancora partecipato.</p>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{"Immagini, materiali visibili e anteprime che raccontano l'esperienza formativa: scopri il tipo di lavoro che Ariadne propone, anche se non hai ancora partecipato."}</p>
                   </div>
                 </div>
               </div>

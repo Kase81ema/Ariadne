@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { schoolAPI } from '../lib/api';
 import {
   CheckCircle2, Circle, Clock, BookOpen, Loader2,
-  ChevronDown, Award, GraduationCap, Sparkles
+  ChevronDown, Award, GraduationCap, Sparkles, ArrowRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -109,6 +109,10 @@ function CourseCard({ course, onStatusChange, onViewDetail }) {
             )}
             <button onClick={() => onViewDetail(course.course_id)} className="text-[11px] text-[hsl(82,60%,42%)] mt-2 hover:underline inline-block" data-testid={`view-course-${course.course_id}`}>
               Vedi scheda completa &rarr;
+            </button>
+            <span className="mx-2 text-gray-200">|</span>
+            <button onClick={() => window.location.href = '/my-enrollments'} className="text-[11px] text-[#6859a3] mt-2 hover:underline inline-block" data-testid={`view-enrollments-${course.course_id}`}>
+              Pagamenti e iscrizione &rarr;
             </button>
           </div>
         </div>
@@ -295,7 +299,16 @@ export default function MyJourneyPage() {
                 {catCourses.length > 0 ? catCourses.map(c => (
                   <CourseCard key={c.course_id} course={c} onStatusChange={handleStatusChange} onViewDetail={(id) => navigate(`/course/${id}`)} />
                 )) : (
-                  <p className="text-sm text-gray-400 text-center py-8">Nessun corso disponibile in questa categoria</p>
+                  <Card className="border-gray-100" data-testid={`empty-${cat}`}>
+                    <CardContent className="p-12 text-center">
+                      <BookOpen className="w-10 h-10 mx-auto mb-4 text-gray-200" />
+                      <h3 className="text-base font-semibold mb-2">Il tuo percorso inizia qui</h3>
+                      <p className="text-sm text-gray-400 mb-4 max-w-md mx-auto">Questa pagina ti accompagnerà lungo il tuo cammino formativo. Man mano che avanzi, vedrai le tue ore, le credenziali e i traguardi raggiunti.</p>
+                      <Button variant="outline" size="sm" onClick={() => navigate('/training-courses')} className="gap-2" data-testid={`empty-${cat}-explore`}>
+                        Scopri da dove partire <ArrowRight className="w-3.5 h-3.5" />
+                      </Button>
+                    </CardContent>
+                  </Card>
                 )}
               </div>
             </TabsContent>
