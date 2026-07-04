@@ -706,14 +706,14 @@ REPOSITORY ARIADNE:
         course_id = body.get("course_id", "")
         if not course_id:
             raise HTTPException(400, "course_id obbligatorio")
-        existing = await db.enrollments.find_one({"user_id": user["user_id"], "course_id": course_id, "status": {"$ne": "cancelled"}}, {"_id": 0})
+        existing = await db.enrollments.find_one({"user_id": user["user_id"], "course_id": course_id, "status": {"$nin": ["completed", "cancelled"]}}, {"_id": 0})
         if existing:
             return existing
         enrollment = {
             "enrollment_id": f"enr_{uuid.uuid4().hex[:12]}",
             "user_id": user["user_id"],
             "course_id": course_id,
-            "status": "onboarding",
+            "status": "in_progress",
             "current_step": 1,
             "motivation": "",
             "background": "",
@@ -745,14 +745,19 @@ REPOSITORY ARIADNE:
             enr["course_description"] = course.get("description", "") if course else ""
             cohort = await db.cohorts.find_one({"cohort_id": enr.get("cohort_id", "")}, {"_id": 0})
             enr["edition_name"] = cohort.get("name", "") if cohort else ""
-            installments = await db.payment_installments.find({"user_id": user["user_id"], "course_id": enr.get("course_id")}, {"_id": 0}).sort("due_date", 1).to_list(20)
+            installments = await db.installments.find({"user_id": user["user_id"], "course_id": enr.get("course_id")}, {"_id": 0}).sort("due_date", 1).to_list(20)
+            if not installments:
+                installments = await db.payment_installments.find({"user_id": user["user_id"], "course_id": enr.get("course_id")}, {"_id": 0}).sort("due_date", 1).to_list(20)
             enr["installments"] = installments
         return enrollments
 
     @router.get("/enrollments/{enrollment_id}")
     async def get_enrollment(request: Request, enrollment_id: str):
         user = await get_current_user(request)
-        enrollment = await db.enrollments.find_one({"enrollment_id": enrollment_id, "user_id": user["user_id"]}, {"_id": 0})
+        query = {"enrollment_id": enrollment_id}
+        if user.get("role") != "admin":
+            query["user_id"] = user["user_id"]
+        enrollment = await db.enrollments.find_one(query, {"_id": 0})
         if not enrollment:
             raise HTTPException(404, "Iscrizione non trovata")
         return enrollment
@@ -799,14 +804,16 @@ REPOSITORY ARIADNE:
         content = await file.read()
         if len(content) > 10 * 1024 * 1024:
             raise HTTPException(400, "File troppo grande (max 10MB)")
+        enr_upload_dir = UPLOAD_DIR / "enrollments"
+        enr_upload_dir.mkdir(parents=True, exist_ok=True)
         ext = file.filename.split(".")[-1].lower() if "." in file.filename else "bin"
-        filename = f"enr_{uuid.uuid4().hex[:12]}.{ext}"
-        filepath = UPLOAD_DIR / filename
+        filename = f"{uuid.uuid4().hex}.{ext}"
+        filepath = enr_upload_dir / filename
         async with aiofiles.open(filepath, "wb") as f:
             await f.write(content)
         doc_entry = {
             "doc_type": doc_type,
-            "file_path": f"/api/uploads/{filename}",
+            "file_path": f"/api/uploads/enrollments/{filename}",
             "file_name": file.filename,
             "uploaded_at": datetime.now(timezone.utc).isoformat(),
         }
@@ -829,31 +836,27 @@ REPOSITORY ARIADNE:
                 "installment_id": f"inst_{uuid.uuid4().hex[:12]}",
                 "user_id": user["user_id"],
                 "course_id": course_id,
-                "cohort_id": "",
+                "enrollment_id": enrollment_id,
                 "description": item.get("description", f"Rata {i + 1}"),
                 "amount": float(item.get("amount", 0) or 0),
                 "due_date": item.get("due_date", ""),
                 "status": "pending",
-                "enrollment_id": enrollment_id,
                 "created_at": datetime.now(timezone.utc).isoformat(),
             }
-            await db.payment_installments.insert_one(inst)
+            await db.installments.insert_one(inst)
+        now = datetime.now(timezone.utc).isoformat()
         await db.enrollments.update_one(
             {"enrollment_id": enrollment_id},
-            {"$set": {"status": "enrolled", "current_step": 6, "updated_at": datetime.now(timezone.utc).isoformat()}}
+            {"$set": {"status": "confirmed", "confirmed_at": now, "current_step": 6, "updated_at": now}}
         )
-        await db.course_interest_status.update_one(
-            {"course_id": course_id, "user_id": user["user_id"]},
-            {"$set": {"status": "enrolled", "updated_at": datetime.now(timezone.utc).isoformat()}},
-            upsert=True,
-        )
+        updated = await db.enrollments.find_one({"enrollment_id": enrollment_id}, {"_id": 0})
         await log_audit(user["user_id"], "confirm_enrollment", {"enrollment_id": enrollment_id, "course_id": course_id})
-        return {"ok": True, "enrollment_id": enrollment_id}
+        return updated
 
     @router.get("/admin/enrollment-pipeline")
     async def admin_enrollment_pipeline(request: Request):
         await require_admin_editor(request)
-        enrollments = await db.enrollments.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+        enrollments = await db.enrollments.find({"status": "in_progress"}, {"_id": 0}).sort("updated_at", -1).to_list(200)
         for enr in enrollments:
             user_doc = await db.users.find_one({"user_id": enr.get("user_id", "")}, {"_id": 0, "password_hash": 0})
             enr["user_name"] = user_doc.get("name", "") if user_doc else ""
@@ -861,6 +864,8 @@ REPOSITORY ARIADNE:
             course = await db.course_catalog.find_one({"course_id": enr.get("course_id")}, {"_id": 0})
             if not course:
                 course = await db.courses_events.find_one({"course_id": enr.get("course_id")}, {"_id": 0})
+            if not course:
+                course = await db.training_courses_cache.find_one({"course_id": enr.get("course_id")}, {"_id": 0})
             enr["course_title"] = course.get("title", "") if course else ""
         return enrollments
 

@@ -15,8 +15,8 @@ import { CalendarDays, CreditCard, Search, Users, Clock, ArrowRight, Download, C
 const toCurrency = (v) => `€ ${Number(v || 0).toFixed(2)}`;
 
 const PIPELINE_STATUS = {
-  onboarding: { label: 'In fase di iscrizione', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  enrolled: { label: 'Iscritto', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  in_progress: { label: 'In fase di iscrizione', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  confirmed: { label: 'Iscritto', className: 'bg-blue-50 text-blue-700 border-blue-200' },
   active: { label: 'Attivo', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   completed: { label: 'Completato', className: 'bg-gray-50 text-gray-600 border-gray-200' },
 };
@@ -231,7 +231,7 @@ export default function AdminEnrollmentsPage() {
           </div>
           <div className="space-y-3">
             {filteredPipeline.map(enr => {
-              const st = PIPELINE_STATUS[enr.status] || PIPELINE_STATUS.onboarding;
+              const st = PIPELINE_STATUS[enr.status] || PIPELINE_STATUS.in_progress;
               const days = daysSince(enr.updated_at);
               return (
                 <Card key={enr.enrollment_id} className="border-gray-100" data-testid={`pipeline-row-${enr.enrollment_id}`}>
@@ -243,7 +243,7 @@ export default function AdminEnrollmentsPage() {
                       </div>
                       <p className="text-sm text-gray-600">{enr.course_title || '—'}</p>
                       <Badge variant="outline" className={`text-[10px] ${st.className}`}>{st.label}</Badge>
-                      {enr.status === 'onboarding' ? (
+                      {enr.status === 'in_progress' ? (
                         <div className="flex items-center gap-1.5 text-xs text-gray-500">
                           <Clock className="w-3.5 h-3.5" /> Step {enr.current_step}/6 · {days}g fa
                         </div>

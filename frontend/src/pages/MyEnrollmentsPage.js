@@ -8,8 +8,8 @@ import { toast } from 'sonner';
 import { CreditCard, GraduationCap, ArrowRight, Loader2, CalendarDays, FileText } from 'lucide-react';
 
 const STATUS_MAP = {
-  onboarding: { label: 'In fase di iscrizione', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  enrolled: { label: 'Iscritto/a', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  in_progress: { label: 'In fase di iscrizione', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  confirmed: { label: 'Iscritto/a', className: 'bg-blue-50 text-blue-700 border-blue-200' },
   active: { label: 'Attivo/a', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   completed: { label: 'Completato', className: 'bg-gray-50 text-gray-600 border-gray-200' },
 };
@@ -82,7 +82,7 @@ export default function MyEnrollmentsPage() {
       ) : (
         <div className="space-y-6">
           {enrichedEnrollments.map(enr => {
-            const status = STATUS_MAP[enr.status] || STATUS_MAP.onboarding;
+            const status = STATUS_MAP[enr.status] || STATUS_MAP.in_progress;
             return (
               <Card key={enr.enrollment_id} className="border-gray-100" data-testid={`enrollment-card-${enr.enrollment_id}`}>
                 <CardContent className="p-6 space-y-4">
@@ -94,7 +94,7 @@ export default function MyEnrollmentsPage() {
                     <Badge variant="outline" className={`text-[10px] ${status.className}`}>{status.label}</Badge>
                   </div>
 
-                  {enr.status === 'onboarding' && enr.current_step < 6 && (
+                  {enr.status === 'in_progress' && enr.current_step < 6 && (
                     <div className="rounded-xl border border-amber-100 bg-amber-50/50 p-4">
                       <p className="text-sm text-amber-800 mb-2">La tua iscrizione è ancora in corso. Puoi riprendere da dove hai lasciato.</p>
                       <Button size="sm" className="gap-2" onClick={() => navigate(`/enroll/${enr.course_id}`)} data-testid={`enrollment-resume-${enr.enrollment_id}`}>

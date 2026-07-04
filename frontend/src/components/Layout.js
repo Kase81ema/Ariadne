@@ -3,7 +3,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from './ui/collapsible';
 import {
   LayoutDashboard, Users, GraduationCap,

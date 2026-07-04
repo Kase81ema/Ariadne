@@ -1,0 +1,71 @@
+{
+  "summary": "Iteration 18: Enrollment endpoints and frontend fixes verification complete. All 14 backend tests PASSED. All 7 frontend UI tests PASSED. Backend enrollment endpoints correctly implement: status 'in_progress' for new enrollments, 'confirmed' after confirmation, installments saved to 'installments' collection, pipeline filters 'in_progress' only. Frontend correctly shows: sidebar with 'Le mie iscrizioni' and 'Iscrizioni e pagamenti' + 'Comunicazioni', profile page with form fields and save button, my-enrollments page with status badges and installment rows, course detail page with 'Iscriviti adesso' and 'Voglio iscrivermi' buttons, admin enrollments page with 3 tabs, admin comms page with 3 tabs, inbox page retrocompatibility working.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_enrollment_features.py",
+    "/app/test_reports/pytest/pytest_enrollment_features.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Backend enrollment endpoints correctly implement status flow: 'in_progress' -> 'confirmed'",
+    "POST /api/school/enrollments creates enrollment with status='in_progress' and current_step=1",
+    "POST /api/school/enrollments with same course_id returns existing enrollment (resume flow)",
+    "GET /api/school/enrollments/my returns enrollments with course_title and installments enriched",
+    "PUT /api/school/enrollments/{id} correctly updates draft fields (motivation, background, payment_plan, current_step)",
+    "POST /api/school/enrollments/{id}/contract saves consents, signature_text, contract_signed_at, contract_ip, contract_user_agent",
+    "POST /api/school/enrollments/{id}/confirm sets status='confirmed', confirmed_at, creates installments in 'installments' collection",
+    "GET /api/school/admin/enrollment-pipeline correctly filters only 'in_progress' enrollments",
+    "Frontend sidebar correctly shows 'Le mie iscrizioni' in 'Il mio spazio' group",
+    "Frontend sidebar correctly shows 'Iscrizioni e pagamenti' and 'Comunicazioni' in 'Gestione' group",
+    "Frontend profile page loads with all form fields and save button",
+    "Frontend my-enrollments page shows enrollments with status badges ('Iscritto/a', 'In fase di iscrizione') and installment rows",
+    "Frontend course detail page shows 'Iscriviti adesso' button and 'Voglio iscrivermi' text",
+    "Frontend admin enrollments page shows 3 tabs: 'Pipeline onboarding', 'Operatività corsi', 'Scadenze pagamenti'",
+    "Frontend admin comms page shows 3 tabs: 'Posta in arrivo', 'Regole', 'Template'",
+    "Frontend /inbox page works for retrocompatibility"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_enrollment_features.py"
+  ],
+  "success_rate": {
+    "backend": "100% (14/14 tests passed)",
+    "frontend": "100% (7/7 UI tests passed)"
+  },
+  "test_credentials": {
+    "admin": "admin@ariadne.training / admin123"
+  },
+  "seed_data_creation": "Test enrollments created during backend tests with unique course_ids (test_course_*, test_resume_*, etc.)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 18 verified all enrollment endpoint fixes and frontend changes. Backend: (1) POST /api/school/enrollments creates enrollment with status='in_progress', current_step=1, (2) Same course_id returns existing enrollment for resume flow, (3) GET /api/school/enrollments/my returns enrollments with course_title and installments, (4) PUT updates draft fields, (5) POST /contract saves consents and signature, (6) POST /confirm sets status='confirmed' and creates installments in 'installments' collection, (7) GET /admin/enrollment-pipeline returns only 'in_progress' enrollments. Frontend: (1) Sidebar shows 'Le mie iscrizioni' in 'Il mio spazio' and 'Iscrizioni e pagamenti' + 'Comunicazioni' in 'Gestione', (2) Profile page has form fields and save button, (3) My-enrollments shows status badges and installments, (4) Course detail has 'Iscriviti adesso' and 'Voglio iscrivermi' buttons, (5) Admin enrollments has 3 tabs, (6) Admin comms has 3 tabs, (7) /inbox retrocompatibility works.",
+  "features_verified": {
+    "backend_enrollment_create_in_progress": "PASS - POST /api/school/enrollments creates with status='in_progress', current_step=1",
+    "backend_enrollment_resume_flow": "PASS - Same course_id returns existing enrollment",
+    "backend_enrollment_my_list": "PASS - GET /api/school/enrollments/my returns with course_title and installments",
+    "backend_enrollment_get_by_id": "PASS - GET /api/school/enrollments/{id} returns enrollment",
+    "backend_enrollment_update_draft": "PASS - PUT updates motivation, background, payment_plan, current_step",
+    "backend_enrollment_contract": "PASS - POST /contract saves consents, signature_text, contract_signed_at",
+    "backend_enrollment_confirm": "PASS - POST /confirm sets status='confirmed', confirmed_at, current_step=6",
+    "backend_enrollment_installments": "PASS - Confirm creates installments in 'installments' collection",
+    "backend_enrollment_pipeline": "PASS - GET /admin/enrollment-pipeline returns only 'in_progress'",
+    "backend_profile_get": "PASS - GET /api/school/user-details returns profile",
+    "backend_profile_save": "PASS - POST /api/school/user-details saves profile",
+    "frontend_sidebar_le_mie_iscrizioni": "PASS - 'Le mie iscrizioni' visible in 'Il mio spazio' group",
+    "frontend_sidebar_iscrizioni_e_pagamenti": "PASS - 'Iscrizioni e pagamenti' visible in 'Gestione' group",
+    "frontend_sidebar_comunicazioni": "PASS - 'Comunicazioni' visible in 'Gestione' group",
+    "frontend_profile_page": "PASS - Profile page loads with form fields and save button",
+    "frontend_my_enrollments_page": "PASS - Shows enrollments with status badges and installment rows",
+    "frontend_course_detail_cta": "PASS - Shows 'Iscriviti adesso' button and 'Voglio iscrivermi' text",
+    "frontend_admin_enrollments_tabs": "PASS - Shows 3 tabs: Pipeline onboarding, Operatività corsi, Scadenze pagamenti",
+    "frontend_admin_comms_tabs": "PASS - Shows 3 tabs: Posta in arrivo, Regole, Template",
+    "frontend_inbox_retrocompatibility": "PASS - /inbox page works"
+  }
+}

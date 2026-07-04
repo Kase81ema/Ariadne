@@ -158,7 +158,7 @@ export default function CourseDetailPage() {
   const overview = adminSummary?.summary || { interested: 0, confirmed: 0, enrolled: 0 };
   const statusContent = {
     interested: {
-      badge: 'Interesse registrato',
+      badge: 'Iscrizione avviata',
       text: 'Hai già segnalato il tuo interesse per questo percorso. Il team Ariadne potrà contattarti con i prossimi passi utili.',
     },
     confirmed: {
@@ -425,7 +425,7 @@ export default function CourseDetailPage() {
               data-testid="course-interest-button"
             >
               {savingInterest ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-              {userStatus ? 'Interesse registrato' : 'Sono interessato/a'}
+              {userStatus ? 'Iscrizione avviata' : 'Voglio iscrivermi'}
             </Button>
             <Button
               variant="outline"

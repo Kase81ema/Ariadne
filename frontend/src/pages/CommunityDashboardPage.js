@@ -164,10 +164,10 @@ export default function CommunityDashboardPage() {
         ]);
         setAdminKpi({
           totalUsers: usersRes.data?.length || 0,
-          activeEnrollments: (pipelineRes.data || []).filter(e => e.status === 'enrolled' || e.status === 'active').length,
+          activeEnrollments: (pipelineRes.data || []).filter(e => e.status === 'confirmed' || e.status === 'active').length,
           pendingPayments: paymentsRes.data?.summary?.pending_count || 0,
           overdueAmount: paymentsRes.data?.summary?.overdue_amount || 0,
-          pipelineOnboarding: (pipelineRes.data || []).filter(e => e.status === 'onboarding').length,
+          pipelineOnboarding: (pipelineRes.data || []).filter(e => e.status === 'in_progress').length,
         });
       }
     } catch { /* ignore */ } finally {
